@@ -1,6 +1,6 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, QLabel, QFileDialog, QMessageBox
-from PyQt5.QtGui import QIcon
+from PyQt6.QtWidgets import QApplication, QMainWindow, QAction, QLabel, QFileDialog, QMessageBox
+from PyQt6.QtGui import QIcon
 
 # Icon directory relative to current working directory
 ICON_DIRECTORY = "../../assets/icons"

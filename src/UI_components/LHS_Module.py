@@ -1,13 +1,14 @@
 import sys
 import os
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QCheckBox, QListWidget, QComboBox, QTableWidget, 
     QTableWidgetItem, QSpinBox, QTabWidget, QLabel
 )
-from PyQt5.QtGui import QIcon, QPalette, QColor
-from PyQt5.QtCore import Qt
+from PyQt6.QtGui import QIcon, QPalette, QColor
+from PyQt6.QtCore import Qt
 
 # Icon directory relative to current working directory
+# TODO: change back relative to main.py (Remove ..)
 ICON_DIRECTORY = "../../assets/icons"
 
 # Path to icon directory
@@ -15,11 +16,11 @@ PATH_TO_ICON_DIRECTORY = os.path.abspath(os.path.join(os.getcwd(), ICON_DIRECTOR
 
 
 
-class GrayButton(QPushButton):
-    def __init__(self, text, parent=None):
-        super().__init__(text, parent)
-        self.setStyleSheet('QPushButton { background-color: #f0f0f0; }'
-                           'QPushButton:pressed { background-color: #d0d0d0; }')
+# class GrayButton(QPushButton):
+#     def __init__(self, text, parent=None):
+#         super().__init__(text, parent)
+#         self.setStyleSheet('QPushButton { background-color: #f0f0f0; }'
+#                            'QPushButton:pressed { background-color: #d0d0d0; }')
 
 
 class LHSWidgets(QWidget):
@@ -46,6 +47,7 @@ class LHSWidgets(QWidget):
 
         self.setLayout(self.layout)
 
+
     def buildFileManagementIcons(self) -> QWidget:
         # Create a QHBoxLayout to contain the icons
         fileManagementLayout = QHBoxLayout()
@@ -60,6 +62,7 @@ class LHSWidgets(QWidget):
         saveButton.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "save.png")))
         saveButton.setIconSize(saveButton.sizeHint())  # Adjust icon size to button size
         saveButton.setToolTip("Save")
+        saveButton.setFixedSize(saveButton.sizeHint())
         fileManagementLayout.addWidget(saveButton)
 
         # Add Open Folder icon
@@ -67,6 +70,7 @@ class LHSWidgets(QWidget):
         openFolderButton.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "open.png")))
         openFolderButton.setIconSize(openFolderButton.sizeHint())  # Adjust icon size to button size
         openFolderButton.setToolTip("Open Folder")
+        openFolderButton.setFixedSize(openFolderButton.sizeHint())
         fileManagementLayout.addWidget(openFolderButton)
 
         # Add Navigate out of Directory icon
@@ -74,6 +78,7 @@ class LHSWidgets(QWidget):
         navigateOutOfDirectoryButton.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "up.png")))
         navigateOutOfDirectoryButton.setIconSize(navigateOutOfDirectoryButton.sizeHint())  # Adjust icon size to button size
         navigateOutOfDirectoryButton.setToolTip("Navigate out of Directory")
+        navigateOutOfDirectoryButton.setFixedSize(navigateOutOfDirectoryButton.sizeHint())
         fileManagementLayout.addWidget(navigateOutOfDirectoryButton)
 
         # Add Navigate into Directory icon
@@ -81,7 +86,11 @@ class LHSWidgets(QWidget):
         navigateIntoDirectoryButton.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "down.png")))
         navigateIntoDirectoryButton.setIconSize(navigateIntoDirectoryButton.sizeHint())  # Adjust icon size to button size
         navigateIntoDirectoryButton.setToolTip("Navigate into Directory")
+        navigateIntoDirectoryButton.setFixedSize(navigateIntoDirectoryButton.sizeHint())
         fileManagementLayout.addWidget(navigateIntoDirectoryButton)
+
+        # Add stretch to push all widgets to LHS
+        fileManagementLayout.addStretch(1)
 
         # Create a container widget and set the layout
         fileManagementWidget = QWidget()
@@ -96,16 +105,21 @@ class LHSWidgets(QWidget):
         # Dropdown 1
         dropdown1 = QComboBox()
         dropdown1.addItems(["All files", "Processed"])  # Add items to the first dropdown
+        dropdown1.setFixedSize(dropdown1.sizeHint())
         dropdownLayout.addWidget(dropdown1)
+        
 
         # Dropdown 2
         dropdown2 = QComboBox()
         dropdown2.addItems(["Height"])  # Add items to the second dropdown
+        dropdown2.setFixedSize(dropdown2.sizeHint())
         dropdownLayout.addWidget(dropdown2)
+        
 
         # Dropdown 3
         dropdown3 = QComboBox()
         dropdown3.addItems(["Stack off", "Stack On", "Intercalate"])  # Add items to the third dropdown
+        dropdown3.setFixedSize(dropdown3.sizeHint())
         dropdownLayout.addWidget(dropdown3)
 
         # Create a container widget and set the layout
@@ -141,13 +155,13 @@ class LHSWidgets(QWidget):
         # THESE ARE TEMPORARY UNTIL A FULL FILE/FOLDER SYSTEM CAN BE IMPLEMENTED
         for i, param in enumerate(parameters):
             item = QTableWidgetItem(param)
-            item.setFlags(item.flags() & ~Qt.ItemIsEditable)  # Make the item read-only
+            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)  # Make the item read-only
             fileDetailsWidget.setItem(i, 0, item)
             fileDetailsWidget.setItem(i, 1, QTableWidgetItem('0' if param != 'Channel' else 'unknown'))
 
         # Disable scroll bars
-        fileDetailsWidget.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        fileDetailsWidget.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        fileDetailsWidget.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        fileDetailsWidget.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         # Adjust the size of the columns to fit the contents
         fileDetailsWidget.resizeColumnsToContents()
@@ -196,7 +210,7 @@ class LHSWidgets(QWidget):
         # Add button to toggle preview
         # This is a custom button coming from an inhereted class QPushButton. It should be accompanied with the function buildToggleableWidgets() unless otherwise discussed (in reference to some stylesheet)
         # We can change this to actually change text. I havent coded any slots or signals yet
-        togglePreviewButton = GrayButton("Preview On/Off")
+        togglePreviewButton = QPushButton("Preview On/Off")
         topHorizontalLayout.addWidget(togglePreviewButton)
 
 
@@ -279,21 +293,19 @@ class LHSWidgets(QWidget):
         
         return tabs
     
+    # Function stands incomplete as priority is to develop a video player application first
+    # TODO: develop the individual 5 tabs as per the MatLab NanoLocz app
     def setupTab(self, tab, content, color):
         layout = QVBoxLayout()
         label = QLabel(content)
         label.setStyleSheet(f"color: {color.name()};")
         layout.addWidget(label)
         
-        # Add more widgets if needed
-        button = QPushButton("Button in " + content)
-        layout.addWidget(button)
-        
         tab.setLayout(layout)
     
-
+# TODO: remove once finished
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     lhs_widgets = LHSWidgets()
     lhs_widgets.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
