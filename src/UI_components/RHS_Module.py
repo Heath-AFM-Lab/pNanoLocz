@@ -225,13 +225,11 @@ class RHSWidgets(QWidget):
         mediaLayout.addStretch(1)
 
         # Set up media player to view AFM videos
-        mediaPlayer = QMediaPlayer()
+        mediaPlayer = QMediaPlayer(self)
         videoWidget = QVideoWidget()
-        videoWidget.setFixedSize(100, 100)
+        videoWidget.setFixedSize(640, 480)  # Adjusted size for better visibility
         videoWidget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        # TODO: containerise the video widget
 
-        mediaPlayer.setVideoOutput(videoWidget)
         mediaPlayer.setVideoOutput(videoWidget)
 
         # Load a sample video file (replace with your actual video path)
@@ -396,6 +394,6 @@ class RangeValidator(QValidator):
 # TODO: remove once finished
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    lhs_widgets = RHSWidgets()
-    lhs_widgets.show()
+    rhs_widgets = RHSWidgets()
+    rhs_widgets.show()
     sys.exit(app.exec())
