@@ -225,21 +225,23 @@ class RHSWidgets(QWidget):
         mediaLayout.addStretch(1)
 
         # Set up media player to view AFM videos
-        self.mediaPlayer = QMediaPlayer(self)
-        self.videoWidget = QVideoWidget(self)
-        self.videoWidget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        mediaPlayer = QMediaPlayer()
+        videoWidget = QVideoWidget()
+        videoWidget.setFixedSize(100, 100)
+        videoWidget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        # TODO: containerise the video widget
 
-        self.mediaPlayer.setVideoOutput(self.videoWidget)
-        self.mediaPlayer.setVideoOutput(self.videoWidget)
+        mediaPlayer.setVideoOutput(videoWidget)
+        mediaPlayer.setVideoOutput(videoWidget)
 
         # Load a sample video file (replace with your actual video path)
         videoFile = "fire.mp4"
         videoPath = QUrl.fromLocalFile(videoFile)
-        # self.mediaPlayer.setMedia(videoPath)
+        mediaPlayer.setSource(videoPath)
 
-        mediaLayout.addWidget(self.videoWidget)
+        mediaLayout.addWidget(videoWidget)
 
-        self.mediaPlayer.play()
+        mediaPlayer.play()
 
         # Set up video control widgets
         mediaControlWidget = self.buildVideoControlWidget()
