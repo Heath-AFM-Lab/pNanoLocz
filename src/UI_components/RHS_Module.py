@@ -10,18 +10,15 @@ from PyQt6.QtMultimediaWidgets import QVideoWidget
 from PyQt6.QtGui import QIcon, QIntValidator, QValidator
 from PyQt6.QtCore import Qt, QUrl
 from PyQt6.QtWidgets import QSizePolicy
-from constants import ICON_DIRECTORY
-
-# Path to icon directory
-PATH_TO_ICON_DIRECTORY = os.path.abspath(os.path.join(os.getcwd(), ICON_DIRECTORY))
+from constants import PATH_TO_ICON_DIRECTORY
 
 class RHSWidgets(QWidget):
     def __init__(self):
         super().__init__()
         self.buildLHS()
 
-    # Function builds the left hand side of the NanoLocz program
-    def buildLHS(self) -> QWidget:
+    # Function builds the right hand side of the NanoLocz program
+    def buildLHS(self):
         # Build the widgets and layouts
         self.layout = QVBoxLayout(self)
 

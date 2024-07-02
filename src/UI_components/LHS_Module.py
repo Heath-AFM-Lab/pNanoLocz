@@ -4,12 +4,12 @@ from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QCheckBox, QListWidget, QComboBox, QTableWidget, 
     QTableWidgetItem, QSpinBox, QTabWidget, QLabel
 )
-from PyQt6.QtGui import QIcon, QPalette, QColor
+from PyQt6.QtGui import QColor
 from PyQt6.QtCore import Qt
 from constants import ICON_DIRECTORY
+# from src.UI_components.LHS_Components.
 
-# Path to icon directory
-PATH_TO_ICON_DIRECTORY = os.path.abspath(os.path.join(os.getcwd(), ICON_DIRECTORY))
+
 
 
 
@@ -26,7 +26,7 @@ class LHSWidgets(QWidget):
         self.buildLHS()
 
     # Function builds the left hand side of the NanoLocz program
-    def buildLHS(self) -> QWidget:
+    def buildLHS(self):
         # Build the widgets and layouts
         self.layout = QVBoxLayout(self)
 
@@ -43,57 +43,6 @@ class LHSWidgets(QWidget):
         self.layout.addWidget(tabWidgets)
 
         self.setLayout(self.layout)
-
-
-    def buildFileManagementIcons(self) -> QWidget:
-        # Create a QHBoxLayout to contain the icons
-        fileManagementLayout = QHBoxLayout()
-
-        # Add Autosave Checkbox
-        autosaveCheckbox = QCheckBox("Autosave")
-        autosaveCheckbox.setToolTip("Enable or disable autosave")
-        fileManagementLayout.addWidget(autosaveCheckbox)
-
-        # Add Save Icon
-        saveButton = QPushButton()
-        saveButton.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "save.png")))
-        saveButton.setIconSize(saveButton.sizeHint())  # Adjust icon size to button size
-        saveButton.setToolTip("Save")
-        saveButton.setFixedSize(saveButton.sizeHint())
-        fileManagementLayout.addWidget(saveButton)
-
-        # Add Open Folder icon
-        openFolderButton = QPushButton()
-        openFolderButton.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "open.png")))
-        openFolderButton.setIconSize(openFolderButton.sizeHint())  # Adjust icon size to button size
-        openFolderButton.setToolTip("Open Folder")
-        openFolderButton.setFixedSize(openFolderButton.sizeHint())
-        fileManagementLayout.addWidget(openFolderButton)
-
-        # Add Navigate out of Directory icon
-        navigateOutOfDirectoryButton = QPushButton()
-        navigateOutOfDirectoryButton.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "up.png")))
-        navigateOutOfDirectoryButton.setIconSize(navigateOutOfDirectoryButton.sizeHint())  # Adjust icon size to button size
-        navigateOutOfDirectoryButton.setToolTip("Navigate out of Directory")
-        navigateOutOfDirectoryButton.setFixedSize(navigateOutOfDirectoryButton.sizeHint())
-        fileManagementLayout.addWidget(navigateOutOfDirectoryButton)
-
-        # Add Navigate into Directory icon
-        navigateIntoDirectoryButton = QPushButton()
-        navigateIntoDirectoryButton.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "down.png")))
-        navigateIntoDirectoryButton.setIconSize(navigateIntoDirectoryButton.sizeHint())  # Adjust icon size to button size
-        navigateIntoDirectoryButton.setToolTip("Navigate into Directory")
-        navigateIntoDirectoryButton.setFixedSize(navigateIntoDirectoryButton.sizeHint())
-        fileManagementLayout.addWidget(navigateIntoDirectoryButton)
-
-        # Add stretch to push all widgets to LHS
-        fileManagementLayout.addStretch(1)
-
-        # Create a container widget and set the layout
-        fileManagementWidget = QWidget()
-        fileManagementWidget.setLayout(fileManagementLayout)
-
-        return fileManagementWidget
 
     def buildDropdownWidgets(self) -> QWidget:
         # Create a QHBoxLayout to contain the dropdowns
@@ -115,9 +64,12 @@ class LHSWidgets(QWidget):
 
         # Dropdown 3
         dropdown3 = QComboBox()
-        dropdown3.addItems(["Stack off", "Stack On", "Intercalate"])  # Add items to the third dropdown
+        dropdown3.addItems(["Stack off", "Stack on", "Intercalate"])  # Add items to the third dropdown
         dropdown3.setFixedSize(dropdown3.sizeHint())
         dropdownLayout.addWidget(dropdown3)
+
+        # Push dropdowns to LHS
+        dropdownLayout.addStretch(1)
 
         # Create a container widget and set the layout
         dropdownWidget = QWidget()
@@ -148,7 +100,7 @@ class LHSWidgets(QWidget):
             "y pixels", "x pixels", "Pixel/nm", "Channel"
         ]
         
-        # Populate the table
+        # TODO: Populate the table properly
         # THESE ARE TEMPORARY UNTIL A FULL FILE/FOLDER SYSTEM CAN BE IMPLEMENTED
         for i, param in enumerate(parameters):
             item = QTableWidgetItem(param)
@@ -174,8 +126,11 @@ class LHSWidgets(QWidget):
         total_height = sum(fileDetailsWidget.rowHeight(1) for i in range(fileDetailsWidget.rowCount() + 1))     # A slightly scuffed line taking in the height of the first line only (dont edit the font of any textbox)
         fileDetailsWidget.setFixedHeight(total_height + 2 * fileDetailsWidget.frameWidth())
         
-        # Add the table to the layout
-        fileDetailingLayout.addWidget(fileDetailsWidget)
+        # Add the table to the layout, pushed to the top left corner
+        fileDetailslayout = QVBoxLayout()
+        fileDetailslayout.addWidget(fileDetailsWidget)
+        fileDetailslayout.addStretch(1)
+        fileDetailingLayout.addLayout(fileDetailslayout)
 
         # Create a container widget and set the layout
         fileDetailingWidget = QWidget()

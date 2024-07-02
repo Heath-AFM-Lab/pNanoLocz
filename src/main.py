@@ -1,10 +1,9 @@
 import sys
-from PyQt6.QtWidgets import QWidget, QApplication, QMainWindow, QLabel, QFileDialog, QMessageBox, QHBoxLayout
-from PyQt6.QtGui import QIcon, QAction
+from PyQt6.QtWidgets import (QSizePolicy, QWidget, QApplication, QMainWindow, 
+                             QFileDialog, QMessageBox, QHBoxLayout)
+from PyQt6.QtGui import QAction
 from UI_components.LHS_Module import LHSWidgets
 from UI_components.RHS_Module import RHSWidgets
-
-
 
 class MyApp(QMainWindow):
     def __init__(self):
@@ -15,23 +14,35 @@ class MyApp(QMainWindow):
         # Set up layout
         appLayout = QHBoxLayout()
 
+        # Remove margins and spacing
+        appLayout.setContentsMargins(0, 0, 0, 0)
+        appLayout.setSpacing(0)
+
         # Create and add LHS and RHS components
         lhsComponent = LHSWidgets()
         rhsComponent = RHSWidgets()
+        lhsComponent.setFixedWidth(lhsComponent.sizeHint().width())
         appLayout.addWidget(lhsComponent)
         appLayout.addWidget(rhsComponent)
+
+        # Set LHS, RHS component names
+        lhsComponent.setObjectName("lhs_component")
+        rhsComponent.setObjectName("rhs_component")
 
         # Create a container widget and set the layout
         container = QWidget()
         container.setLayout(appLayout)
         self.setCentralWidget(container)
 
+        # Set size policy for the main window
+        size_policy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        self.setSizePolicy(size_policy)
+
+        # Create menu for application
         self.createMenu()
-    
     
     def createMenu(self):
         menubar = self.menuBar()
-
         fileMenu = menubar.addMenu('File')
         self.createFileMenuActions(fileMenu)
 
@@ -48,7 +59,7 @@ class MyApp(QMainWindow):
         menu.addAction(action)
 
     def openFile(self):
-        options = QFileDialog.options()
+        options = QFileDialog.Options()
         options |= QFileDialog.ReadOnly
         fileName, _ = QFileDialog.getOpenFileName(self, "Open File", "", "All Files (*);;Text Files (*.txt)", options=options)
         if fileName:
@@ -67,70 +78,6 @@ class MyApp(QMainWindow):
                     file.write(self.label.text())
             except Exception as e:
                 QMessageBox.critical(self, "Error", str(e))
-    
-    
-    
-    
-    
-    
-    
-    # def initUI(self):
-
-
-    #     # Create a label
-    #     self.label = QLabel('Hello, World!', self)
-    #     self.setCentralWidget(self.label)
-
-    #     # Create the menubar
-    #     menubar = self.menuBar()
-
-    #     # Add the File menu
-    #     fileMenu = menubar.addMenu('File')
-
-    #     # Create actions for the File menu
-    #     openAction = QAction(QIcon(), 'Open', self)
-    #     openAction.setShortcut('Ctrl+O')
-    #     openAction.triggered.connect(self.openFile)
-
-    #     saveAction = QAction(QIcon(), 'Save', self)
-    #     saveAction.setShortcut('Ctrl+S')
-    #     saveAction.triggered.connect(self.saveFile)
-
-    #     exitAction = QAction(QIcon(), 'Exit', self)
-    #     exitAction.setShortcut('Ctrl+Q')
-    #     exitAction.triggered.connect(self.close)
-
-    #     # Add actions to the File menu
-    #     fileMenu.addAction(openAction)
-    #     fileMenu.addAction(saveAction)
-    #     fileMenu.addSeparator()
-    #     fileMenu.addAction(exitAction)
-
-    #     # Set the main window properties
-    #     self.setWindowTitle('My PyQt5 App with Menu')
-    #     self.setGeometry(300, 300, 400, 300)
-
-
-    # def openFile(self):
-    #     options = QFileDialog.Options()
-    #     options |= QFileDialog.ReadOnly
-    #     fileName, _ = QFileDialog.getOpenFileName(self, "Open File", "", "All Files (*);;Text Files (*.txt)", options=options)
-    #     if fileName:
-    #         try:
-    #             with open(fileName, 'r') as file:
-    #                 self.label.setText(file.read())
-    #         except Exception as e:
-    #             QMessageBox.critical(self, "Error", str(e))
-
-    # def saveFile(self):
-    #     options = QFileDialog.Options()
-    #     fileName, _ = QFileDialog.getSaveFileName(self, "Save File", "", "All Files (*);;Text Files (*.txt)", options=options)
-    #     if fileName:
-    #         try:
-    #             with open(fileName, 'w') as file:
-    #                 file.write(self.label.text())
-    #         except Exception as e:
-    #             QMessageBox.critical(self, "Error", str(e))
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
