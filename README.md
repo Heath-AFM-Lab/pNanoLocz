@@ -35,7 +35,7 @@ source activate pNanoLocz_env
 
 This will switch your PC to the development environment that will now contain the necessary dependancy files. Navigate to the folder containing the file `Requirements.txt`. We will now install these dependancies by running
 ```conda
-python install_requirements.py
+python install_requirements.py Requirements.txt
 ```
 
 Once that is completed, we can run the program by running
