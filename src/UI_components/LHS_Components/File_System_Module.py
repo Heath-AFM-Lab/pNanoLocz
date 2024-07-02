@@ -3,10 +3,7 @@ from PyQt6.QtWidgets import QWidget, QHBoxLayout, QPushButton, QCheckBox
 from PyQt6.QtGui import QIcon
 # from src.constants import PATH_TO_ICON_DIRECTORY
 
-# TODO: remove once format correction is complete
-ICON_DIRECTORY = "../../../assets/icons"
-# Path to icon directory
-PATH_TO_ICON_DIRECTORY = os.path.abspath(os.path.join(os.getcwd(), ICON_DIRECTORY))
+
 
 class fileSystemWidget(QWidget):
     def __init__(self):
@@ -93,6 +90,10 @@ from PyQt6.QtWidgets import QApplication
 import sys
 
 if __name__ == '__main__':
+    # TODO: remove once format correction is complete
+    ICON_DIRECTORY = "../../../assets/icons"
+    # Path to icon directory
+    PATH_TO_ICON_DIRECTORY = os.path.abspath(os.path.join(os.getcwd(), ICON_DIRECTORY))
     app = QApplication(sys.argv)
     file_system = fileSystemWidget()
     file_system.show()

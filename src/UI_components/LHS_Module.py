@@ -44,39 +44,6 @@ class LHSWidgets(QWidget):
 
         self.setLayout(self.layout)
 
-    def buildDropdownWidgets(self) -> QWidget:
-        # Create a QHBoxLayout to contain the dropdowns
-        dropdownLayout = QHBoxLayout()
-
-        # Dropdown 1
-        dropdown1 = QComboBox()
-        dropdown1.addItems(["All files", "Processed"])  # Add items to the first dropdown
-        dropdown1.setFixedSize(dropdown1.sizeHint())
-        dropdownLayout.addWidget(dropdown1)
-        
-
-        # Dropdown 2
-        dropdown2 = QComboBox()
-        dropdown2.addItems(["Height"])  # Add items to the second dropdown
-        dropdown2.setFixedSize(dropdown2.sizeHint())
-        dropdownLayout.addWidget(dropdown2)
-        
-
-        # Dropdown 3
-        dropdown3 = QComboBox()
-        dropdown3.addItems(["Stack off", "Stack on", "Intercalate"])  # Add items to the third dropdown
-        dropdown3.setFixedSize(dropdown3.sizeHint())
-        dropdownLayout.addWidget(dropdown3)
-
-        # Push dropdowns to LHS
-        dropdownLayout.addStretch(1)
-
-        # Create a container widget and set the layout
-        dropdownWidget = QWidget()
-        dropdownWidget.setLayout(dropdownLayout)
-
-        return dropdownWidget
-
     def buildFileDetailingSystem(self) -> QWidget:
         # Create a QHBoxLayout to contain the file selector and details box
         fileDetailingLayout = QHBoxLayout()
