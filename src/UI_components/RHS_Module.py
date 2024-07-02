@@ -3,19 +3,14 @@ import os
 import re
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QCheckBox, QListWidget, QComboBox, QTableWidget, 
-    QTableWidgetItem, QSpinBox, QTabWidget, QLabel, QLineEdit, QSlider
+    QTableWidgetItem, QSpinBox, QTabWidget, QLabel, QLineEdit, QSlider, QDoubleSpinBox
 )
 from PyQt6.QtMultimedia import QMediaPlayer
 from PyQt6.QtMultimediaWidgets import QVideoWidget
 from PyQt6.QtGui import QIcon, QIntValidator, QValidator
 from PyQt6.QtCore import Qt, QUrl
 from PyQt6.QtWidgets import QSizePolicy
-
-
-
-# Icon directory relative to current working directory
-# TODO: change back relative to main.py (Remove ..)
-ICON_DIRECTORY = "../../assets/icons"
+from constants import ICON_DIRECTORY
 
 # Path to icon directory
 PATH_TO_ICON_DIRECTORY = os.path.abspath(os.path.join(os.getcwd(), ICON_DIRECTORY))
@@ -224,10 +219,15 @@ class RHSWidgets(QWidget):
         # Add some spacing between the screenshot icon and video player
         mediaLayout.addStretch(1)
 
+
+        videoPlayerContainer = QWidget()
+        videoPlayerContainer.setFixedSize(640, 480)
+
         # Set up media player to view AFM videos
         mediaPlayer = QMediaPlayer(self)
         videoWidget = QVideoWidget()
-        videoWidget.setFixedSize(640, 480)  # Adjusted size for better visibility
+        videoWidget.setMinimumSize(videoPlayerContainer.size())
+        videoWidget.setMaximumSize(videoPlayerContainer.size())  # Adjusted size for better visibility
         videoWidget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
 
         mediaPlayer.setVideoOutput(videoWidget)
@@ -237,24 +237,25 @@ class RHSWidgets(QWidget):
         videoPath = QUrl.fromLocalFile(videoFile)
         mediaPlayer.setSource(videoPath)
 
+        # Load Widget and play tmp video        
         mediaLayout.addWidget(videoWidget)
-
         mediaPlayer.play()
 
         # Set up video control widgets
         mediaControlWidget = self.buildVideoControlWidget()
-        # visualRepresentationWidget = self.buildVisualRepresetationWidget()
-        # videoDepthControlWidget = self.buildVideoDepthControlWidget()
-        # exportAndVideoScaleWidget = self.buildExportAndVideoScaleWidget()
+        visualRepresentationWidget = self.buildVisualRepresetationWidget()
+        videoDepthControlWidget = self.buildVideoDepthControlWidget()
+        exportAndVideoScaleWidget = self.buildExportAndVideoScaleWidget()
 
         # Compose all widgets
         videoControlLayout = QHBoxLayout()
         videoControlLayout.addWidget(mediaControlWidget)
-        # videoControlLayout.addWidget(visualRepresentationWidget)
-        # videoControlLayout.addWidget(videoDepthControlWidget)
+        videoControlLayout.addWidget(visualRepresentationWidget)
+        videoControlLayout.addStretch(1)
+        videoControlLayout.addWidget(videoDepthControlWidget)
 
         mediaLayout.addLayout(videoControlLayout)
-        # mediaLayout.addWidget(exportAndVideoScaleWidget)
+        mediaLayout.addWidget(exportAndVideoScaleWidget)
 
         mediaWidget = QWidget()
         mediaWidget.setLayout(mediaLayout)
@@ -357,13 +358,127 @@ class RHSWidgets(QWidget):
 
         
     def buildVisualRepresetationWidget(self) -> QWidget:
-        pass
+        # Set up layout
+        visualRepresentationLayout = QVBoxLayout()
+
+        # Add checkboxes for Scale bar, Z-scale, Timescale
+        # Add Scale bar Checkbox
+        scaleBarCheckbox = QCheckBox("Scale bar")
+        scaleBarCheckbox.setToolTip("Enable or disable Scale bar")
+        visualRepresentationLayout.addWidget(scaleBarCheckbox)
+        
+        # Add Z-scale Checkbox
+        zScaleCheckbox = QCheckBox("Z-scale")
+        zScaleCheckbox.setToolTip("Enable or disable Z-scale")
+        visualRepresentationLayout.addWidget(zScaleCheckbox)
+
+        # Add Autosave Checkbox
+        autosaveCheckbox = QCheckBox("Autosave")
+        autosaveCheckbox.setToolTip("Enable or disable autosave")
+        visualRepresentationLayout.addWidget(autosaveCheckbox)
+
+        # Push checkbox to top
+        visualRepresentationLayout.addStretch(1)
+
+        # Return widget
+        visualRepresentationWidget = QWidget()
+        visualRepresentationWidget.setLayout(visualRepresentationLayout)
+
+        return visualRepresentationWidget
+
 
     def buildVideoDepthControlWidget(self) -> QWidget:
-        pass
+        # Set up layout
+        videoDepthControlLayout = QVBoxLayout()
+
+        # Add dropdown for type of depth
+        depthTypeDropdown = QComboBox()
+        depthTypeDropdown.addItems(["Min Max", "Histogram", "Excl. outliers", "Manual"])
+        depthTypeDropdown.setFixedSize(depthTypeDropdown.sizeHint())
+        videoDepthControlLayout.addWidget(depthTypeDropdown)
+
+        # Add Auto and Hold buttons
+        # Store in QHBoxLayout to keep them together
+        buttonLayout = QHBoxLayout()
+        autoButton = QPushButton("Auto")
+        buttonLayout.addWidget(autoButton)
+
+        holdButton = QPushButton("Hold")
+        buttonLayout.addWidget(holdButton)
+
+        videoDepthControlLayout.addLayout(buttonLayout)
+
+        # Add max and min spinners and respective labels
+        minSpinLayout = QHBoxLayout()
+        minSpinBox = QDoubleSpinBox()
+        minSpinBox.setMinimum(0)
+        minSpinBox.setMaximum(10000)
+        minSpinBox.setSingleStep(0.01)
+        minSpinBox.setFixedSize(minSpinBox.sizeHint())
+        minSpinLabel = QLabel("Min height:")
+        minSpinLayout.addWidget(minSpinLabel)
+        minSpinLayout.addWidget(minSpinBox)
+
+        maxSpinLayout = QHBoxLayout()
+        maxSpinBox = QDoubleSpinBox()
+        maxSpinBox.setMinimum(0)
+        maxSpinBox.setMaximum(10000)
+        maxSpinBox.setSingleStep(0.01)
+        maxSpinBox.setFixedSize(maxSpinBox.sizeHint())
+        maxSpinLabel = QLabel("Max height:")
+        maxSpinLayout.addWidget(maxSpinLabel)
+        maxSpinLayout.addWidget(maxSpinBox)
+
+        videoDepthControlLayout.addLayout(minSpinLayout)
+        videoDepthControlLayout.addLayout(maxSpinLayout)
+        
+
+        # Return layout as widget
+        videoDepthControlWidget = QWidget()
+        videoDepthControlWidget.setLayout(videoDepthControlLayout)
+
+        return videoDepthControlWidget
 
     def buildExportAndVideoScaleWidget(self) -> QWidget:
-        pass
+        # Set layout
+        exportAndVideoScaleLayout = QHBoxLayout()
+
+        # Add Export button, dropdown for which plot to export, dropdown file format
+        exportButton = QPushButton("Export")
+        exportButton.setToolTip("Export data plot")
+        exportButton.setFixedSize(exportButton.sizeHint())
+        exportAndVideoScaleLayout.addWidget(exportButton)
+
+        exportTargetPlotDropdown = QComboBox()
+        exportTargetPlotDropdown.addItems(["Plot 1", "Plot 2", "Data"])
+        exportTargetPlotDropdown.setFixedSize(exportTargetPlotDropdown.sizeHint())
+        exportAndVideoScaleLayout.addWidget(exportTargetPlotDropdown)
+
+        fileFormatDropdown = QComboBox()
+        fileFormatDropdown.addItems([".tiff", ".gif", ".avi", ".png", ".jpeg", ".pdf", ".txt", ".csv", ".xlsx", "MATLAB workspace"])
+        fileFormatDropdown.setFixedSize(fileFormatDropdown.sizeHint())
+        exportAndVideoScaleLayout.addWidget(fileFormatDropdown)
+
+        # Add spacing to separate export features from scale video features
+        exportAndVideoScaleLayout.addStretch(1)
+
+        # Add scale video dropdown
+        scaleVideoDropdown = QComboBox()
+        scaleVideoDropdown.addItems(["Original", "1 to 1"])
+        scaleVideoDropdown.setFixedSize(scaleVideoDropdown.sizeHint())
+        exportAndVideoScaleLayout.addWidget(scaleVideoDropdown)
+
+        # Add button to force 1 to 1 scale
+        force1To1Button = QPushButton("Force 1:1")
+        force1To1Button.setToolTip("Force image and video scaling to 1:1")
+        force1To1Button.setFixedSize(force1To1Button.sizeHint())
+        exportAndVideoScaleLayout.addWidget(force1To1Button)
+
+        # Retun QWidget
+        exportAndVideoScaleWidget = QWidget()
+        exportAndVideoScaleWidget.setLayout(exportAndVideoScaleLayout)
+
+        return exportAndVideoScaleWidget      
 
 
 

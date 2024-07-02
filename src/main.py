@@ -1,9 +1,9 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QMainWindow, QAction, QLabel, QFileDialog, QMessageBox
-from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import QWidget, QApplication, QMainWindow, QLabel, QFileDialog, QMessageBox, QHBoxLayout
+from PyQt6.QtGui import QIcon, QAction
+from UI_components.LHS_Module import LHSWidgets
+from UI_components.RHS_Module import RHSWidgets
 
-# Icon directory relative to current working directory
-ICON_DIRECTORY = "../../assets/icons"
 
 
 class MyApp(QMainWindow):
@@ -12,11 +12,19 @@ class MyApp(QMainWindow):
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle('NanoLocz')
-        self.setGeometry(300, 300, 400, 300)
+        # Set up layout
+        appLayout = QHBoxLayout()
 
-        self.label = QLabel('Hello, World!', self)
-        self.setCentralWidget(self.label)
+        # Create and add LHS and RHS components
+        lhsComponent = LHSWidgets()
+        rhsComponent = RHSWidgets()
+        appLayout.addWidget(lhsComponent)
+        appLayout.addWidget(rhsComponent)
+
+        # Create a container widget and set the layout
+        container = QWidget()
+        container.setLayout(appLayout)
+        self.setCentralWidget(container)
 
         self.createMenu()
     
@@ -40,7 +48,7 @@ class MyApp(QMainWindow):
         menu.addAction(action)
 
     def openFile(self):
-        options = QFileDialog.Options()
+        options = QFileDialog.options()
         options |= QFileDialog.ReadOnly
         fileName, _ = QFileDialog.getOpenFileName(self, "Open File", "", "All Files (*);;Text Files (*.txt)", options=options)
         if fileName:
@@ -128,4 +136,4 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = MyApp()
     ex.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

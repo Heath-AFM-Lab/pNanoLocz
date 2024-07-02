@@ -6,10 +6,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QIcon, QPalette, QColor
 from PyQt6.QtCore import Qt
-
-# Icon directory relative to current working directory
-# TODO: change back relative to main.py (Remove ..)
-ICON_DIRECTORY = "../../assets/icons"
+from constants import ICON_DIRECTORY
 
 # Path to icon directory
 PATH_TO_ICON_DIRECTORY = os.path.abspath(os.path.join(os.getcwd(), ICON_DIRECTORY))
@@ -209,6 +206,7 @@ class LHSWidgets(QWidget):
 
         # Add button to toggle preview
         # This is a custom button coming from an inhereted class QPushButton. It should be accompanied with the function buildToggleableWidgets() unless otherwise discussed (in reference to some stylesheet)
+        # Custom button commented out
         # We can change this to actually change text. I havent coded any slots or signals yet
         togglePreviewButton = QPushButton("Preview On/Off")
         topHorizontalLayout.addWidget(togglePreviewButton)
@@ -225,6 +223,7 @@ class LHSWidgets(QWidget):
 
         # Add spin box for quantity of frames 
         # NEEDS TO BE CHANGED TO FIT THE ACTUAL NUMBER OF FRAMES BY SLOT
+        # TODO: Add a label next to the frameSpinBox to indicate what the spinbox does
         frameSpinBox = QSpinBox()
         frameSpinBox.setMinimum(0)
         frameSpinBox.setMaximum(100000)
