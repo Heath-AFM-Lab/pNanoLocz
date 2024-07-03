@@ -230,7 +230,7 @@ class RHSWidgets(QWidget):
         mediaPlayer.setVideoOutput(videoWidget)
 
         # Load a sample video file (replace with your actual video path)
-        videoFile = "fire.mp4"
+        videoFile = "UI_Components/fire.mp4"
         videoPath = QUrl.fromLocalFile(videoFile)
         mediaPlayer.setSource(videoPath)
 
