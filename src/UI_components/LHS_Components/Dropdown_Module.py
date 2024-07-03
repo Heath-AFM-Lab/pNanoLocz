@@ -1,8 +1,6 @@
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QComboBox
-# from src.constants import PATH_TO_ICON_DIRECTORY
 
-
-class dropdownWidget(QWidget):
+class DropdownWidget(QWidget):
     def __init__(self):
         super().__init__()
         self.buildDropdownWidgets()
@@ -13,39 +11,33 @@ class dropdownWidget(QWidget):
         dropdownLayout = QHBoxLayout()
 
         # Dropdown 1
-        dropdown1 = QComboBox()
-        dropdown1.addItems(["All files", "Processed"])  # Add items to the first dropdown
-        dropdown1.setFixedSize(dropdown1.sizeHint())
-        dropdownLayout.addWidget(dropdown1)
-        
+        self.dropdown1 = QComboBox()
+        self.dropdown1.addItems(["All files", "Processed"])  # Add items to the first dropdown
+        self.dropdown1.setFixedSize(self.dropdown1.sizeHint())
+        dropdownLayout.addWidget(self.dropdown1)
 
         # Dropdown 2
-        dropdown2 = QComboBox()
-        dropdown2.addItems(["Height"])  # Add items to the second dropdown
-        dropdown2.setFixedSize(dropdown2.sizeHint())
-        dropdownLayout.addWidget(dropdown2)
-        
+        self.dropdown2 = QComboBox()
+        self.dropdown2.addItems(["Height"])  # Add items to the second dropdown
+        self.dropdown2.setFixedSize(self.dropdown2.sizeHint())
+        dropdownLayout.addWidget(self.dropdown2)
 
         # Dropdown 3
-        dropdown3 = QComboBox()
-        dropdown3.addItems(["Stack off", "Stack on", "Intercalate"])  # Add items to the third dropdown
-        dropdown3.setFixedSize(dropdown3.sizeHint())
-        dropdownLayout.addWidget(dropdown3)
+        self.dropdown3 = QComboBox()
+        self.dropdown3.addItems(["Stack off", "Stack on", "Intercalate"])  # Add items to the third dropdown
+        self.dropdown3.setFixedSize(self.dropdown3.sizeHint())
+        dropdownLayout.addWidget(self.dropdown3)
 
         # Push dropdowns to LHS
         dropdownLayout.addStretch(1)
-
-        # Create a container widget and set the layout
-        dropdownWidget = QWidget()
-        dropdownWidget.setLayout(dropdownLayout)
 
         # Set layout to the current widget
         self.setLayout(dropdownLayout)
 
         # Set names and signals of all buttons and checkbox
-        dropdown1.currentIndexChanged.connect(self.onDropdown1IndexChanged)
-        dropdown2.currentIndexChanged.connect(self.onDropdown2IndexChanged)
-        dropdown3.currentIndexChanged.connect(self.onDropdown3IndexChanged)
+        self.dropdown1.currentIndexChanged.connect(self.onDropdown1IndexChanged)
+        self.dropdown2.currentIndexChanged.connect(self.onDropdown2IndexChanged)
+        self.dropdown3.currentIndexChanged.connect(self.onDropdown3IndexChanged)
 
     def onDropdown1IndexChanged(self):
         # TODO: Complete dropdown1 function
@@ -66,6 +58,6 @@ import sys
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    dropdown = dropdownWidget()
+    dropdown = DropdownWidget()
     dropdown.show()
     sys.exit(app.exec())

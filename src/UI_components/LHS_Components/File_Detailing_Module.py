@@ -5,32 +5,27 @@ from PyQt6.QtWidgets import (
     QTableWidgetItem
 )
 from PyQt6.QtCore import Qt
-# from src.constants import PATH_TO_ICON_DIRECTORY
-
-
-
-class fileDetailingSystemWidget(QWidget):
+class FileDetailingSystemWidget(QWidget):
     def __init__(self):
         super().__init__()
         self.buildFileDetailingSystem()
-    
-    
-    def buildFileDetailingSystem(self) -> QWidget:
+
+    def buildFileDetailingSystem(self):
         # Create a QHBoxLayout to contain the file selector and details box
         fileDetailingLayout = QHBoxLayout()
 
         # Create the widget to list the files
-        fileListWidget = QListWidget()
-        fileDetailingLayout.addWidget(fileListWidget)
+        self.fileListWidget = QListWidget()
+        fileDetailingLayout.addWidget(self.fileListWidget)
 
         # Create a widget to show details of the file
         # Create the table
-        fileDetailsWidget = QTableWidget()
-        fileDetailsWidget.setRowCount(8)
-        fileDetailsWidget.setColumnCount(2)
+        self.fileDetailsWidget = QTableWidget()
+        self.fileDetailsWidget.setRowCount(8)
+        self.fileDetailsWidget.setColumnCount(2)
         
         # Set the headers
-        fileDetailsWidget.setHorizontalHeaderLabels(['Parameter', 'Value'])
+        self.fileDetailsWidget.setHorizontalHeaderLabels(['Parameter', 'Value'])
         
         # List of parameters
         parameters = [
@@ -43,43 +38,47 @@ class fileDetailingSystemWidget(QWidget):
         for i, param in enumerate(parameters):
             item = QTableWidgetItem(param)
             item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)  # Make the item read-only
-            fileDetailsWidget.setItem(i, 0, item)
-            fileDetailsWidget.setItem(i, 1, QTableWidgetItem('0' if param != 'Channel' else 'unknown'))
+            self.fileDetailsWidget.setItem(i, 0, item)
+            self.fileDetailsWidget.setItem(i, 1, QTableWidgetItem('0' if param != 'Channel' else 'unknown'))
 
         # Disable scroll bars
-        fileDetailsWidget.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        fileDetailsWidget.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.fileDetailsWidget.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.fileDetailsWidget.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         # Adjust the size of the columns to fit the contents
-        fileDetailsWidget.resizeColumnsToContents()
-        fileDetailsWidget.resizeRowsToContents()
+        self.fileDetailsWidget.resizeColumnsToContents()
+        self.fileDetailsWidget.resizeRowsToContents()
 
         # Calculate minimum width based on content
-        column_width = fileDetailsWidget.verticalHeader().width()   # Account for header width and frame
-        for column in range(fileDetailsWidget.columnCount()):
-            column_width += fileDetailsWidget.columnWidth(column)
+        column_width = self.fileDetailsWidget.verticalHeader().width()   # Account for header width and frame
+        for column in range(self.fileDetailsWidget.columnCount()):
+            column_width += self.fileDetailsWidget.columnWidth(column)
 
         # Set fixed width and calculate required height
-        fileDetailsWidget.setFixedWidth(column_width)
-        total_height = sum(fileDetailsWidget.rowHeight(1) for i in range(fileDetailsWidget.rowCount() + 1))     # A slightly scuffed line taking in the height of the first line only (dont edit the font of any textbox)
-        fileDetailsWidget.setFixedHeight(total_height + 2 * fileDetailsWidget.frameWidth())
+        self.fileDetailsWidget.setFixedWidth(column_width)
+        total_height = sum(self.fileDetailsWidget.rowHeight(1) for i in range(self.fileDetailsWidget.rowCount() + 1))     # A slightly scuffed line taking in the height of the first line only (dont edit the font of any textbox)
+        self.fileDetailsWidget.setFixedHeight(total_height + 2 * self.fileDetailsWidget.frameWidth())
         
         # Add the table to the layout, pushed to the top left corner
         fileDetailslayout = QVBoxLayout()
-        fileDetailslayout.addWidget(fileDetailsWidget)
+        fileDetailslayout.addWidget(self.fileDetailsWidget)
         fileDetailslayout.addStretch(1)
         fileDetailingLayout.addLayout(fileDetailslayout)
 
         # Set layout to the current widget
         self.setLayout(fileDetailingLayout)
 
-    def onAutosaveClick(self):
-        # TODO: Complete Autosave function
-        pass
+        # Set names and signals of all widgets
+        self.fileListWidget.itemDoubleClicked.connect(self.onFileItemDoubleClick)
+        self.fileDetailsWidget.cellClicked.connect(self.onFileDetailCellClick)
 
-    def onSaveButtonClick(self):
-        # TODO: Complete save button function
-        pass
+    def onFileItemDoubleClick(self, item):
+        # TODO: Complete load file function
+        print(f"File item double-clicked: {item.text()}")
+
+    def onFileDetailCellClick(self, row, column):
+        # TODO: Handle file detail cell click
+        print(f"Cell clicked at row {row}, column {column}")
 
 # TODO: remove once finished
 from PyQt6.QtWidgets import QApplication
@@ -91,6 +90,7 @@ if __name__ == '__main__':
     # Path to icon directory
     PATH_TO_ICON_DIRECTORY = os.path.abspath(os.path.join(os.getcwd(), ICON_DIRECTORY))
     app = QApplication(sys.argv)
-    file_detail = fileDetailingSystemWidget()
+    file_detail = FileDetailingSystemWidget()
     file_detail.show()
     sys.exit(app.exec())
+

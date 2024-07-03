@@ -1,56 +1,53 @@
 import os
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QPushButton, QCheckBox
 from PyQt6.QtGui import QIcon
-# from src.constants import PATH_TO_ICON_DIRECTORY
+from constants import PATH_TO_ICON_DIRECTORY
 
-
-
-class fileSystemWidget(QWidget):
+class FileSystemWidget(QWidget):
     def __init__(self):
         super().__init__()
         self.buildFileManagementIcons()
-    
     
     def buildFileManagementIcons(self):
         # Create a QHBoxLayout to contain the icons
         fileManagementLayout = QHBoxLayout()
 
         # Add Autosave Checkbox
-        autosaveCheckbox = QCheckBox("Autosave")
-        autosaveCheckbox.setToolTip("Enable or disable autosave")
-        fileManagementLayout.addWidget(autosaveCheckbox)
+        self.autosaveCheckbox = QCheckBox("Autosave")
+        self.autosaveCheckbox.setToolTip("Enable or disable autosave")
+        fileManagementLayout.addWidget(self.autosaveCheckbox)
 
         # Add Save Icon
-        saveButton = QPushButton()
-        saveButton.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "save.png")))
-        saveButton.setIconSize(saveButton.sizeHint())  # Adjust icon size to button size
-        saveButton.setToolTip("Save")
-        saveButton.setFixedSize(saveButton.sizeHint())
-        fileManagementLayout.addWidget(saveButton)
+        self.saveButton = QPushButton()
+        self.saveButton.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "save.png")))
+        self.saveButton.setIconSize(self.saveButton.sizeHint())  # Adjust icon size to button size
+        self.saveButton.setToolTip("Save")
+        self.saveButton.setFixedSize(self.saveButton.sizeHint())
+        fileManagementLayout.addWidget(self.saveButton)
 
         # Add Open Folder icon
-        openFolderButton = QPushButton()
-        openFolderButton.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "open.png")))
-        openFolderButton.setIconSize(openFolderButton.sizeHint())  # Adjust icon size to button size
-        openFolderButton.setToolTip("Open Folder")
-        openFolderButton.setFixedSize(openFolderButton.sizeHint())
-        fileManagementLayout.addWidget(openFolderButton)
+        self.openFolderButton = QPushButton()
+        self.openFolderButton.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "open.png")))
+        self.openFolderButton.setIconSize(self.openFolderButton.sizeHint())  # Adjust icon size to button size
+        self.openFolderButton.setToolTip("Open Folder")
+        self.openFolderButton.setFixedSize(self.openFolderButton.sizeHint())
+        fileManagementLayout.addWidget(self.openFolderButton)
 
         # Add Navigate out of Directory icon
-        navigateOutOfDirectoryButton = QPushButton()
-        navigateOutOfDirectoryButton.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "up.png")))
-        navigateOutOfDirectoryButton.setIconSize(navigateOutOfDirectoryButton.sizeHint())  # Adjust icon size to button size
-        navigateOutOfDirectoryButton.setToolTip("Navigate out of Directory")
-        navigateOutOfDirectoryButton.setFixedSize(navigateOutOfDirectoryButton.sizeHint())
-        fileManagementLayout.addWidget(navigateOutOfDirectoryButton)
+        self.navigateOutOfDirectoryButton = QPushButton()
+        self.navigateOutOfDirectoryButton.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "up.png")))
+        self.navigateOutOfDirectoryButton.setIconSize(self.navigateOutOfDirectoryButton.sizeHint())  # Adjust icon size to button size
+        self.navigateOutOfDirectoryButton.setToolTip("Navigate out of Directory")
+        self.navigateOutOfDirectoryButton.setFixedSize(self.navigateOutOfDirectoryButton.sizeHint())
+        fileManagementLayout.addWidget(self.navigateOutOfDirectoryButton)
 
         # Add Navigate into Directory icon
-        navigateIntoDirectoryButton = QPushButton()
-        navigateIntoDirectoryButton.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "down.png")))
-        navigateIntoDirectoryButton.setIconSize(navigateIntoDirectoryButton.sizeHint())  # Adjust icon size to button size
-        navigateIntoDirectoryButton.setToolTip("Navigate into Directory")
-        navigateIntoDirectoryButton.setFixedSize(navigateIntoDirectoryButton.sizeHint())
-        fileManagementLayout.addWidget(navigateIntoDirectoryButton)
+        self.navigateIntoDirectoryButton = QPushButton()
+        self.navigateIntoDirectoryButton.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "down.png")))
+        self.navigateIntoDirectoryButton.setIconSize(self.navigateIntoDirectoryButton.sizeHint())  # Adjust icon size to button size
+        self.navigateIntoDirectoryButton.setToolTip("Navigate into Directory")
+        self.navigateIntoDirectoryButton.setFixedSize(self.navigateIntoDirectoryButton.sizeHint())
+        fileManagementLayout.addWidget(self.navigateIntoDirectoryButton)
 
         # Add stretch to push all widgets to LHS
         fileManagementLayout.addStretch(1)
@@ -59,11 +56,11 @@ class fileSystemWidget(QWidget):
         self.setLayout(fileManagementLayout)
 
         # Set names and signals of all buttons and checkbox
-        autosaveCheckbox.clicked.connect(self.onAutosaveClick)
-        saveButton.clicked.connect(self.onSaveButtonClick)
-        openFolderButton.clicked.connect(self.onOpenFolderButtonClick)
-        navigateOutOfDirectoryButton.clicked.connect(self.onNavigateOutButtonClick)
-        navigateIntoDirectoryButton.clicked.connect(self.onNavigateInButtonClick)
+        self.autosaveCheckbox.clicked.connect(self.onAutosaveClick)
+        self.saveButton.clicked.connect(self.onSaveButtonClick)
+        self.openFolderButton.clicked.connect(self.onOpenFolderButtonClick)
+        self.navigateOutOfDirectoryButton.clicked.connect(self.onNavigateOutButtonClick)
+        self.navigateIntoDirectoryButton.clicked.connect(self.onNavigateInButtonClick)
 
     def onAutosaveClick(self):
         # TODO: Complete Autosave function
@@ -95,6 +92,6 @@ if __name__ == '__main__':
     # Path to icon directory
     PATH_TO_ICON_DIRECTORY = os.path.abspath(os.path.join(os.getcwd(), ICON_DIRECTORY))
     app = QApplication(sys.argv)
-    file_system = fileSystemWidget()
+    file_system = FileSystemWidget()
     file_system.show()
     sys.exit(app.exec())
