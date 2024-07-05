@@ -33,26 +33,6 @@ class RHSWidgets(QWidget):
     def buildVideoAndParticleControlWidgets(self) -> QWidget:
         pass
 
-# Range validator for the "delete frames" input (attached to the video controls widget)
-class RangeValidator(QValidator):
-    def validate(self, input_str, pos):
-        # Empty input is considered intermediate state (not invalid)
-        if not input_str:
-            return (QValidator.State.Intermediate, input_str, pos)
-
-        # Regular expression to match a single number or a range like "10-20"
-        range_pattern = re.compile(r'^\d+(-\d+)?$')
-        
-        if range_pattern.match(input_str):
-            return (QValidator.State.Acceptable, input_str, pos)
-        else:
-            return (QValidator.State.Invalid, input_str, pos)
-
-    def fixup(self, input_str):
-        # Optionally, implement any automatic fixes for invalid input
-        return input_str
-
-
 
 # TODO: remove once finished
 if __name__ == '__main__':

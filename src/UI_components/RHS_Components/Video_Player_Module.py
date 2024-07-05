@@ -1,14 +1,12 @@
 import sys
 import os
-from PyQt6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QCheckBox, QComboBox, 
-    QSpinBox, QLabel, QLineEdit, QSlider, QDoubleSpinBox
-)
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton
 from PyQt6.QtMultimedia import QMediaPlayer
 from PyQt6.QtMultimediaWidgets import QVideoWidget
-from PyQt6.QtGui import QIcon, QIntValidator
-from PyQt6.QtCore import Qt, QUrl, pyqtSignal
+from PyQt6.QtGui import QIcon
+from PyQt6.QtCore import QUrl, pyqtSignal
 from PyQt6.QtWidgets import QSizePolicy
+from UI_components.RHS_Components.Video_Player_Components import VideoControlWidget, VideoDepthControlWidget, VisualRepresentationWidget, ExportAndVideoScaleWidget
 from constants import PATH_TO_ICON_DIRECTORY
 
 class VideoPlayerWidget(QWidget):
@@ -56,10 +54,10 @@ class VideoPlayerWidget(QWidget):
         self.mediaPlayer.play()
 
         # Initialise the rest of the widgets
-        self.videoControlWidget = self.VideoControlWidget()
-        self.visualRepresentationWidget = self.VisualRepresentationWidget()
-        self.videoDepthControlWidget = self.VideoDepthControlWidget()
-        self.exportAndVideoScaleWidget = self.ExportAndVideoScaleWidget()
+        self.videoControlWidget = VideoControlWidget()
+        self.visualRepresentationWidget = VisualRepresentationWidget()
+        self.videoDepthControlWidget = VideoDepthControlWidget()
+        self.exportAndVideoScaleWidget = ExportAndVideoScaleWidget()
 
         # Connect singlas to slots (video player done for now)
         self.videoControlWidget.playClicked.connect(self.playPauseVideo)
@@ -120,91 +118,6 @@ class VideoPlayerWidget(QWidget):
 
     def updateSliderRange(self, duration):
         self.videoControlWidget.videoSeekSlider.setRange(0, duration)
-
-
-    class VideoDepthControlWidget(QWidget):
-        def __init__(self):
-            super().__init__()
-            self.setupUi()
-
-        def setupUi(self):
-            self.layout = QVBoxLayout()
-
-            self.depthTypeDropdown = QComboBox()
-            self.depthTypeDropdown.addItems(["Min Max", "Histogram", "Excl. outliers", "Manual"])
-            self.depthTypeDropdown.setFixedSize(self.depthTypeDropdown.sizeHint())
-            self.layout.addWidget(self.depthTypeDropdown)
-
-            self.buttonLayout = QHBoxLayout()
-            self.autoButton = QPushButton("Auto")
-            self.buttonLayout.addWidget(self.autoButton)
-
-            self.holdButton = QPushButton("Hold")
-            self.buttonLayout.addWidget(self.holdButton)
-
-            self.layout.addLayout(self.buttonLayout)
-
-            self.minSpinLayout = QHBoxLayout()
-            self.minSpinBox = QDoubleSpinBox()
-            self.minSpinBox.setMinimum(0)
-            self.minSpinBox.setMaximum(10000)
-            self.minSpinBox.setSingleStep(0.01)
-            self.minSpinBox.setFixedSize(self.minSpinBox.sizeHint())
-            self.minSpinLabel = QLabel("Min height:")
-            self.minSpinLayout.addWidget(self.minSpinLabel)
-            self.minSpinLayout.addWidget(self.minSpinBox)
-
-            self.maxSpinLayout = QHBoxLayout()
-            self.maxSpinBox = QDoubleSpinBox()
-            self.maxSpinBox.setMinimum(0)
-            self.maxSpinBox.setMaximum(10000)
-            self.maxSpinBox.setSingleStep(0.01)
-            self.maxSpinBox.setFixedSize(self.maxSpinBox.sizeHint())
-            self.maxSpinLabel = QLabel("Max height:")
-            self.maxSpinLayout.addWidget(self.maxSpinLabel)
-            self.maxSpinLayout.addWidget(self.maxSpinBox)
-
-            self.layout.addLayout(self.minSpinLayout)
-            self.layout.addLayout(self.maxSpinLayout)
-
-            self.setLayout(self.layout)
-
-    class ExportAndVideoScaleWidget(QWidget):
-        def __init__(self):
-            super().__init__()
-            self.setupUi()
-
-        def setupUi(self):
-            self.layout = QHBoxLayout()
-
-            self.exportButton = QPushButton("Export")
-            self.exportButton.setToolTip("Export data plot")
-            self.exportButton.setFixedSize(self.exportButton.sizeHint())
-            self.layout.addWidget(self.exportButton)
-
-            self.exportTargetPlotDropdown = QComboBox()
-            self.exportTargetPlotDropdown.addItems(["Plot 1", "Plot 2", "Data"])
-            self.exportTargetPlotDropdown.setFixedSize(self.exportTargetPlotDropdown.sizeHint())
-            self.layout.addWidget(self.exportTargetPlotDropdown)
-
-            self.fileFormatDropdown = QComboBox()
-            self.fileFormatDropdown.addItems([".tiff", ".gif", ".avi", ".png", ".jpeg", ".pdf", ".txt", ".csv", ".xlsx", "MATLAB workspace"])
-            self.fileFormatDropdown.setFixedSize(self.fileFormatDropdown.sizeHint())
-            self.layout.addWidget(self.fileFormatDropdown)
-
-            self.layout.addStretch(1)
-
-            self.scaleVideoDropdown = QComboBox()
-            self.scaleVideoDropdown.addItems(["Original", "1 to 1"])
-            self.scaleVideoDropdown.setFixedSize(self.scaleVideoDropdown.sizeHint())
-            self.layout.addWidget(self.scaleVideoDropdown)
-
-            self.force1To1Button = QPushButton("Force 1:1")
-            self.force1To1Button.setToolTip("Force image and video scaling to 1:1")
-            self.force1To1Button.setFixedSize(self.force1To1Button.sizeHint())
-            self.layout.addWidget(self.force1To1Button)
-
-            self.setLayout(self.layout)
 
 if __name__ == "__main__":
     # TODO: remove once format correction is complete

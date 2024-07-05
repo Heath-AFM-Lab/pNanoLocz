@@ -1,13 +1,32 @@
-import sys
+import re
 import os
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpinBox, QLabel, 
     QLineEdit, QSlider
 )
-from PyQt6.QtGui import QIcon, QIntValidator
+from PyQt6.QtGui import QIcon, QIntValidator, QValidator
 from PyQt6.QtCore import Qt, pyqtSignal
 from constants import PATH_TO_ICON_DIRECTORY
 
+
+class RangeValidator(QValidator):
+    def validate(self, input_str, pos):
+        # Empty input is considered intermediate state (not invalid)
+        if not input_str:
+            return (QValidator.State.Intermediate, input_str, pos)
+
+        # Regular expression to match a single number or a range like "10-20"
+        range_pattern = re.compile(r'^\d+(-\d+)?$')
+        
+        if range_pattern.match(input_str):
+            return (QValidator.State.Acceptable, input_str, pos)
+        else:
+            return (QValidator.State.Invalid, input_str, pos)
+
+    def fixup(self, input_str):
+        # Optionally, implement any automatic fixes for invalid input
+        return input_str
+    
 
 class VideoControlWidget(QWidget):
     specificVideoFrameGiven = pyqtSignal(int)
@@ -15,6 +34,8 @@ class VideoControlWidget(QWidget):
     skipBackClicked = pyqtSignal()
     skipForwardClicked = pyqtSignal()
     fpsChanged = pyqtSignal(int)
+    videoAlignButtonClicked = pyqtSignal()
+    deleteFramesButtonClicked = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -65,7 +86,39 @@ class VideoControlWidget(QWidget):
 
         # Video slider
         self.videoSeekSlider = QSlider(Qt.Orientation.Horizontal)
+        # TODO: Update the range when a video has been loaded
         self.videoSeekSlider.setRange(0, 100)
         self.layout.addWidget(self.videoSeekSlider)
+
+        # Add video align and delete frames widgets
+        self.videoEditingLayout = QHBoxLayout()
+
+        self.videoAlignButton = QPushButton("Align video")
+        self.videoAlignButton.setIconSize(self.videoAlignButton.sizeHint())
+        self.videoAlignButton.setToolTip("Align video frames")
+        self.videoAlignButton.setFixedSize(self.videoAlignButton.sizeHint())
+        self.videoAlignButton.clicked.connect(self.videoAlignButtonClicked.emit)
+        self.videoEditingLayout.addWidget(self.videoAlignButton)
+
+        self.videoEditingLayout.addStretch(1)
+
+        # Delete frames consists of a label, text box and icon
+        self.deleteFramesLabel = QLabel("Delete frames:")
+        self.deleteFramesTextBox = QLineEdit()
+        self.deleteFramesTextBox.setValidator(RangeValidator())
+
+        # Add Delete frames icon
+        self.deleteFramesButton = QPushButton()
+        self.deleteFramesButton.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "bin.png")))
+        self.deleteFramesButton.setIconSize(self.deleteFramesButton.sizeHint())  # Adjust icon size to button size
+        self.deleteFramesButton.setToolTip("Delete frames")
+        self.deleteFramesButton.clicked.connect(self.deleteFramesButtonClicked.emit)
+        self.deleteFramesButton.setFixedSize(self.deleteFramesButton.sizeHint())
+
+        self.videoEditingLayout.addWidget(self.deleteFramesLabel)
+        self.videoEditingLayout.addWidget(self.deleteFramesTextBox)
+        self.videoEditingLayout.addWidget(self.deleteFramesButton)
+
+        self.layout.addLayout(self.videoEditingLayout)
 
         self.setLayout(self.layout)
