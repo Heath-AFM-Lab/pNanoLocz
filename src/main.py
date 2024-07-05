@@ -1,9 +1,8 @@
 import sys
 from PyQt6.QtWidgets import (QSizePolicy, QWidget, QApplication, QMainWindow, 
-                             QFileDialog, QMessageBox, QHBoxLayout)
+    QFileDialog, QMessageBox, QHBoxLayout)
 from PyQt6.QtGui import QAction
-from UI_components.LHS_Module import LHSWidgets
-from UI_components.RHS_Module import RHSWidgets
+from UI_components import LHSWidgets, RHSWidgets
 
 class MyApp(QMainWindow):
     def __init__(self):

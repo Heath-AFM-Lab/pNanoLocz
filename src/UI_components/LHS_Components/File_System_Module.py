@@ -56,29 +56,29 @@ class FileSystemWidget(QWidget):
         self.setLayout(fileManagementLayout)
 
         # Set names and signals of all buttons and checkbox
-        self.autosaveCheckbox.clicked.connect(self.onAutosaveClick)
-        self.saveButton.clicked.connect(self.onSaveButtonClick)
-        self.openFolderButton.clicked.connect(self.onOpenFolderButtonClick)
-        self.navigateOutOfDirectoryButton.clicked.connect(self.onNavigateOutButtonClick)
-        self.navigateIntoDirectoryButton.clicked.connect(self.onNavigateInButtonClick)
+        self.autosaveCheckbox.clicked.connect(self.onAutosaveClicked)
+        self.saveButton.clicked.connect(self.onSaveButtonClicked)
+        self.openFolderButton.clicked.connect(self.onOpenFolderButtonClicked)
+        self.navigateOutOfDirectoryButton.clicked.connect(self.onNavigateOutButtonClicked)
+        self.navigateIntoDirectoryButton.clicked.connect(self.onNavigateInButtonClicked)
 
-    def onAutosaveClick(self):
+    def onAutosaveClicked(self):
         # TODO: Complete Autosave function
         pass
 
-    def onSaveButtonClick(self):
+    def onSaveButtonClicked(self):
         # TODO: Complete save button function
         pass
         
-    def onOpenFolderButtonClick(self):
+    def onOpenFolderButtonClicked(self):
         # TODO: Complete Open Folder function
         pass
     
-    def onNavigateInButtonClick(self):
+    def onNavigateInButtonClicked(self):
         # TODO: Complete Navigate Into file function
         pass
     
-    def onNavigateOutButtonClick(self):
+    def onNavigateOutButtonClicked(self):
         # TODO: Complete Navigate Into file function
         pass
 

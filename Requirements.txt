@@ -1,1 +1,6 @@
 PyQt6
+vispy
+cmake
+opencv
+cudatoolkit
+imageio
