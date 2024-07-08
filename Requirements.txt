@@ -1,0 +1,10 @@
+PyQt6
+vispy
+# cmake         # Accidentally installed on windows machine. unquote if something is broken/missing
+# opencv        # Same here
+cudatoolkit=11.8  # Specify the version compatible with PyTorch
+imageio
+pytorch
+torchvision
+torchaudio
+pytorch-cuda=11.8  # Ensure PyTorch uses the correct CUDA version
