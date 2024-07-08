@@ -50,5 +50,6 @@ class VideoDepthControlWidget(QWidget):
 
             self.layout.addLayout(self.minSpinLayout)
             self.layout.addLayout(self.maxSpinLayout)
+            self.layout.addStretch(1)       # Might be redundant
 
             self.setLayout(self.layout)

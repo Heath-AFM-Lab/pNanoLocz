@@ -37,7 +37,4 @@ def main(requirements_file):
                         install_with_pip(package)
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        print("Usage: python install_requirements.py requirements.txt")
-    else:
-        main(sys.argv[1])
+    main("requirements.txt")

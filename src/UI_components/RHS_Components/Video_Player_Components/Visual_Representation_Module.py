@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QCheckBox
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import pyqtSignal
 
 
 class VisualRepresentationWidget(QWidget):
@@ -30,6 +30,6 @@ class VisualRepresentationWidget(QWidget):
         self.timescaleCheckbox.clicked.connect(self.timescaleCheckboxChecked.emit)
         self.layout.addWidget(self.timescaleCheckbox)
 
-        self.layout.addStretch(1)
+        self.layout.addStretch(1)       # Might be redundant
 
         self.setLayout(self.layout)

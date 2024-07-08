@@ -1,11 +1,6 @@
 import sys
-import os
-import re
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout
-from PyQt6.QtGui import QValidator
-from UI_components.RHS_Components import VideoDropdownWidget, VideoEditingIconsWidget, VideoPlayerWidget
-
-
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy
+from UI_components.RHS_Components import VideoDropdownWidget, VideoEditingIconsWidget, VideoPlayerWidget, ParticleViewerAndControlWidget
 
 class RHSWidgets(QWidget):
     def __init__(self):
@@ -16,25 +11,28 @@ class RHSWidgets(QWidget):
     def buildRHS(self):
         # Build the widgets and layouts
         self.layout = QVBoxLayout(self)
+        self.mediaLayout = QHBoxLayout()
 
         self.videoEditingIconsWidget = VideoEditingIconsWidget()
         self.videoDropdownWidgets = VideoDropdownWidget()
         self.videoPlayerWidgets = VideoPlayerWidget()
-        # videoAndParticleControlWidgets = self.buildVideoAndParticleControlWidgets()
+        self.particleViewerWidgets = ParticleViewerAndControlWidget()
 
+        # Set size policy for video and particle widgets in a 1:1 ratio
+        mediaPlayersSizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        mediaPlayersSizePolicy.setHorizontalStretch(1)
+        self.videoPlayerWidgets.setSizePolicy(mediaPlayersSizePolicy)
+        self.particleViewerWidgets.setSizePolicy(mediaPlayersSizePolicy)
+
+        # Stick video and particle viewer widgets together
+        self.mediaLayout.addWidget(self.videoPlayerWidgets)
+        self.mediaLayout.addWidget(self.particleViewerWidgets)
+
+        # Assemble final layout
         self.layout.addWidget(self.videoEditingIconsWidget)
         self.layout.addWidget(self.videoDropdownWidgets)
-        self.layout.addWidget(self.videoPlayerWidgets)
-        # self.layout.addWidget(videoAndParticleControlWidgets)
-        
-        self.setLayout(self.layout)
+        self.layout.addLayout(self.mediaLayout)
 
-
-    def buildVideoAndParticleControlWidgets(self) -> QWidget:
-        pass
-
-
-# TODO: remove once finished
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     rhs_widgets = RHSWidgets()

@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPu
 from PyQt6.QtMultimedia import QMediaPlayer
 from PyQt6.QtMultimediaWidgets import QVideoWidget
 from PyQt6.QtGui import QIcon
-from PyQt6.QtCore import QUrl, pyqtSignal
+from PyQt6.QtCore import QUrl
 from PyQt6.QtWidgets import QSizePolicy
 from UI_components.RHS_Components.Video_Player_Components import VideoControlWidget, VideoDepthControlWidget, VisualRepresentationWidget, ExportAndVideoScaleWidget
 from constants import PATH_TO_ICON_DIRECTORY
@@ -17,6 +17,9 @@ class VideoPlayerWidget(QWidget):
     def buildVideoPlayerWidgets(self):
         # Set up video player layout 
         self.mediaLayout = QVBoxLayout()
+        # Remove margins and spacing
+        self.mediaLayout.setContentsMargins(0, 0, 0, 0)
+        self.mediaLayout.setSpacing(0)
 
         self.iconLayout = QHBoxLayout()
         self.iconLayout.addStretch(1)
@@ -28,21 +31,27 @@ class VideoPlayerWidget(QWidget):
         self.screenshotIcon.setToolTip("Screenshot video")
         self.screenshotIcon.setFixedSize(16, 16)
         self.iconLayout.addWidget(self.screenshotIcon)
+        self.mediaLayout.addLayout(self.iconLayout)
 
         # Set up video player widget
         # TODO: convert video player widget to vispy widget
-        self.mediaLayout.addLayout(self.iconLayout)
-        self.mediaLayout.addStretch(1)
-
         self.videoPlayerContainer = QWidget()
-        self.videoPlayerContainer.setFixedSize(640, 480)
+        # self.videoPlayerContainer.setFixedSize(640, 480)
 
+        videoPlayerSizePolicy = QSizePolicy()
+        videoPlayerSizePolicy.setHeightForWidth(True)
+        videoPlayerSizePolicy.setWidthForHeight(True)
+        videoPlayerSizePolicy.setHorizontalPolicy(QSizePolicy.Policy.Expanding)
+        videoPlayerSizePolicy.setVerticalPolicy(QSizePolicy.Policy.Expanding)
+        self.videoPlayerContainer.setSizePolicy(videoPlayerSizePolicy)
+        
+        
         self.mediaPlayer = QMediaPlayer(self)
         self.videoWidget = QVideoWidget()
-        self.videoWidget.setMinimumSize(self.videoPlayerContainer.size())
-        self.videoWidget.setMaximumSize(self.videoPlayerContainer.size())
-        self.videoWidget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-
+        # self.videoWidget.setMinimumSize(self.videoPlayerContainer.size())
+        # self.videoWidget.setMaximumSize(self.videoPlayerContainer.size())
+        # self.videoWidget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.videoWidget.setSizePolicy(videoPlayerSizePolicy)
         self.mediaPlayer.setVideoOutput(self.videoWidget)
 
         # TODO: Eliminate this video
@@ -53,13 +62,15 @@ class VideoPlayerWidget(QWidget):
         self.mediaLayout.addWidget(self.videoWidget)
         self.mediaPlayer.play()
 
+        # self.videoPlayerContainer.addWidget(self.video)
+
         # Initialise the rest of the widgets
         self.videoControlWidget = VideoControlWidget()
         self.visualRepresentationWidget = VisualRepresentationWidget()
         self.videoDepthControlWidget = VideoDepthControlWidget()
         self.exportAndVideoScaleWidget = ExportAndVideoScaleWidget()
 
-        # Connect singlas to slots (video player done for now)
+        # Connect signals to slots (video player done for now)
         self.videoControlWidget.playClicked.connect(self.playPauseVideo)
         self.videoControlWidget.skipBackClicked.connect(self.skipBackward)
         self.videoControlWidget.skipForwardClicked.connect(self.skipForward)
@@ -68,6 +79,12 @@ class VideoPlayerWidget(QWidget):
         self.videoControlWidget.videoSeekSlider.valueChanged.connect(self.setVideoPosition)
         self.mediaPlayer.positionChanged.connect(self.updateSliderPosition)
         self.mediaPlayer.durationChanged.connect(self.updateSliderRange)
+
+        # Fix all sizes
+        self.videoControlWidget.setFixedSize(self.videoControlWidget.sizeHint())
+        self.visualRepresentationWidget.setFixedSize(self.visualRepresentationWidget.sizeHint())
+        self.videoDepthControlWidget.setFixedSize(self.videoDepthControlWidget.sizeHint())
+        self.exportAndVideoScaleWidget.setFixedSize(self.exportAndVideoScaleWidget.sizeHint())
 
         # Compose all widgets
         videoControlLayout = QHBoxLayout()

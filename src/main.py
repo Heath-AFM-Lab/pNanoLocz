@@ -1,6 +1,8 @@
 import sys
-from PyQt6.QtWidgets import (QSizePolicy, QWidget, QApplication, QMainWindow, 
-    QFileDialog, QMessageBox, QHBoxLayout)
+from PyQt6.QtWidgets import (
+    QSizePolicy, QWidget, QApplication, QMainWindow, QFileDialog, 
+    QMessageBox, QHBoxLayout
+)
 from PyQt6.QtGui import QAction
 from UI_components import LHSWidgets, RHSWidgets
 
@@ -20,9 +22,17 @@ class MyApp(QMainWindow):
         # Create and add LHS and RHS components
         lhsComponent = LHSWidgets()
         rhsComponent = RHSWidgets()
-        lhsComponent.setFixedWidth(lhsComponent.sizeHint().width())
         appLayout.addWidget(lhsComponent)
         appLayout.addWidget(rhsComponent)
+
+        # Set size policy with stretch factors
+        lhsPolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        lhsPolicy.setHorizontalStretch(5)
+        lhsComponent.setSizePolicy(lhsPolicy)
+
+        rhsPolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        rhsPolicy.setHorizontalStretch(16)
+        rhsComponent.setSizePolicy(rhsPolicy)
 
         # Set LHS, RHS component names
         lhsComponent.setObjectName("lhs_component")
@@ -33,13 +43,12 @@ class MyApp(QMainWindow):
         container.setLayout(appLayout)
         self.setCentralWidget(container)
 
-        # Set size policy for the main window
-        size_policy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        self.setSizePolicy(size_policy)
+        # Set the window to be maximized
+        self.showMaximized()
 
         # Create menu for application
         self.createMenu()
-    
+
     def createMenu(self):
         menubar = self.menuBar()
         fileMenu = menubar.addMenu('File')
