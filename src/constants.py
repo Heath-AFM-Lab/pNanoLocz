@@ -1,9 +1,11 @@
 import os
 
-# Icon directory relative to current working directory
-# TODO: change back relative to main.py (Remove ..)
+# Icon directory relative to current working directory (/src/)
 ICON_DIRECTORY = "../assets/icons"
 # Path to icon directory
 PATH_TO_ICON_DIRECTORY = os.path.abspath(os.path.join(os.getcwd(), ICON_DIRECTORY))
+
+print(os.getcwd())
+
 print(PATH_TO_ICON_DIRECTORY)
-print(os.listdir(PATH_TO_ICON_DIRECTORY))
+# print(os.listdir(PATH_TO_ICON_DIRECTORY))
