@@ -5,3 +5,5 @@ import os
 ICON_DIRECTORY = "../assets/icons"
 # Path to icon directory
 PATH_TO_ICON_DIRECTORY = os.path.abspath(os.path.join(os.getcwd(), ICON_DIRECTORY))
+print(PATH_TO_ICON_DIRECTORY)
+print(os.listdir(PATH_TO_ICON_DIRECTORY))

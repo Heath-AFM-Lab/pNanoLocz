@@ -1,11 +1,10 @@
 import sys
 import os
+import numpy as np
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton
-from PyQt6.QtMultimedia import QMediaPlayer
-from PyQt6.QtMultimediaWidgets import QVideoWidget
 from PyQt6.QtGui import QIcon
-from PyQt6.QtCore import QUrl
-from PyQt6.QtWidgets import QSizePolicy
+from PyQt6.QtCore import Qt
+from vispy import app, scene
 from UI_components.RHS_Components.Video_Player_Components import VideoControlWidget, VideoDepthControlWidget, VisualRepresentationWidget, ExportAndVideoScaleWidget
 from constants import PATH_TO_ICON_DIRECTORY
 
@@ -13,11 +12,15 @@ class VideoPlayerWidget(QWidget):
     def __init__(self):
         super().__init__()
         self.buildVideoPlayerWidgets()
+        self.loadFrames()
+        self.frame_index = 0
+
+        # Timer to update the frames
+        self.timer = app.Timer('auto', connect=self.update_frame, start=True)
 
     def buildVideoPlayerWidgets(self):
         # Set up video player layout 
         self.mediaLayout = QVBoxLayout()
-        # Remove margins and spacing
         self.mediaLayout.setContentsMargins(0, 0, 0, 0)
         self.mediaLayout.setSpacing(0)
 
@@ -33,52 +36,30 @@ class VideoPlayerWidget(QWidget):
         self.iconLayout.addWidget(self.screenshotIcon)
         self.mediaLayout.addLayout(self.iconLayout)
 
-        # Set up video player widget
-        # TODO: convert video player widget to vispy widget
+        # Set up Vispy canvas
         self.videoPlayerContainer = QWidget()
-        # self.videoPlayerContainer.setFixedSize(640, 480)
+        self.vispyCanvas = scene.SceneCanvas(keys='interactive', parent=self.videoPlayerContainer)
+        self.mediaLayout.addWidget(self.vispyCanvas.native)
 
-        videoPlayerSizePolicy = QSizePolicy()
-        videoPlayerSizePolicy.setHeightForWidth(True)
-        videoPlayerSizePolicy.setWidthForHeight(True)
-        videoPlayerSizePolicy.setHorizontalPolicy(QSizePolicy.Policy.Expanding)
-        videoPlayerSizePolicy.setVerticalPolicy(QSizePolicy.Policy.Expanding)
-        self.videoPlayerContainer.setSizePolicy(videoPlayerSizePolicy)
-        
-        
-        self.mediaPlayer = QMediaPlayer(self)
-        self.videoWidget = QVideoWidget()
-        # self.videoWidget.setMinimumSize(self.videoPlayerContainer.size())
-        # self.videoWidget.setMaximumSize(self.videoPlayerContainer.size())
-        # self.videoWidget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.videoWidget.setSizePolicy(videoPlayerSizePolicy)
-        self.mediaPlayer.setVideoOutput(self.videoWidget)
+        self.view = self.vispyCanvas.central_widget.add_view()
+        self.view.camera = 'panzoom'
 
-        # TODO: Eliminate this video
-        videoFile = "UI_Components/RHS_Components/fire.mp4"
-        videoPath = QUrl.fromLocalFile(videoFile)
-        self.mediaPlayer.setSource(videoPath)
+        self.setLayout(self.mediaLayout)
 
-        self.mediaLayout.addWidget(self.videoWidget)
-        self.mediaPlayer.play()
-
-        # self.videoPlayerContainer.addWidget(self.video)
-
-        # Initialise the rest of the widgets
+        # Initialize the rest of the widgets
         self.videoControlWidget = VideoControlWidget()
         self.visualRepresentationWidget = VisualRepresentationWidget()
         self.videoDepthControlWidget = VideoDepthControlWidget()
         self.exportAndVideoScaleWidget = ExportAndVideoScaleWidget()
 
-        # Connect signals to slots (video player done for now)
+        # Connect signals to slots
         self.videoControlWidget.playClicked.connect(self.playPauseVideo)
         self.videoControlWidget.skipBackClicked.connect(self.skipBackward)
         self.videoControlWidget.skipForwardClicked.connect(self.skipForward)
         self.videoControlWidget.fpsChanged.connect(self.changePlaybackRate)
         self.videoControlWidget.specificVideoFrameGiven.connect(self.goToFrameNo)
         self.videoControlWidget.videoSeekSlider.valueChanged.connect(self.setVideoPosition)
-        self.mediaPlayer.positionChanged.connect(self.updateSliderPosition)
-        self.mediaPlayer.durationChanged.connect(self.updateSliderRange)
+        self.videoControlWidget.videoSeekSlider.sliderReleased.connect(self.sliderReleased)
 
         # Fix all sizes
         self.videoControlWidget.setFixedSize(self.videoControlWidget.sizeHint())
@@ -96,50 +77,53 @@ class VideoPlayerWidget(QWidget):
         self.mediaLayout.addLayout(videoControlLayout)
         self.mediaLayout.addWidget(self.exportAndVideoScaleWidget)
 
-        self.setLayout(self.mediaLayout)
+    def loadFrames(self):
+        # Example: Generate random frames
+        self.frames = [np.random.randint(0, 256, (600, 800, 3), dtype=np.uint8) for _ in range(100)]
+        self.image_visual = scene.visuals.Image(self.frames[0], parent=self.view.scene, interpolation='nearest')
 
-    def playPauseVideo(self):
-        if self.mediaPlayer.isPlaying():
-            self.mediaPlayer.pause()
-            self.videoControlWidget.playIcon.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "pause.png")))
-            self.videoControlWidget.playIcon.setToolTip("Pause")
-        else:
-            self.mediaPlayer.play()
-            self.videoControlWidget.playIcon.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "play.png")))
-            self.videoControlWidget.playIcon.setToolTip("Play")
+    def update_frame(self, event):
+        # Update the image visual with the new frame
+        self.image_visual.set_data(self.frames[self.frame_index])
+        self.frame_index = (self.frame_index + 1) % len(self.frames)
+        self.vispyCanvas.update()
 
-    def skipForward(self):
-        new_position = self.mediaPlayer.position() + 10000  # 10 seconds forward
-        self.mediaPlayer.setPosition(new_position)
-
-    def skipBackward(self):
-        new_position = self.mediaPlayer.position() - 10000  # 10 seconds forward
-        self.mediaPlayer.setPosition(new_position)
-
-    # TODO: Chnage all FPS stuff to suit the vispy module
-    def changePlaybackRate(self, fps):
-        self.mediaPlayer.setPlaybackRate(fps / 30.0)  # Adjusting the rate assuming 30 FPS as normal speed
-
-    def goToFrameNo(self, frameNo):
-        fps = 30  # Assuming 30 FPS
-        position = frameNo * 1000 / fps  # Convert frame number to milliseconds
-        self.mediaPlayer.setPosition(int(position))
-
-    def setVideoPosition(self, position):
-        self.mediaPlayer.setPosition(position)
-        
-    def updateSliderPosition(self, position):
+        # Update the slider position
         self.videoControlWidget.videoSeekSlider.blockSignals(True)
-        self.videoControlWidget.videoSeekSlider.setValue(position)
+        self.videoControlWidget.videoSeekSlider.setValue(self.frame_index)
         self.videoControlWidget.videoSeekSlider.blockSignals(False)
 
-    def updateSliderRange(self, duration):
-        self.videoControlWidget.videoSeekSlider.setRange(0, duration)
+    def playPauseVideo(self):
+        if self.timer.running:
+            self.timer.stop()
+            self.videoControlWidget.playIcon.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "play.png")))
+            self.videoControlWidget.playIcon.setToolTip("Play")
+        else:
+            self.timer.start()
+            self.videoControlWidget.playIcon.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "pause.png")))
+            self.videoControlWidget.playIcon.setToolTip("Pause")
+
+    def skipForward(self):
+        self.frame_index = min(self.frame_index + 30, len(self.frames) - 1)  # Skip 30 frames forward
+
+    def skipBackward(self):
+        self.frame_index = max(self.frame_index - 30, 0)  # Skip 30 frames backward
+
+    def changePlaybackRate(self, fps):
+        self.timer.interval = 1.0 / fps
+
+    def goToFrameNo(self, frameNo):
+        self.frame_index = frameNo % len(self.frames)
+
+    def setVideoPosition(self, position):
+        self.frame_index = position
+
+    def sliderReleased(self):
+        self.update_frame(None)
 
 if __name__ == "__main__":
-    # TODO: remove once format correction is complete
-    ICON_DIRECTORY = "../../../assets/icons"
     # Path to icon directory
+    ICON_DIRECTORY = "../../../assets/icons"
     PATH_TO_ICON_DIRECTORY = os.path.abspath(os.path.join(os.getcwd(), ICON_DIRECTORY))
     app = QApplication(sys.argv)
     videoPlayerWidget = VideoPlayerWidget()
