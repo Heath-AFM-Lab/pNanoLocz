@@ -5,6 +5,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QAction
 from UI_components import LHSWidgets, RHSWidgets
+from utils.Folder_Opener_Module.folderOpener import FolderOpener
 
 class MyApp(QMainWindow):
     def __init__(self):
@@ -12,6 +13,9 @@ class MyApp(QMainWindow):
         self.initUI()
 
     def initUI(self):
+        # Instantiate classes
+        self.folderOpener = FolderOpener()
+
         # Set up layout
         appLayout = QHBoxLayout()
 
@@ -20,7 +24,7 @@ class MyApp(QMainWindow):
         appLayout.setSpacing(0)
 
         # Create and add LHS and RHS components
-        lhsComponent = LHSWidgets()
+        lhsComponent = LHSWidgets(FolderOpener())
         rhsComponent = RHSWidgets()
         appLayout.addWidget(lhsComponent)
         appLayout.addWidget(rhsComponent)

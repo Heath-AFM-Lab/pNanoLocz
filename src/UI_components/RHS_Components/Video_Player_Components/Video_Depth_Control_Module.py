@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QUrl, pyqtSignal
 
-from constants import PATH_TO_ICON_DIRECTORY
+from utils.constants import PATH_TO_ICON_DIRECTORY
 
 class VideoDepthControlWidget(QWidget):
         def __init__(self):

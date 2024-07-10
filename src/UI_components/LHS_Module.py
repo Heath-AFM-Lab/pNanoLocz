@@ -1,10 +1,12 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout
 from UI_components.LHS_Components import DropdownWidget, FileDetailingSystemWidget, FileSystemWidget, TabWidget, ToggleableWidget
+from utils.Folder_Opener_Module.folderOpener import FolderOpener
 
 class LHSWidgets(QWidget):
-    def __init__(self):
+    def __init__(self, folderOpener: FolderOpener):
         super().__init__()
+        self.folderOpener = folderOpener
         self.buildLHS()
 
     # Function builds the left hand side of the NanoLocz program
@@ -12,9 +14,9 @@ class LHSWidgets(QWidget):
         # Build the widgets and layouts
         self.layout = QVBoxLayout(self)
 
-        self.fileManagementIconsWidget = FileSystemWidget()
+        self.fileManagementIconsWidget = FileSystemWidget(self.folderOpener)
         self.dropdownWidgets = DropdownWidget()
-        self.fileDetailingWidgets = FileDetailingSystemWidget()
+        self.fileDetailingWidgets = FileDetailingSystemWidget(self.folderOpener)
         self.toggleableWidgets = ToggleableWidget()
         self.tabWidgets = TabWidget()
 

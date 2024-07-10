@@ -7,7 +7,7 @@ from PyQt6.QtCore import Qt
 from vispy import app, scene
 from vispy.gloo import set_clear_color
 from UI_components.RHS_Components.Video_Player_Components import VideoControlWidget, VideoDepthControlWidget, VisualRepresentationWidget, ExportAndVideoScaleWidget
-from constants import PATH_TO_ICON_DIRECTORY
+from utils.constants import PATH_TO_ICON_DIRECTORY
 
 class FixedPanZoomCamera(scene.cameras.PanZoomCamera):
     def viewbox_mouse_event(self, event):

@@ -1,25 +1,32 @@
 import sys
-from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QTableWidget, 
-    QTableWidgetItem
-)
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTreeView, QTableWidget, QTableWidgetItem
+from PyQt6.QtGui import QFileSystemModel
 from PyQt6.QtCore import Qt
+from utils.Folder_Opener_Module.folderOpener import FolderOpener
 
 class FileDetailingSystemWidget(QWidget):
-    def __init__(self):
+    def __init__(self, folderOpener: FolderOpener):
         super().__init__()
+        self.folderOpener = folderOpener
         self.buildFileDetailingSystem()
 
     def buildFileDetailingSystem(self):
         # Create a QHBoxLayout to contain the file selector and details box
-        fileDetailingLayout = QHBoxLayout()
+        fileDetailingLayout = QHBoxLayout(self)
 
         # Create the widget to list the files
-        self.fileListWidget = QListWidget()
-        fileDetailingLayout.addWidget(self.fileListWidget)
+        self.fileTreeView = QTreeView(self)
+        self.fileSystemModel = QFileSystemModel(self)
+        self.fileTreeView.setModel(self.fileSystemModel)
+
+        # Adjust column width for better file name display
+        self.fileTreeView.setColumnWidth(0, 250)  # Adjust the width as needed
+
+        # Add the file tree view to the main layout
+        fileDetailingLayout.addWidget(self.fileTreeView)
 
         # Create a widget to show details of the file
-        self.fileDetailsWidget = QTableWidget()
+        self.fileDetailsWidget = QTableWidget(self)
         self.fileDetailsWidget.setRowCount(8)
         self.fileDetailsWidget.setColumnCount(2)
 
@@ -62,18 +69,14 @@ class FileDetailingSystemWidget(QWidget):
 
         self.setLayout(fileDetailingLayout)
 
-        self.fileListWidget.itemDoubleClicked.connect(self.onFileItemDoubleClick)
-        self.fileDetailsWidget.cellClicked.connect(self.onFileDetailCellClick)
+        # Connect the signal from FolderOpener to populateFileTree method
+        self.folderOpener.folderReceived.connect(self.populateFileTree)
 
-        # Adjust size of file list widget in proportion to file details widget
-        # self.fileListWidget.setFixedWidth(self.fileDetailsWidget.sizeHint().width())
-
-    def onFileItemDoubleClick(self, item):
-        print(f"File item double-clicked: {item.text()}")
-
-    def onFileDetailCellClick(self, row, column):
-        print(f"Cell clicked at row {row}, column {column}")
-
+    def populateFileTree(self, folder_path):
+        # TODO: Remove print statement
+        print(f"Populating file tree with: {folder_path}")
+        self.fileSystemModel.setRootPath(folder_path)
+        self.fileTreeView.setRootIndex(self.fileSystemModel.index(folder_path))
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

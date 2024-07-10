@@ -1,15 +1,14 @@
 import os
-from PyQt6.QtWidgets import (QWidget, QHBoxLayout, QPushButton, QCheckBox, QVBoxLayout, QFileDialog, QTreeView, QDialog, QDialogButtonBox, QLabel)
-from PyQt6.QtGui import QIcon, QFileSystemModel
-from PyQt6.QtCore import Qt
-
-from constants import PATH_TO_ICON_DIRECTORY
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QPushButton, QCheckBox, QVBoxLayout
+from PyQt6.QtGui import QIcon
+from utils.Folder_Opener_Module.folderOpener import FolderOpener
+from utils.constants import PATH_TO_ICON_DIRECTORY
 
 class FileSystemWidget(QWidget):
-    def __init__(self):
+    def __init__(self, folderOpener: FolderOpener):
         super().__init__()
+        self.folderOpener = folderOpener
         self.buildFileManagementIcons()
-        self.buildFileExplorerPane()
 
     def buildFileManagementIcons(self):
         fileManagementLayout = QHBoxLayout()
@@ -59,19 +58,6 @@ class FileSystemWidget(QWidget):
         self.navigateOutOfDirectoryButton.clicked.connect(self.onNavigateOutButtonClicked)
         self.navigateIntoDirectoryButton.clicked.connect(self.onNavigateInButtonClicked)
 
-    def buildFileExplorerPane(self):
-        self.fileTreeView = QTreeView()
-        self.fileSystemModel = QFileSystemModel()
-        self.fileSystemModel.setRootPath('')
-        self.fileTreeView.setModel(self.fileSystemModel)
-        self.fileTreeView.setRootIndex(self.fileSystemModel.index(''))
-
-        # Adjust column width for better file name display
-        self.fileTreeView.setColumnWidth(0, 250)  # Adjust the width as needed
-
-        # Add the file tree view to the main layout
-        self.layout().addWidget(self.fileTreeView)
-
     def onAutosaveClicked(self):
         pass
 
@@ -79,32 +65,7 @@ class FileSystemWidget(QWidget):
         pass
 
     def onOpenFolderButtonClicked(self):
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Select a folder or a session file")
-
-        layout = QVBoxLayout()
-        label = QLabel("Select a folder or a session file")
-        layout.addWidget(label)
-
-        buttonBox = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        buttonBox.accepted.connect(lambda: self.openFolder(dialog))
-        buttonBox.rejected.connect(dialog.reject)
-
-        layout.addWidget(buttonBox)
-        dialog.setLayout(layout)
-        dialog.exec()
-
-    def openFolder(self, dialog):
-        dialog.accept()
-        folder_path = QFileDialog.getExistingDirectory(self, "Select Folder")
-        if folder_path:
-            print(f"Selected folder: {folder_path}")
-            self.populateFileTree(folder_path)
-
-    def populateFileTree(self, folder_path):
-        print(f"Populating file tree with: {folder_path}")
-        self.fileSystemModel.setRootPath(folder_path)
-        self.fileTreeView.setRootIndex(self.fileSystemModel.index(folder_path))
+        self.folderOpener.exec()
 
     def onNavigateInButtonClicked(self):
         pass
