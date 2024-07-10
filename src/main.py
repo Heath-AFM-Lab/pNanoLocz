@@ -25,10 +25,11 @@ class MyApp(QMainWindow):
         appLayout.addWidget(lhsComponent)
         appLayout.addWidget(rhsComponent)
 
-        # Set size policy with stretch factors
-        lhsPolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        lhsPolicy.setHorizontalStretch(5)
-        lhsComponent.setSizePolicy(lhsPolicy)
+        # Set size policy with stretch factors on the RHS widgets
+        # lhsComponent.setFixedWidth(lhsComponent.sizeHint().width())
+        # lhsPolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        # lhsPolicy.setHorizontalStretch(5)
+        # lhsComponent.setSizePolicy(lhsPolicy)
 
         rhsPolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         rhsPolicy.setHorizontalStretch(16)

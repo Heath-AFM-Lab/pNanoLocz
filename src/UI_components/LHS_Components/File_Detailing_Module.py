@@ -72,6 +72,9 @@ class FileDetailingSystemWidget(QWidget):
         self.fileListWidget.itemDoubleClicked.connect(self.onFileItemDoubleClick)
         self.fileDetailsWidget.cellClicked.connect(self.onFileDetailCellClick)
 
+        # Adjust size of file list widget in proportion to file details widget
+        # self.fileListWidget.setFixedWidth(self.fileDetailsWidget.sizeHint().width())
+
     def onFileItemDoubleClick(self, item):
         # TODO: Complete load file function
         print(f"File item double-clicked: {item.text()}")
