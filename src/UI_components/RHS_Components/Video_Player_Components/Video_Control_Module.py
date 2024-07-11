@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QIcon, QIntValidator, QValidator
 from PyQt6.QtCore import Qt, pyqtSignal
-from constants import PATH_TO_ICON_DIRECTORY
+from utils.constants import PATH_TO_ICON_DIRECTORY
 
 
 class RangeValidator(QValidator):

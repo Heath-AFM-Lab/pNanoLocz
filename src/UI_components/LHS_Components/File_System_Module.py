@@ -1,7 +1,7 @@
 import os
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QPushButton, QCheckBox
 from PyQt6.QtGui import QIcon
-from constants import PATH_TO_ICON_DIRECTORY
+from utils.constants import PATH_TO_ICON_DIRECTORY
 
 class FileSystemWidget(QWidget):
     def __init__(self):

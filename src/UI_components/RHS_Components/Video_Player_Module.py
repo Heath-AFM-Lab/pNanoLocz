@@ -5,9 +5,8 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSiz
 from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import Qt
 from vispy import app, scene
-from vispy.gloo import set_clear_color
 from UI_components.RHS_Components.Video_Player_Components import VideoControlWidget, VideoDepthControlWidget, VisualRepresentationWidget, ExportAndVideoScaleWidget
-from constants import PATH_TO_ICON_DIRECTORY
+from utils.constants import PATH_TO_ICON_DIRECTORY
 
 class FixedPanZoomCamera(scene.cameras.PanZoomCamera):
     def viewbox_mouse_event(self, event):
@@ -87,14 +86,11 @@ class VideoPlayerWidget(QWidget):
         self.mediaLayout.addWidget(self.exportAndVideoScaleWidget)
 
         # Adapt the video player widget to match the size of the lower control widgets
-        self.adjustSizeToFitBottomWidgets()
+        widthOfControlWidgets = self.videoControlWidget.width() + self.visualRepresentationWidget.width() + self.videoDepthControlWidget.width()
+        self.videoPlayerContainer.setFixedSize(widthOfControlWidgets, widthOfControlWidgets)
         
         # Disable widgets until loadFrames is called
         self.disableWidgets()
-
-    def adjustSizeToFitBottomWidgets(self):
-        widthOfControlWidgets = self.videoControlWidget.width() + self.visualRepresentationWidget.width() + self.videoDepthControlWidget.width()
-        self.videoPlayerContainer.setFixedSize(widthOfControlWidgets, widthOfControlWidgets)
 
 
     # TODO: create proper load frames func that 
@@ -102,7 +98,7 @@ class VideoPlayerWidget(QWidget):
     def loadFrames(self):
         # Example: Generate random frames
         self.frames = [np.random.randint(0, 256, (512, 512), dtype=np.uint8) for _ in range(100)]
-        self.image_visual = scene.visuals.Image(self.frames[0], parent=self.view.scene, interpolation='nearest')
+        self.Image = scene.visuals.Image(self.frames[0], parent=self.view.scene, interpolation='nearest')
 
         # Update slider with max frames
         self.videoControlWidget.videoSeekSlider.setRange(0, len(self.frames) - 1)
@@ -135,7 +131,7 @@ class VideoPlayerWidget(QWidget):
         self.videoControlWidget.frameSpinBox.blockSignals(False)
 
         # Update the image visual with the new frame
-        self.image_visual.set_data(self.frames[self.frame_index])
+        self.Image.set_data(self.frames[self.frame_index])
         self.frame_index = (self.frame_index + 1) % len(self.frames)
         self.vispyCanvas.update()
 
@@ -177,6 +173,7 @@ class VideoPlayerWidget(QWidget):
     def sliderReleased(self):
         self.update_frame(None)
 
+    # TODO: complete this func
     def deleteFrames(self, min, max):
         pass
 
