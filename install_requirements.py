@@ -5,7 +5,7 @@ import os
 def install_with_conda(package):
     """Attempt to install a package with conda."""
     try:
-        subprocess.check_call(['conda', 'install', '--yes', package, '-c', 'conda-forge'])
+        subprocess.check_call(['conda', 'install', '--yes', package, '-c', 'conda-forge', "-c", "pytorch", "-c", "nvidia" ])
         print(f'Successfully installed {package} with conda')
     except subprocess.CalledProcessError:
         print(f'Failed to install {package} with conda, falling back to pip')

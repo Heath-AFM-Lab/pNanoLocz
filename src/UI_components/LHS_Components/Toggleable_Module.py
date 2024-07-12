@@ -61,7 +61,6 @@ class ToggleableWidget(QWidget):
         self.particlesOrFramesDropdown = QComboBox()
         self.particlesOrFramesDropdown.addItems(["Frames", "Particles"])
         bottomHorizontalLayout.addWidget(self.particlesOrFramesDropdown)
-
         
         # Store all layouts to the vertical layout
         toggleableWidgetsLayout.addLayout(topHorizontalLayout)
@@ -93,7 +92,7 @@ class ToggleableWidget(QWidget):
 
     def onLoadAllFramesClicked(self, checked):
         # Handle load all frames checkbox click
-        self.frame_spin_box.setEnabled(not checked)
+        self.frameSpinBox.setEnabled(not checked)
 
     def onFrameSpinBoxValueChanged(self, value):
         # TODO: Handle frame spin box value change
