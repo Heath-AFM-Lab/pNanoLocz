@@ -3,6 +3,28 @@ from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTr
 from PyQt6.QtGui import QFileSystemModel
 from PyQt6.QtCore import Qt
 from utils.Folder_Opener_Module.folderOpener import FolderOpener
+from PyQt6.QtCore import QSortFilterProxyModel
+
+class CustomFileFilterProxyModel(QSortFilterProxyModel):
+    def __init__(self, extensions, parent=None):
+        super().__init__(parent)
+        self.extensions = extensions
+
+    def filterAcceptsRow(self, source_row, source_parent):
+        index = self.sourceModel().index(source_row, 0, source_parent)
+        if not index.isValid():
+            return False
+
+        file_path = self.sourceModel().filePath(index)
+        if self.sourceModel().isDir(index):
+            return True
+
+        return any(file_path.endswith(ext) for ext in self.extensions)
+
+
+class CustomFileSystemModel(QFileSystemModel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 class FileDetailingSystemWidget(QWidget):
     def __init__(self, folderOpener: FolderOpener):
@@ -11,29 +33,28 @@ class FileDetailingSystemWidget(QWidget):
         self.buildFileDetailingSystem()
 
     def buildFileDetailingSystem(self):
-        # Create a QHBoxLayout to contain the file selector and details box
         fileDetailingLayout = QHBoxLayout(self)
 
-        # Create the widget to list the files
         self.fileTreeView = QTreeView(self)
-        self.fileSystemModel = QFileSystemModel(self)
-        self.fileTreeView.setModel(self.fileSystemModel)
-
-        # Adjust column width for better file name display
-        self.fileTreeView.setColumnWidth(0, 250)  # Adjust the width as needed
-
-        # Add the file tree view to the main layout
+        
+        # Use the custom file system model
+        self.fileSystemModel = CustomFileSystemModel(parent=self)
+        
+        # Use the custom filter proxy model with the desired extensions
+        self.fileFilterProxyModel = CustomFileFilterProxyModel(
+            extensions=['.asd', '.ibw', '.spm', '.jpk', '.gwy', '.aris', '.nhf'], parent=self
+        )
+        self.fileFilterProxyModel.setSourceModel(self.fileSystemModel)
+        
+        self.fileTreeView.setModel(self.fileFilterProxyModel)
+        self.fileTreeView.setColumnWidth(0, 250)
         fileDetailingLayout.addWidget(self.fileTreeView)
 
-        # Create a widget to show details of the file
         self.fileDetailsWidget = QTableWidget(self)
         self.fileDetailsWidget.setRowCount(8)
         self.fileDetailsWidget.setColumnCount(2)
-
-        # Set the headers
         self.fileDetailsWidget.setHorizontalHeaderLabels(['Parameter', 'Value'])
 
-        # List of parameters
         parameters = [
             "Num Imgs", "X-Range (nm)", "Speed (fps)", "Line/s (Hz)",
             "y pixels", "x pixels", "Pixel/nm", "Channel"
@@ -41,19 +62,15 @@ class FileDetailingSystemWidget(QWidget):
 
         for i, param in enumerate(parameters):
             item = QTableWidgetItem(param)
-            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)  # Make the item read-only
+            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
             self.fileDetailsWidget.setItem(i, 0, item)
             self.fileDetailsWidget.setItem(i, 1, QTableWidgetItem('0' if param != 'Channel' else 'unknown'))
 
-        # Disable scroll bars
         self.fileDetailsWidget.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.fileDetailsWidget.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-
-        # Adjust the size of the columns to fit the contents
         self.fileDetailsWidget.resizeColumnsToContents()
         self.fileDetailsWidget.resizeRowsToContents()
 
-        # Calculate minimum width based on content
         column_width = self.fileDetailsWidget.verticalHeader().width()
         for column in range(self.fileDetailsWidget.columnCount()):
             column_width += self.fileDetailsWidget.columnWidth(column)
@@ -68,18 +85,15 @@ class FileDetailingSystemWidget(QWidget):
         fileDetailingLayout.addLayout(fileDetailslayout)
 
         self.setLayout(fileDetailingLayout)
-
-        # Connect the signal from FolderOpener to populateFileTree method
         self.folderOpener.folderReceived.connect(self.populateFileTree)
 
     def populateFileTree(self, folder_path):
-        # TODO: Remove print statement
-        print(f"Populating file tree with: {folder_path}")
         self.fileSystemModel.setRootPath(folder_path)
-        self.fileTreeView.setRootIndex(self.fileSystemModel.index(folder_path))
+        self.fileTreeView.setRootIndex(self.fileFilterProxyModel.mapFromSource(self.fileSystemModel.index(folder_path)))
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    file_detail = FileDetailingSystemWidget()
+    folderOpener = FolderOpener()
+    file_detail = FileDetailingSystemWidget(folderOpener)
     file_detail.show()
     sys.exit(app.exec())
