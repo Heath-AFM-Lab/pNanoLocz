@@ -6,11 +6,8 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QAction, QIcon
 from UI_components import LHSWidgets, RHSWidgets
-<<<<<<< HEAD
 from utils.constants import PATH_TO_ICON_DIRECTORY
-=======
 from utils.Folder_Opener_Module.folderOpener import FolderOpener
->>>>>>> c7025005f58f4216a4cf2f56ecd43b99a0fe8769
 
 class MyApp(QMainWindow):
     def __init__(self):
