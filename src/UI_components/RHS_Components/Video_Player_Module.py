@@ -43,10 +43,13 @@ class VideoPlayerWidget(QWidget):
         self.mediaLayout.addLayout(self.iconLayout)
 
         # Set up Vispy canvas
-        self.videoPlayerContainer = QWidget()
-        self.vispyCanvas = scene.SceneCanvas(keys='interactive', parent=self.videoPlayerContainer, bgcolor=None)
+        # self.videoPlayerContainer = QWidget()
+        self.vispyCanvas = scene.SceneCanvas(keys='interactive', bgcolor=None)
+        self.vispyCanvas.size = 800, 600
+        self.grid = self.vispyCanvas.central_widget.add_grid()
         # self.vispyCanvas.native.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Expand to fill space
         self.mediaLayout.addWidget(self.vispyCanvas.native)
+
 
         self.view = self.vispyCanvas.central_widget.add_view()
         self.view.camera = FixedPanZoomCamera()
@@ -87,7 +90,7 @@ class VideoPlayerWidget(QWidget):
 
         # Adapt the video player widget to match the size of the lower control widgets
         widthOfControlWidgets = self.videoControlWidget.width() + self.visualRepresentationWidget.width() + self.videoDepthControlWidget.width()
-        self.videoPlayerContainer.setFixedSize(widthOfControlWidgets, widthOfControlWidgets)
+        self.vispyCanvas.size = (widthOfControlWidgets, widthOfControlWidgets)
         
         # Disable widgets until loadFrames is called
         self.disableWidgets()
@@ -96,9 +99,18 @@ class VideoPlayerWidget(QWidget):
     # TODO: create proper load frames func that 
     # triggers after user selects a file to open
     def loadFrames(self):
+        width, height = 512, 512
         # Example: Generate random frames
-        self.frames = [np.random.randint(0, 256, (512, 512), dtype=np.uint8) for _ in range(100)]
-        self.Image = scene.visuals.Image(self.frames[0], parent=self.view.scene, interpolation='nearest')
+        self.frames = [np.random.randint(0, 256, (height, width), dtype=np.uint8) for _ in range(100)]
+        self.Image = scene.visuals.Image(self.frames[0], parent=self.view.scene, interpolation='nearest', cmap="plasma")
+
+        # Create a ColorBarWidget (managed independently)
+        self.colorbar = scene.ColorBarWidget(orientation='right', cmap="plasma")
+        # self.colorbar.pos = (750, 50)  # Position of the color bar within the canvas
+        # self.colorbar.size = (100, 500)  # Size of the color bar
+        # self.colorbar.parent = self.vispyCanvas.scene
+
+        self.grid.add_widget(self.colorbar)
 
         # Update slider with max frames
         self.videoControlWidget.videoSeekSlider.setRange(0, len(self.frames) - 1)

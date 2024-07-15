@@ -24,13 +24,13 @@ class PlayerWindow(QMainWindow):
         layout.addWidget(self.canvas.native)
 
         # Create a 3D array of random data (100 frames of 200x200 arrays)
-        self.frames = np.random.rand(100, 200, 200)
+        self.frames = np.random.rand(100, 900, 600)
 
         # Initialize Vispy visuals with a colormap
-        self.image = scene.visuals.Image(self.frames[0], parent=self.canvas.scene, cmap='inferno')
+        self.image = scene.visuals.Image(self.frames[0], parent=self.canvas.scene, cmap='plasma')
 
         # Create a ColorBarWidget (managed independently)
-        self.colorbar = scene.ColorBarWidget(orientation='right', cmap="inferno")
+        self.colorbar = scene.ColorBarWidget(orientation='right', cmap="plasma")
         self.colorbar.pos = (750, 50)  # Position of the color bar within the canvas
         self.colorbar.size = (100, 500)  # Size of the color bar
         self.colorbar.parent = self.canvas.scene
