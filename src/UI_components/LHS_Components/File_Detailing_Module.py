@@ -1,9 +1,10 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTreeView, QTableWidget, QTableWidgetItem
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTreeView, QTableWidget, QTableWidgetItem, QComboBox
 from PyQt6.QtGui import QFileSystemModel
 from PyQt6.QtCore import Qt, QSortFilterProxyModel
 from utils.Folder_Opener_Module.folderOpener import FolderOpener
 import os
+from PyQt6.QtCore import QTimer
 
 class CustomFileFilterProxyModel(QSortFilterProxyModel):
     def __init__(self, extensions, parent=None):
@@ -72,21 +73,21 @@ class CustomFileSystemModel(QFileSystemModel):
                 return f"{size:.{decimal_places}f} {unit}"
             size /= 1024.0
 
+
 class FileDetailingSystemWidget(QWidget):
     def __init__(self, folderOpener: FolderOpener):
         super().__init__()
         self.folderOpener = folderOpener
+        self.currentFilePath = None
+        self.currentChannel = None  # Default channel to None
+        self.animation = None  # Store the animation object
         self.buildFileDetailingSystem()
 
     def buildFileDetailingSystem(self):
         fileDetailingLayout = QHBoxLayout(self)
 
         self.fileTreeView = QTreeView(self)
-
-        # Use the custom file system model
         self.fileSystemModel = CustomFileSystemModel(parent=self)
-
-        # Use the custom filter proxy model with the desired extensions
         self.fileFilterProxyModel = CustomFileFilterProxyModel(
             extensions=['.asd', '.ibw', '.spm', '.jpk', '.gwy', '.ARIS', '.nhf'], parent=self
         )
@@ -95,11 +96,10 @@ class FileDetailingSystemWidget(QWidget):
         self.fileTreeView.setModel(self.fileFilterProxyModel)
         self.fileTreeView.setColumnWidth(0, 250)
         self.fileTreeView.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.fileTreeView.setSortingEnabled(True)  # Enable sorting
+        self.fileTreeView.setSortingEnabled(True)
+        self.fileTreeView.doubleClicked.connect(self.onFileDoubleClicked)  # Connect double click event
 
-        # Connect the sorting signal
         self.fileTreeView.header().sortIndicatorChanged.connect(self.onSortIndicatorChanged)
-
         fileDetailingLayout.addWidget(self.fileTreeView)
 
         self.fileDetailsWidget = QTableWidget(self)
@@ -133,6 +133,10 @@ class FileDetailingSystemWidget(QWidget):
 
         fileDetailslayout = QVBoxLayout()
         fileDetailslayout.addWidget(self.fileDetailsWidget)
+
+        self.channelDropdown = QComboBox(self)
+        self.channelDropdown.currentIndexChanged.connect(self.onChannelChanged)
+        fileDetailslayout.addWidget(self.channelDropdown)
         fileDetailslayout.addStretch(1)
         fileDetailingLayout.addLayout(fileDetailslayout)
 
@@ -145,6 +149,101 @@ class FileDetailingSystemWidget(QWidget):
     def populateFileTree(self, folder_path):
         self.fileSystemModel.setRootPath(folder_path)
         self.fileTreeView.setRootIndex(self.fileFilterProxyModel.mapFromSource(self.fileSystemModel.index(folder_path)))
+
+    def onFileDoubleClicked(self, index):
+        file_path = self.fileSystemModel.filePath(self.fileFilterProxyModel.mapToSource(index))
+        self.currentFilePath = file_path
+        self.loadFileData(file_path, self.currentChannel)
+
+    def loadFileData(self, file_path, channel=None):
+        # Import necessary file readers
+        from utils.file_reader.asd import load_asd
+        from utils.file_reader.read_aris import open_aris
+        from utils.file_reader.read_ibw import open_ibw
+        from utils.file_reader.read_jpk import open_jpk
+        from utils.file_reader.read_nhf import open_nhf
+        from utils.file_reader.read_spm import open_spm
+        from utils.file_reader.read_gwy import open_gwy
+
+        extension = os.path.splitext(file_path)[1].lower()
+        metadata = {}  # Initialize metadata
+
+        try:
+            if extension == ".asd":
+                frames, pixel_to_nanometre_scaling_factor, metadata = load_asd(file_path, channel or "TP")
+            elif extension == ".aris":
+                frames, metadata = open_aris(file_path, channel or "HeightTrace")
+            elif extension == ".ibw":
+                frames, metadata = open_ibw(file_path, channel or "Height")
+            elif extension == ".jpk":
+                frames, metadata = open_jpk(file_path, channel or "height_trace")
+            elif extension == ".nhf":
+                frames, metadata = open_nhf(file_path, channel or "Topography")
+            elif extension == ".spm":
+                frames, metadata = open_spm(file_path, channel or "Height Sensor")
+            elif extension == ".gwy":
+                frames, metadata = open_gwy(file_path, channel or "1")
+            else:
+                print(f"Unsupported file type: {extension}")
+                return
+
+            self.updateMetadataTable(metadata)
+            channels = metadata.get('channels', ['Channel 1'])
+            self.updateDropdownChannels(channels)
+            self.displayData(frames)
+
+        except Exception as e:
+            print(f"Error loading file {file_path}: {e}")
+
+    def updateMetadataTable(self, metadata):
+        values = [
+            str(metadata.get('num_frames', 'N/A')),
+            str(metadata.get('x_scan_length', 'N/A')),
+            str(metadata.get('scan_rate', 'N/A')),
+            str(metadata.get('line_rate', 'N/A')),
+            str(metadata.get('y_pixels', 'N/A')),
+            str(metadata.get('x_pixels', 'N/A')),
+            str(metadata.get('pixel_nm', 'N/A')),
+            str(metadata.get('channel', 'N/A'))
+        ]
+
+        for i, value in enumerate(values):
+            self.fileDetailsWidget.setItem(i, 1, QTableWidgetItem(value))
+
+    def updateDropdownChannels(self, channels):
+        self.channelDropdown.clear()
+        self.channelDropdown.addItems(channels)
+        if self.currentChannel in channels:
+            self.channelDropdown.setCurrentText(self.currentChannel)
+        else:
+            self.currentChannel = channels[0]
+            self.channelDropdown.setCurrentText(self.currentChannel)
+
+    def displayData(self, frames):
+        import matplotlib.pyplot as plt
+        from matplotlib import animation
+
+        if self.animation:
+            plt.close(self.animation._fig)  # Close the previous animation figure
+
+        fig, axis = plt.subplots()
+        def update(frame):
+            axis.imshow(frames[frame])
+            return axis
+        self.animation = animation.FuncAnimation(fig, update, frames=len(frames), interval=200)
+
+        # Integrate the animation into the Qt event loop
+        timer = QTimer(self)
+        timer.timeout.connect(lambda: None)
+        timer.start(50)
+
+        plt.show()
+
+    def onChannelChanged(self, index):
+        selected_channel = self.channelDropdown.itemText(index)
+        self.currentChannel = selected_channel
+        if self.currentFilePath:
+            self.loadFileData(self.currentFilePath, selected_channel)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

@@ -6,7 +6,7 @@ import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-AFM = np.load('AFM_cmap.npy')
+AFM = np.load('utils/file_reader/AFM_cmap.npy')
 AFM = colors.ListedColormap(AFM)
 
 # Configure logging

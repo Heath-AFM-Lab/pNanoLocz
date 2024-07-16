@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 import matplotlib.colors as colors
 
-AFM = np.load('AFM_cmap.npy')
+AFM = np.load('utils/file_reader/AFM_cmap.npy')
 AFM = colors.ListedColormap(AFM)
 
 # Configure logging

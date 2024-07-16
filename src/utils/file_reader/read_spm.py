@@ -5,7 +5,7 @@ import numpy as np
 import logging
 import matplotlib.colors as colors
 
-AFM = np.load('AFM_cmap.npy')
+AFM = np.load('utils/file_reader/AFM_cmap.npy')
 AFM = colors.ListedColormap(AFM)
 
 # Configure logging
@@ -93,11 +93,21 @@ def open_spm(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
             logger.error(f"Raw channel names: {raw_labels}")
             raise ValueError(f"{channel} not in {file_path.suffix} channel list: {labels}") from e
         raise e
+    
+    labels = []
+    raw_labels = []
+    for layer in scan.layers:
+        for data in layer.get(b"@2:Image Data", []):
+            raw_channel_name = data.decode("latin1", errors="ignore")
+            raw_labels.append(raw_channel_name)
+            channel_name = raw_channel_name.split('"')[1] if '"' in raw_channel_name else raw_channel_name
+            labels.append(channel_name)
 
     scaling_factor = spm_pixel_to_nm_scaling(filename, channel_data)
     metadata = {
         'scaling_factor': scaling_factor,
         'channel': channel,
+        'channels': labels
     }
 
     return image, metadata
@@ -109,6 +119,7 @@ if __name__ == "__main__":
         image, metadata = open_spm(file_path, channel)
         print(f"Pixel to nm scaling: {metadata['scaling_factor']} nm/pixel")
         print(f"Image shape: {image.shape}")
+        print(metadata)
 
         # Display the image using matplotlib
         import matplotlib.pyplot as plt

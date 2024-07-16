@@ -3,7 +3,7 @@ from pathlib import Path
 import tifffile
 import matplotlib.colors as colors
 
-AFM = np.load('AFM_cmap.npy')
+AFM = np.load('utils/file_reader/AFM_cmap.npy')
 AFM = colors.ListedColormap(AFM)
 
 def _jpk_pixel_to_nm_scaling(tiff_page: tifffile.tifffile.TiffPage) -> float:
@@ -56,6 +56,7 @@ def open_jpk(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
         metadata = extract_metadata(metadata_page)
         scaling_factor = _jpk_pixel_to_nm_scaling(metadata_page)
         metadata['scaling_factor'] = scaling_factor
+        metadata['channels'] = list(channel_list.keys())
 
         # Rotate the image 90 degrees clockwise
         image_flipped = np.flipud(image)

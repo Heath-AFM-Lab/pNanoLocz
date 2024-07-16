@@ -5,7 +5,7 @@ from igor2 import binarywave
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 
-AFM = np.load('AFM_cmap.npy')
+AFM = np.load('utils/file_reader/AFM_cmap.npy')
 AFM = colors.ListedColormap(AFM)
 
 def _ibw_pixel_to_nm_scaling(scan: dict) -> float:
@@ -92,6 +92,7 @@ def open_ibw(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
     scaling = _ibw_pixel_to_nm_scaling(scan)
     metadata = extract_metadata(str(scan["wave"]["note"]))
     metadata['scaling_factor'] = scaling
+    metadata['channels'] = labels
 
     return image, metadata
 

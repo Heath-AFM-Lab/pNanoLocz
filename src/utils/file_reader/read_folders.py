@@ -10,9 +10,9 @@ from read_ibw import open_ibw
 from read_spm import open_spm
 from read_gwy import open_gwy
 import matplotlib.colors as colors
-import time  # Import the time module
+import time
 
-AFM = np.load('AFM_cmap.npy')
+AFM = np.load('utils/file_reader/AFM_cmap.npy')
 AFM = colors.ListedColormap(AFM)
 
 # Configure logging
@@ -27,7 +27,7 @@ class ImageLoader:
         self._dominant_format, self._file_paths = self._check_folder()
         
         start_time = time.time()  # Start timing before loading images
-        self._images, self._metadata = self._load_images()
+        self._images, self._metadata_list = self._load_images()
         end_time = time.time()  # End timing after loading images
 
         self._load_time = end_time - start_time  # Calculate the duration
@@ -52,10 +52,13 @@ class ImageLoader:
         logger.info(f"Number of files: {len(dominant_format_files)}")
 
         return dominant_format, dominant_format_files
+    
+    def get_load_time(self):
+        return self._load_time
 
     def _load_images(self):
         images = []
-        metadata = None
+        metadata_list = []
 
         for file_path in self._file_paths:
             if self._dominant_format == '.nhf':
@@ -69,29 +72,40 @@ class ImageLoader:
             elif self._dominant_format == '.gwy':
                 im, meta = open_gwy(file_path, 1)
             images.append(im)
-            metadata = meta  # Assume metadata is same for all images
+            metadata_list.append(meta)  # Store metadata for each image
 
-        return images, metadata
+        return images, metadata_list
 
-    def get_images(self):
-        return self._images
-
-    def get_metadata(self):
-        return self._metadata
-
-    def get_load_time(self):
-        return self._load_time
+    def _check_metadata_change(self, current_meta, previous_meta):
+        fields_to_check = [
+            'numberofFrames', 'x_scan_length', 'Scan_Rate', 'linerate', 'yPixel', 'xPixel', 'scaling_factor'
+        ]
+        for field in fields_to_check:
+            if current_meta.get(field) != previous_meta.get(field):
+                return True
+        return False
 
     def play_images(self):
         fig, ax = plt.subplots()
         im = ax.imshow(self._images[0], animated=True, cmap=AFM)
+        metadata_text = ax.text(0.02, 0.95, '', transform=ax.transAxes, color='white', fontsize=8, verticalalignment='top', bbox=dict(facecolor='black', alpha=0.5))
+
+        previous_meta = self._metadata_list[0]  # Initialize previous_meta outside the function
 
         def updatefig(i):
+            nonlocal previous_meta  # Declare previous_meta as nonlocal to modify it inside the function
             im.set_array(self._images[i])
-            return im,
+            current_meta = self._metadata_list[i]
+            if self._check_metadata_change(current_meta, previous_meta):
+                metadata_text.set_text(self._format_metadata(current_meta))
+                previous_meta = current_meta
+            return im, metadata_text
 
         ani = animation.FuncAnimation(fig, updatefig, frames=len(self._images), interval=100, blit=True)
         plt.show()
+
+    def _format_metadata(self, metadata):
+        return '\n'.join([f"{key}: {value}" for key, value in metadata.items() if key in ['numberofFrames', 'x_scan_length', 'Scan_Rate', 'linerate', 'yPixel', 'xPixel', 'scaling_factor']])
 
 if __name__ == "__main__":
     folder_path = 'data/Streptavidin imaging-12.08.46.399'  # Replace with folder path

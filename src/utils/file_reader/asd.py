@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from matplotlib import animation
 import matplotlib.colors as colors
 
-AFM = np.load('AFM_cmap.npy')
+AFM = np.load('utils/file_reader/AFM_cmap.npy')
 AFM = colors.ListedColormap(AFM)
 
 
@@ -35,92 +35,92 @@ logger.enable(__package__)
 
 
 # pylint: disable=too-few-public-methods
-class VoltageLevelConverter:
-    """
-    A class for converting arbitrary height levels from the AFM into real world nanometre heights.
+# class VoltageLevelConverter:
+#     """
+#     A class for converting arbitrary height levels from the AFM into real world nanometre heights.
 
-    Different .asd files require different functions to perform this calculation based on many factors, hence why we
-    need to define the correct function in each case.
+#     Different .asd files require different functions to perform this calculation based on many factors, hence why we
+#     need to define the correct function in each case.
 
-    Parameters
-    ----------
-    analogue_digital_range : float
-        The range of analogue voltage values.
-    scaling_factor : float
-        A scaling factor calculated elsewhere that scales the heightmap appropriately based on the type of channel
-        and sensor parameters.
-    resolution : int
-        The vertical resolution of the instrument. Dependant on the number of bits used to store its
-        values. Typically 12, hence 2^12 = 4096 sensitivity levels.
-    """
+#     Parameters
+#     ----------
+#     analogue_digital_range : float
+#         The range of analogue voltage values.
+#     scaling_factor : float
+#         A scaling factor calculated elsewhere that scales the heightmap appropriately based on the type of channel
+#         and sensor parameters.
+#     resolution : int
+#         The vertical resolution of the instrument. Dependant on the number of bits used to store its
+#         values. Typically 12, hence 2^12 = 4096 sensitivity levels.
+#     """
 
-    def __init__(self, analogue_digital_range: float, scaling_factor: float, resolution: int) -> None:
-        """
-        Convert arbitrary height levels from the AFM into real world nanometre heights.
+#     def __init__(self, analogue_digital_range: float, scaling_factor: float, resolution: int) -> None:
+#         """
+#         Convert arbitrary height levels from the AFM into real world nanometre heights.
 
-        Parameters
-        ----------
-        analogue_digital_range : float
-            The range of analogue voltage values.
-        scaling_factor : float
-            A scaling factor calculated elsewhere that scales the heightmap appropriately based on the type of channel
-            and sensor parameters.
-        resolution : int
-            The vertical resolution of the instrumen. Dependant on the number of bits used to store its
-            values. Typically 12, hence 2^12 = 4096 sensitivity levels.
-        """
-        self.ad_range = analogue_digital_range
-        self.scaling_factor = scaling_factor
-        self.resolution = resolution
-        logger.info(
-            f"created voltage converter. ad_range: {analogue_digital_range} -> {self.ad_range}, "
-            f" scaling factor: {scaling_factor}, resolution: {resolution}"
-        )
-
-
-# pylint: disable=too-few-public-methods
-class UnipolarConverter(VoltageLevelConverter):
-    """A VoltageLevelConverter for unipolar encodings. (0 to +X Volts)."""
-
-    def level_to_voltage(self, level: float) -> float:
-        """
-        Calculate the real world height scale in nanometres for an arbitrary level value.
-
-        Parameters
-        ----------
-        level : float
-            Arbitrary height measurement from the AFM that needs converting into real world
-            length scale units.
-
-        Returns
-        -------
-        float
-            Real world nanometre height for the input height level.
-        """
-        multiplier = -self.ad_range / self.resolution * self.scaling_factor
-        return level * multiplier
+#         Parameters
+#         ----------
+#         analogue_digital_range : float
+#             The range of analogue voltage values.
+#         scaling_factor : float
+#             A scaling factor calculated elsewhere that scales the heightmap appropriately based on the type of channel
+#             and sensor parameters.
+#         resolution : int
+#             The vertical resolution of the instrumen. Dependant on the number of bits used to store its
+#             values. Typically 12, hence 2^12 = 4096 sensitivity levels.
+#         """
+#         self.ad_range = analogue_digital_range
+#         self.scaling_factor = scaling_factor
+#         self.resolution = resolution
+#         logger.info(
+#             f"created voltage converter. ad_range: {analogue_digital_range} -> {self.ad_range}, "
+#             f" scaling factor: {scaling_factor}, resolution: {resolution}"
+#         )
 
 
-# pylint: disable=too-few-public-methods
-class BipolarConverter(VoltageLevelConverter):
-    """A VoltageLevelConverter for bipolar encodings. (-X to +X Volts)."""
+# # pylint: disable=too-few-public-methods
+# class UnipolarConverter(VoltageLevelConverter):
+#     """A VoltageLevelConverter for unipolar encodings. (0 to +X Volts)."""
 
-    def level_to_voltage(self, level: float) -> float:
-        """
-        Calculate the real world height scale in nanometres for an arbitrary level value.
+#     def level_to_voltage(self, level: float) -> float:
+#         """
+#         Calculate the real world height scale in nanometres for an arbitrary level value.
 
-        Parameters
-        ----------
-        level : float
-            Arbitrary height measurement from the AFM that needs converting into real world
-            length scale units.
+#         Parameters
+#         ----------
+#         level : float
+#             Arbitrary height measurement from the AFM that needs converting into real world
+#             length scale units.
 
-        Returns
-        -------
-        float
-            Real world nanometre height for the input height level.
-        """
-        return (self.ad_range - 2 * level * self.ad_range / self.resolution) * self.scaling_factor
+#         Returns
+#         -------
+#         float
+#             Real world nanometre height for the input height level.
+#         """
+#         multiplier = -self.ad_range / self.resolution * self.scaling_factor
+#         return level * multiplier
+
+
+# # pylint: disable=too-few-public-methods
+# class BipolarConverter(VoltageLevelConverter):
+#     """A VoltageLevelConverter for bipolar encodings. (-X to +X Volts)."""
+
+#     def level_to_voltage(self, level: float) -> float:
+#         """
+#         Calculate the real world height scale in nanometres for an arbitrary level value.
+
+#         Parameters
+#         ----------
+#         level : float
+#             Arbitrary height measurement from the AFM that needs converting into real world
+#             length scale units.
+
+#         Returns
+#         -------
+#         float
+#             Real world nanometre height for the input height level.
+#         """
+#         return (self.ad_range - 2 * level * self.ad_range / self.resolution) * self.scaling_factor
 
 
 def calculate_scaling_factor(
@@ -262,19 +262,25 @@ def load_asd(file_path: Path, channel: str):
             phase_sensitivity=header_dict["phase_sensitivity"],
         )
 
-        analogue_digital_converter = create_analogue_digital_converter(
-            analogue_digital_range=header_dict["analogue_digital_range"],
-            scaling_factor=scaling_factor,
-        )
+        # analogue_digital_converter = create_analogue_digital_converter(
+        #     analogue_digital_range=header_dict["analogue_digital_range"],
+        #     scaling_factor=scaling_factor,
+        # )
         frames = read_channel_data(
             open_file=open_file,
             num_frames=header_dict["num_frames"],
             x_pixels=header_dict["x_pixels"],
             y_pixels=header_dict["y_pixels"],
-            analogue_digital_converter=analogue_digital_converter,
+            # analogue_digital_converter=analogue_digital_converter,
         )
 
         frames = np.array(frames)
+
+        # Ensure channels are returned
+        channels = [header_dict["channel1"], header_dict["channel2"]]
+
+        # Ensure metadata includes channels
+        header_dict["channels"] = channels
 
         return frames, pixel_to_nanometre_scaling_factor, header_dict
 
@@ -651,7 +657,6 @@ def read_channel_data(
     num_frames: int,
     x_pixels: int,
     y_pixels: int,
-    analogue_digital_converter: VoltageLevelConverter,
 ) -> npt.NDArray:
     """
     Read frame data from an open .asd file, starting at the current position.
@@ -703,7 +708,7 @@ def read_channel_data(
         # Decode frame data from bytes. Data is always stored in signed 2 byte integer form
         frame_data = np.frombuffer(frame_data, dtype=np.int16)
         # Convert from Voltage to Real units
-        frame_data = analogue_digital_converter.level_to_voltage(frame_data)
+        # frame_data = analogue_digital_converter.level_to_voltage(frame_data)
         # Reshape frame to 2D array
         frame_data = frame_data.reshape((y_pixels, x_pixels))
         frames.append(frame_data)
@@ -711,105 +716,105 @@ def read_channel_data(
     return frames
 
 
-def create_analogue_digital_converter(
-    analogue_digital_range: float, scaling_factor: float, resolution: int = 4096
-) -> VoltageLevelConverter:
-    """
-    Create an analogue to digital converter for a given range, scaling factor and resolution.
+# def create_analogue_digital_converter(
+#     analogue_digital_range: float, scaling_factor: float, resolution: int = 4096
+# ) -> VoltageLevelConverter:
+#     """
+#     Create an analogue to digital converter for a given range, scaling factor and resolution.
 
-    Used for converting raw level values into real world height scales in nanometres.
+#     Used for converting raw level values into real world height scales in nanometres.
 
-    Parameters
-    ----------
-    analogue_digital_range : float
-        The range of analogue voltage values.
-    scaling_factor : float
-        A scaling factor calculated elsewhere that scales the heightmap appropriately based on the type of channel and
-        sensor parameters.
-    resolution : int
-        The vertical resolution of the instrumen. Dependant on the number of bits used to store its values. Typically
-        12, hence 2^12 = 4096 sensitivity levels.
+#     Parameters
+#     ----------
+#     analogue_digital_range : float
+#         The range of analogue voltage values.
+#     scaling_factor : float
+#         A scaling factor calculated elsewhere that scales the heightmap appropriately based on the type of channel and
+#         sensor parameters.
+#     resolution : int
+#         The vertical resolution of the instrumen. Dependant on the number of bits used to store its values. Typically
+#         12, hence 2^12 = 4096 sensitivity levels.
 
-    Returns
-    -------
-    VoltageLevelConverter
-        An instance of the VoltageLevelConverter class with a tailored function `level_to_voltage`
-        which converts arbitrary level values into real world nanometre heights for the given .asd
-        file. Note that this is file specific since the parameters will change between files.
-    """
-    # Analogue to digital hex conversion range encoding:
-    # unipolar_1_00V : 0x00000001 +0.00 to +1.00 V
-    # unipolar_2_50V : 0x00000002 +0.00 to +2.50 V
-    # unipolar_9.99v : 0x00000003 +0.00 to +9.99 V
-    # unipolar_5_00V : 0x00000004 +0.00 to +5.00 V
-    # bipolar_1_00V  : 0x00010000 -1.00 to +1.00 V
-    # bipolar_2_50V  : 0x00020000 -2.50 to +2.50 V
-    # bipolar_5_00V  : 0x00040000 -5.00 to +5.00 V
+#     Returns
+#     -------
+#     VoltageLevelConverter
+#         An instance of the VoltageLevelConverter class with a tailored function `level_to_voltage`
+#         which converts arbitrary level values into real world nanometre heights for the given .asd
+#         file. Note that this is file specific since the parameters will change between files.
+#     """
+#     # Analogue to digital hex conversion range encoding:
+#     # unipolar_1_00V : 0x00000001 +0.00 to +1.00 V
+#     # unipolar_2_50V : 0x00000002 +0.00 to +2.50 V
+#     # unipolar_9.99v : 0x00000003 +0.00 to +9.99 V
+#     # unipolar_5_00V : 0x00000004 +0.00 to +5.00 V
+#     # bipolar_1_00V  : 0x00010000 -1.00 to +1.00 V
+#     # bipolar_2_50V  : 0x00020000 -2.50 to +2.50 V
+#     # bipolar_5_00V  : 0x00040000 -5.00 to +5.00 V
 
-    converter: VoltageLevelConverter
+#     converter: VoltageLevelConverter
 
-    if analogue_digital_range == hex(0x00000001):
-        # unipolar 1.0V
-        mapping = (0.0, 1.0)
-        converter = UnipolarConverter(
-            analogue_digital_range=1.0,
-            resolution=resolution,
-            scaling_factor=scaling_factor,
-        )
-    elif analogue_digital_range == hex(0x00000002):
-        # unipolar 2.5V
-        mapping = (0.0, 2.5)
-        converter = UnipolarConverter(
-            analogue_digital_range=2.5,
-            resolution=resolution,
-            scaling_factor=scaling_factor,
-        )
-    elif analogue_digital_range == hex(0x00000003):
-        mapping = (0, 9.99)
-        converter = UnipolarConverter(
-            analogue_digital_range=9.99,
-            resolution=resolution,
-            scaling_factor=scaling_factor,
-        )
-    elif analogue_digital_range == hex(0x00000004):
-        # unipolar 5.0V
-        mapping = (0.0, 5.0)
-        converter = UnipolarConverter(
-            analogue_digital_range=5.0,
-            resolution=resolution,
-            scaling_factor=scaling_factor,
-        )
-    elif analogue_digital_range == hex(0x00010000):
-        # bipolar 1.0V
-        mapping = (-1.0, 1.0)
-        converter = BipolarConverter(
-            analogue_digital_range=1.0,
-            resolution=resolution,
-            scaling_factor=scaling_factor,
-        )
-    elif analogue_digital_range == hex(0x00020000):
-        # bipolar 2.5V
-        mapping = (-2.5, 2.5)
-        converter = BipolarConverter(
-            analogue_digital_range=2.5,
-            resolution=resolution,
-            scaling_factor=scaling_factor,
-        )
-    elif analogue_digital_range == hex(0x00040000):
-        # bipolar 5.0V
-        mapping = (-5.0, 5.0)
-        converter = BipolarConverter(
-            analogue_digital_range=5.0,
-            resolution=resolution,
-            scaling_factor=scaling_factor,
-        )
-    else:
-        raise ValueError(
-            f"Analogue to digital range hex value {analogue_digital_range} has no known " "analogue-digital mapping."
-        )
-    logger.info(f"Analogue to digital mapping | Range: {analogue_digital_range} -> {mapping}")
-    logger.info(f"Converter: {converter}")
-    return converter
+#     if analogue_digital_range == hex(0x00000001):
+#         # unipolar 1.0V
+#         mapping = (0.0, 1.0)
+#         converter = UnipolarConverter(
+#             analogue_digital_range=1.0,
+#             resolution=resolution,
+#             scaling_factor=scaling_factor,
+#         )
+#     elif analogue_digital_range == hex(0x00000002):
+#         # unipolar 2.5V
+#         mapping = (0.0, 2.5)
+#         converter = UnipolarConverter(
+#             analogue_digital_range=2.5,
+#             resolution=resolution,
+#             scaling_factor=scaling_factor,
+#         )
+#     elif analogue_digital_range == hex(0x00000003):
+#         mapping = (0, 9.99)
+#         converter = UnipolarConverter(
+#             analogue_digital_range=9.99,
+#             resolution=resolution,
+#             scaling_factor=scaling_factor,
+#         )
+#     elif analogue_digital_range == hex(0x00000004):
+#         # unipolar 5.0V
+#         mapping = (0.0, 5.0)
+#         converter = UnipolarConverter(
+#             analogue_digital_range=5.0,
+#             resolution=resolution,
+#             scaling_factor=scaling_factor,
+#         )
+#     elif analogue_digital_range == hex(0x00010000):
+#         # bipolar 1.0V
+#         mapping = (-1.0, 1.0)
+#         converter = BipolarConverter(
+#             analogue_digital_range=1.0,
+#             resolution=resolution,
+#             scaling_factor=scaling_factor,
+#         )
+#     elif analogue_digital_range == hex(0x00020000):
+#         # bipolar 2.5V
+#         mapping = (-2.5, 2.5)
+#         converter = BipolarConverter(
+#             analogue_digital_range=2.5,
+#             resolution=resolution,
+#             scaling_factor=scaling_factor,
+#         )
+#     elif analogue_digital_range == hex(0x00040000):
+#         # bipolar 5.0V
+#         mapping = (-5.0, 5.0)
+#         converter = BipolarConverter(
+#             analogue_digital_range=5.0,
+#             resolution=resolution,
+#             scaling_factor=scaling_factor,
+#         )
+#     else:
+#         raise ValueError(
+#             f"Analogue to digital range hex value {analogue_digital_range} has no known " "analogue-digital mapping."
+#         )
+#     logger.info(f"Analogue to digital mapping | Range: {analogue_digital_range} -> {mapping}")
+#     logger.info(f"Converter: {converter}")
+#     return converter
 
 
 def create_animation(file_name: str, frames: npt.NDArray, file_format: str = ".gif") -> None:
