@@ -1,10 +1,11 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTreeView, QTableWidget, QTableWidgetItem, QComboBox
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTreeView, QTableWidget, QTableWidgetItem
 from PyQt6.QtGui import QFileSystemModel
 from PyQt6.QtCore import Qt, QSortFilterProxyModel
 from utils.Folder_Opener_Module.folderOpener import FolderOpener
 import os
 from PyQt6.QtCore import QTimer
+from UI_components.LHS_Components.Dropdown_Module import DropdownWidget
 
 class CustomFileFilterProxyModel(QSortFilterProxyModel):
     def __init__(self, extensions, parent=None):
@@ -79,7 +80,7 @@ class FileDetailingSystemWidget(QWidget):
         super().__init__()
         self.folderOpener = folderOpener
         self.currentFilePath = None
-        self.currentChannel = None  # Default channel to None
+        self.currentChannel = None  # Default channel
         self.animation = None  # Store the animation object
         self.buildFileDetailingSystem()
 
@@ -133,10 +134,6 @@ class FileDetailingSystemWidget(QWidget):
 
         fileDetailslayout = QVBoxLayout()
         fileDetailslayout.addWidget(self.fileDetailsWidget)
-
-        self.channelDropdown = QComboBox(self)
-        self.channelDropdown.currentIndexChanged.connect(self.onChannelChanged)
-        fileDetailslayout.addWidget(self.channelDropdown)
         fileDetailslayout.addStretch(1)
         fileDetailingLayout.addLayout(fileDetailslayout)
 
@@ -155,7 +152,7 @@ class FileDetailingSystemWidget(QWidget):
         self.currentFilePath = file_path
         self.loadFileData(file_path, self.currentChannel)
 
-    def loadFileData(self, file_path, channel=None):
+    def loadFileData(self, file_path, channel):
         # Import necessary file readers
         from utils.file_reader.asd import load_asd
         from utils.file_reader.read_aris import open_aris
@@ -165,66 +162,60 @@ class FileDetailingSystemWidget(QWidget):
         from utils.file_reader.read_spm import open_spm
         from utils.file_reader.read_gwy import open_gwy
 
-        extension = os.path.splitext(file_path)[1].lower()
-        metadata = {}  # Initialize metadata
-
-        try:
-            if extension == ".asd":
-                frames, pixel_to_nanometre_scaling_factor, metadata = load_asd(file_path, channel or "TP")
-            elif extension == ".aris":
-                frames, metadata = open_aris(file_path, channel or "HeightTrace")
-            elif extension == ".ibw":
-                frames, metadata = open_ibw(file_path, channel or "Height")
-            elif extension == ".jpk":
-                frames, metadata = open_jpk(file_path, channel or "height_trace")
-            elif extension == ".nhf":
-                frames, metadata = open_nhf(file_path, channel or "Topography")
-            elif extension == ".spm":
-                frames, metadata = open_spm(file_path, channel or "Height Sensor")
-            elif extension == ".gwy":
-                frames, metadata = open_gwy(file_path, channel or "1")
-            else:
-                print(f"Unsupported file type: {extension}")
-                return
-
-            self.updateMetadataTable(metadata)
-            channels = metadata.get('channels', ['Channel 1'])
-            self.updateDropdownChannels(channels)
-            self.displayData(frames)
-
-        except Exception as e:
-            print(f"Error loading file {file_path}: {e}")
-
-    def updateMetadataTable(self, metadata):
-        values = [
+        ext = os.path.splitext(file_path)[1].lower()
+        if ext == '.asd':
+            try:
+                channel = 'TP'
+                frames, pixel_to_nanometre_scaling_factor, metadata = load_asd(file_path, channel)
+            except ValueError:
+                channel = 'PH'
+                frames, pixel_to_nanometre_scaling_factor, metadata = load_asd(file_path, channel)
+            fps = 1000.0 / metadata.get('frame_time', 1000.0)  # Default to 1 fps if frame_time is missing
+            line_rate = metadata.get('y_pixels', 1) / (metadata.get('frame_time', 1000.0) / 1000.0)
+            values = [
             str(metadata.get('num_frames', 'N/A')),
-            str(metadata.get('x_scan_length', 'N/A')),
-            str(metadata.get('scan_rate', 'N/A')),
-            str(metadata.get('line_rate', 'N/A')),
+            str(metadata.get('x_nm', 'N/A')),
+            f"{int(fps)}",
+            f"{int(line_rate)}",
             str(metadata.get('y_pixels', 'N/A')),
             str(metadata.get('x_pixels', 'N/A')),
-            str(metadata.get('pixel_nm', 'N/A')),
-            str(metadata.get('channel', 'N/A'))
-        ]
+            f"{pixel_to_nanometre_scaling_factor:.2f}",
+            f"{channel}"
+            ]
+            channels = []
+            channels.append(str(metadata.get('channel1', 'N/A')))
+            if str(metadata.get('channel2')):
+                channels.append(str(metadata.get('channel2')))
+            # DropdownWidget.updateChannels(DropdownWidget, channels)
+        elif ext == '.aris':
+            frames, metadata = open_aris(file_path, channel)
+        elif ext == '.ibw':
+            frames, metadata = open_ibw(file_path, channel)
+        elif ext == '.jpk':
+            frames, metadata = open_jpk(file_path, channel)
+        elif ext == '.nhf':
+            frames, metadata = open_nhf(file_path, channel)
+        elif ext == '.spm':
+            frames, metadata = open_spm(file_path, channel)
+        elif ext == '.gwy':
+            frames, metadata = open_gwy(file_path, channel)
+        else:
+            print(f"Unsupported file type: {ext}")
+            return
+
+        self.updateMetadataTable(values)
+        
+
+        self.displayData(frames)
+
+    def updateMetadataTable(self, values):
 
         for i, value in enumerate(values):
             self.fileDetailsWidget.setItem(i, 1, QTableWidgetItem(value))
 
-    def updateDropdownChannels(self, channels):
-        self.channelDropdown.clear()
-        self.channelDropdown.addItems(channels)
-        if self.currentChannel in channels:
-            self.channelDropdown.setCurrentText(self.currentChannel)
-        else:
-            self.currentChannel = channels[0]
-            self.channelDropdown.setCurrentText(self.currentChannel)
-
     def displayData(self, frames):
         import matplotlib.pyplot as plt
         from matplotlib import animation
-
-        if self.animation:
-            plt.close(self.animation._fig)  # Close the previous animation figure
 
         fig, axis = plt.subplots()
         def update(frame):
@@ -239,11 +230,10 @@ class FileDetailingSystemWidget(QWidget):
 
         plt.show()
 
-    def onChannelChanged(self, index):
-        selected_channel = self.channelDropdown.itemText(index)
-        self.currentChannel = selected_channel
+    def onChannelChanged(self, channel):
+        self.currentChannel = channel
         if self.currentFilePath:
-            self.loadFileData(self.currentFilePath, selected_channel)
+            self.loadFileData(self.currentFilePath, channel)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
