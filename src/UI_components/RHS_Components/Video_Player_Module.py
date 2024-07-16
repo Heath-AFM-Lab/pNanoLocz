@@ -5,6 +5,7 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSiz
 from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import Qt
 from vispy import app, scene
+from vispy import Colormap
 from UI_components.RHS_Components.Video_Player_Components import VideoControlWidget, VideoDepthControlWidget, VisualRepresentationWidget, ExportAndVideoScaleWidget
 from utils.constants import PATH_TO_ICON_DIRECTORY
 
@@ -12,6 +13,38 @@ class FixedPanZoomCamera(scene.cameras.PanZoomCamera):
     def viewbox_mouse_event(self, event):
         # Ignore all mouse events to lock the video in place
         return
+class ImageViewer(scene.SceneCanvas):
+    def __init__(self):
+        super().__init__(keys='interactive', bgcolor='transparent')
+        
+        self.unfreeze()
+        self.
+        
+        view = self.central_widget.add_view(margin=0)
+
+        self.image = scene.visuals.Image(image_data, parent=view.scene, cmap='viridis')
+
+        view.camera = scene.PanZoomCamera(rect=(0, 0, size, size), aspect=1)
+        view.camera.set_range()
+        view.camera.interactive = False
+        
+        self.freeze()
+
+class ColorBarWidget(scene.SceneCanvas):
+    def __init__(self):
+        super().__init__(bgcolor='transparent')
+        
+        self.unfreeze()
+        
+        grid = self.central_widget.add_grid(margin=0)
+        
+        cmap = Colormap(['#000000', '#FF0000', '#FFFF00', '#FFFFFF'])
+        self.colorbar = scene.ColorBarWidget(cmap, orientation='right', label='Intensity', 
+                                             label_color='white')
+        grid.add_widget(self.colorbar)
+        self.colorbar.clim = (0, 1)
+        
+        self.freeze()
 
 class VideoPlayerWidget(QWidget):
     def __init__(self):
@@ -42,20 +75,45 @@ class VideoPlayerWidget(QWidget):
         self.iconLayout.addWidget(self.screenshotIcon)
         self.mediaLayout.addLayout(self.iconLayout)
 
+
+        ## EXPERIMENTAL
+        self.videoPlayerLayout = QHBoxLayout()
+
         # Set up Vispy canvas
+        self.videoPlayer = ImageViewer()
         # self.videoPlayerContainer = QWidget()
-        self.vispyCanvas = scene.SceneCanvas(keys='interactive', bgcolor=None)
+        self.videoPlayerCanvas = scene.SceneCanvas(keys='interactive', bgcolor=None)
         self.vispyCanvas.size = 800, 600
-        self.grid = self.vispyCanvas.central_widget.add_grid()
+        # self.grid = self.vispyCanvas.central_widget.add_grid()
         # self.vispyCanvas.native.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Expand to fill space
-        self.mediaLayout.addWidget(self.vispyCanvas.native)
-
-
+        self.videoPlayerLayout.addWidget(self.vispyCanvas.native)
         self.view = self.vispyCanvas.central_widget.add_view()
         self.view.camera = FixedPanZoomCamera()
         self.view.camera.zoom_factor = 1.0  # Set initial zoom factor
 
-        self.setLayout(self.mediaLayout)
+
+        self.colorbarCanvas = 
+
+        self.colorbar = scene.ColorBarWidget(cmap, orientation='right', label='Intensity', 
+                                             label_color='white')
+        self.colorbarWidget = self.colorbar.native
+        self.colorbarWidget.setFixedSize(100, 400)
+        self.videoPlayerLayout.addWidget(self.colorbarWidget)
+
+
+        # # Set up Vispy canvas
+        # # self.videoPlayerContainer = QWidget()
+        # self.vispyCanvas = scene.SceneCanvas(keys='interactive', bgcolor=None)
+        # self.vispyCanvas.size = 800, 600
+        # # self.grid = self.vispyCanvas.central_widget.add_grid()
+        # # self.vispyCanvas.native.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Expand to fill space
+        # self.mediaLayout.addWidget(self.vispyCanvas.native)
+
+
+        # self.view = self.vispyCanvas.central_widget.add_view()
+        # self.view.camera = FixedPanZoomCamera()
+        # self.view.camera.zoom_factor = 1.0  # Set initial zoom factor
+
 
         # Initialize the rest of the widgets
         self.videoControlWidget = VideoControlWidget()
@@ -95,6 +153,10 @@ class VideoPlayerWidget(QWidget):
         # Disable widgets until loadFrames is called
         self.disableWidgets()
 
+        self.setLayout(self.mediaLayout)
+
+
+
 
     # TODO: create proper load frames func that 
     # triggers after user selects a file to open
@@ -105,12 +167,12 @@ class VideoPlayerWidget(QWidget):
         self.Image = scene.visuals.Image(self.frames[0], parent=self.view.scene, interpolation='nearest', cmap="plasma")
 
         # Create a ColorBarWidget (managed independently)
-        self.colorbar = scene.ColorBarWidget(orientation='right', cmap="plasma")
+        # self.colorbar = scene.ColorBarWidget(orientation='right', cmap="plasma")
         # self.colorbar.pos = (750, 50)  # Position of the color bar within the canvas
         # self.colorbar.size = (100, 500)  # Size of the color bar
         # self.colorbar.parent = self.vispyCanvas.scene
 
-        self.grid.add_widget(self.colorbar)
+        # self.grid.add_widget(self.colorbar)
 
         # Update slider with max frames
         self.videoControlWidget.videoSeekSlider.setRange(0, len(self.frames) - 1)
@@ -130,7 +192,9 @@ class VideoPlayerWidget(QWidget):
     def enableWidgets(self):
         self.videoControlWidget.setEnabled(True)
 
-    # Following functions are for the video control widget, to play and control the video
+
+###     VIDEO CONTROL FUNCTIONALITY     ###
+# Following functions are for the video control widget, to play and control the video
     def update_frame(self, event):
         # Update the slider position
         self.videoControlWidget.videoSeekSlider.blockSignals(True)
@@ -189,6 +253,11 @@ class VideoPlayerWidget(QWidget):
     def deleteFrames(self, min, max):
         pass
 
+
+
+
+
+# TODO: remove later
 if __name__ == "__main__":
     # Path to icon directory
     ICON_DIRECTORY = "../../../assets/icons"
