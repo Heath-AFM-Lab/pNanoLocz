@@ -11,10 +11,9 @@ cbar_widget = scene.ColorBarWidget(label="ColorBarWidget", clim=(0, 99),
                                    cmap="cool", orientation="right",
                                    border_width=1)
 grid.add_widget(cbar_widget)
-cbar_widget.
 
 cbar_widget.border_color = "#212121"
-grid.bgcolor = "#ffffff"
+grid.bgcolor = "transparent"
 
 if __name__ == '__main__' and sys.flags.interactive == 0:
     app.run()

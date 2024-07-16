@@ -13,38 +13,40 @@ class FixedPanZoomCamera(scene.cameras.PanZoomCamera):
     def viewbox_mouse_event(self, event):
         # Ignore all mouse events to lock the video in place
         return
-class ImageViewer(scene.SceneCanvas):
-    def __init__(self):
-        super().__init__(keys='interactive', bgcolor='transparent')
-        
-        self.unfreeze()
-        self.
-        
-        view = self.central_widget.add_view(margin=0)
+    
 
-        self.image = scene.visuals.Image(image_data, parent=view.scene, cmap='viridis')
+# class ImageViewer(scene.SceneCanvas):
+#     def __init__(self):
+#         super().__init__(keys='interactive', bgcolor='transparent')
+        
+#         self.unfreeze()
+#         self.
+        
+#         view = self.central_widget.add_view(margin=0)
 
-        view.camera = scene.PanZoomCamera(rect=(0, 0, size, size), aspect=1)
-        view.camera.set_range()
-        view.camera.interactive = False
-        
-        self.freeze()
+#         self.image = scene.visuals.Image(self.image_data, parent=view.scene, cmap='viridis')
 
-class ColorBarWidget(scene.SceneCanvas):
-    def __init__(self):
-        super().__init__(bgcolor='transparent')
+#         view.camera = scene.PanZoomCamera(rect=(0, 0, size, size), aspect=1)
+#         view.camera.set_range()
+#         view.camera.interactive = False
         
-        self.unfreeze()
+#         self.freeze()
+
+# class ColorBarWidget(scene.SceneCanvas):
+#     def __init__(self):
+#         super().__init__(bgcolor='transparent')
         
-        grid = self.central_widget.add_grid(margin=0)
+#         self.unfreeze()
         
-        cmap = Colormap(['#000000', '#FF0000', '#FFFF00', '#FFFFFF'])
-        self.colorbar = scene.ColorBarWidget(cmap, orientation='right', label='Intensity', 
-                                             label_color='white')
-        grid.add_widget(self.colorbar)
-        self.colorbar.clim = (0, 1)
+#         grid = self.central_widget.add_grid(margin=0)
         
-        self.freeze()
+#         cmap = Colormap(['#000000', '#FF0000', '#FFFF00', '#FFFFFF'])
+#         self.colorbar = scene.ColorBarWidget(cmap, orientation='right', label='Intensity', 
+#                                              label_color='white')
+#         grid.add_widget(self.colorbar)
+#         self.colorbar.clim = (0, 1)
+        
+#         self.freeze()
 
 class VideoPlayerWidget(QWidget):
     def __init__(self):
@@ -79,11 +81,8 @@ class VideoPlayerWidget(QWidget):
         ## EXPERIMENTAL
         self.videoPlayerLayout = QHBoxLayout()
 
-        # Set up Vispy canvas
-        self.videoPlayer = ImageViewer()
         # self.videoPlayerContainer = QWidget()
-        self.videoPlayerCanvas = scene.SceneCanvas(keys='interactive', bgcolor=None)
-        self.vispyCanvas.size = 800, 600
+        self.videoPlayerCanvas = scene.SceneCanvas(keys='interactive', bgcolor="transparent", always_on_top=True)
         # self.grid = self.vispyCanvas.central_widget.add_grid()
         # self.vispyCanvas.native.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Expand to fill space
         self.videoPlayerLayout.addWidget(self.vispyCanvas.native)
@@ -92,7 +91,7 @@ class VideoPlayerWidget(QWidget):
         self.view.camera.zoom_factor = 1.0  # Set initial zoom factor
 
 
-        self.colorbarCanvas = 
+        self.colorbarCanvas = scene.SceneCanvas(keys="interactive", bgcolor="transparent", )
 
         self.colorbar = scene.ColorBarWidget(cmap, orientation='right', label='Intensity', 
                                              label_color='white')

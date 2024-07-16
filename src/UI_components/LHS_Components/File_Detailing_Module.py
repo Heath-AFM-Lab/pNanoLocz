@@ -21,7 +21,6 @@ class CustomFileFilterProxyModel(QSortFilterProxyModel):
 
         return any(file_path.endswith(ext) for ext in self.extensions)
 
-
 class CustomFileSystemModel(QFileSystemModel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

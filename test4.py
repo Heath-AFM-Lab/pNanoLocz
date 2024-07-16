@@ -6,7 +6,7 @@ from vispy.color import Colormap
 
 class ImageViewer(scene.SceneCanvas):
     def __init__(self):
-        super().__init__(keys='interactive', bgcolor='transparent')
+        super().__init__(keys='interactive', bgcolor='transparent', always_on_top=True)
         
         self.unfreeze()
         
