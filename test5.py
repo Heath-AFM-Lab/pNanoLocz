@@ -63,7 +63,7 @@ class VispyCanvas(scene.SceneCanvas):
 class MatplotlibColorBar(FigureCanvas):
     def __init__(self, parent=None):
         self.fig, self.ax = plt.subplots(figsize=(1, 5))
-        # self.fig.subplots_adjust(left=0.5, right=0.6, top=0.9, bottom=0.1)
+        self.fig.subplots_adjust(left=0.5, right=0.6, top=0.9, bottom=0.1)
         
         # Create a colorbar
         self.cbar = self.fig.colorbar(plt.cm.ScalarMappable(cmap='viridis'), cax=self.ax)

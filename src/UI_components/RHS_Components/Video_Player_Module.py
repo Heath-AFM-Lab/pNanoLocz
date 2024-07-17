@@ -5,7 +5,6 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSiz
 from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import Qt
 from vispy import app, scene
-from vispy import Colormap
 from UI_components.RHS_Components.Video_Player_Components import VideoControlWidget, VideoDepthControlWidget, VisualRepresentationWidget, ExportAndVideoScaleWidget
 from utils.constants import PATH_TO_ICON_DIRECTORY
 
@@ -81,23 +80,36 @@ class VideoPlayerWidget(QWidget):
         ## EXPERIMENTAL
         self.videoPlayerLayout = QHBoxLayout()
 
+        # Set up first SceneCanvas to show the video
         # self.videoPlayerContainer = QWidget()
         self.videoPlayerCanvas = scene.SceneCanvas(keys='interactive', bgcolor="transparent", always_on_top=True)
         # self.grid = self.vispyCanvas.central_widget.add_grid()
         # self.vispyCanvas.native.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Expand to fill space
-        self.videoPlayerLayout.addWidget(self.vispyCanvas.native)
-        self.view = self.vispyCanvas.central_widget.add_view()
-        self.view.camera = FixedPanZoomCamera()
-        self.view.camera.zoom_factor = 1.0  # Set initial zoom factor
+        self.videoPlayerLayout.addWidget(self.videoPlayerCanvas.native)
+        self.videoPlayerCanvas.native.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.videoPlayerCanvas.native.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        self.videoPlayerCanvas.native
+
+        # QWidget.
+
+        self.videoView = self.videoPlayerCanvas.central_widget.add_view()
+        self.videoView.camera = FixedPanZoomCamera()
+        self.videoView.camera.zoom_factor = 1.0  # Set initial zoom factor
 
 
-        self.colorbarCanvas = scene.SceneCanvas(keys="interactive", bgcolor="transparent", )
+        # Set up second SceneCanvas to show the colorbar
+        self.colorbarCanvas = scene.SceneCanvas(keys="interactive", bgcolor="transparent")
+        self.colorbarGrid = self.colorbarCanvas.central_widget.add_grid(margin=0)
 
-        self.colorbar = scene.ColorBarWidget(cmap, orientation='right', label='Intensity', 
-                                             label_color='white')
-        self.colorbarWidget = self.colorbar.native
-        self.colorbarWidget.setFixedSize(100, 400)
-        self.videoPlayerLayout.addWidget(self.colorbarWidget)
+        self.videoPlayerLayout.addWidget(self.colorbarCanvas.native)
+        self.colorbarView = self.colorbarCanvas.central_widget.add_view()
+        self.colorbarView.camera = FixedPanZoomCamera()
+        self.colorbarView.camera.zoom_factor = 1.0  # Set initial zoom factor
+
+        self.mediaLayout.addLayout(self.videoPlayerLayout)
+
+        
+        
 
 
         # # Set up Vispy canvas
@@ -107,6 +119,9 @@ class VideoPlayerWidget(QWidget):
         # # self.grid = self.vispyCanvas.central_widget.add_grid()
         # # self.vispyCanvas.native.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Expand to fill space
         # self.mediaLayout.addWidget(self.vispyCanvas.native)
+
+        videoPlayerCanvasSizePolicy = QSizePolicy()
+
 
 
         # self.view = self.vispyCanvas.central_widget.add_view()
@@ -147,7 +162,8 @@ class VideoPlayerWidget(QWidget):
 
         # Adapt the video player widget to match the size of the lower control widgets
         widthOfControlWidgets = self.videoControlWidget.width() + self.visualRepresentationWidget.width() + self.videoDepthControlWidget.width()
-        self.vispyCanvas.size = (widthOfControlWidgets, widthOfControlWidgets)
+        # self.videoPlayerCanvas.native.
+        # self.videoPlayerCanvas.native.setFixedSize(widthOfControlWidgets, widthOfControlWidgets)
         
         # Disable widgets until loadFrames is called
         self.disableWidgets()
@@ -163,7 +179,15 @@ class VideoPlayerWidget(QWidget):
         width, height = 512, 512
         # Example: Generate random frames
         self.frames = [np.random.randint(0, 256, (height, width), dtype=np.uint8) for _ in range(100)]
-        self.Image = scene.visuals.Image(self.frames[0], parent=self.view.scene, interpolation='nearest', cmap="plasma")
+        self.Image = scene.visuals.Image(self.frames[0], parent=self.videoView.scene, interpolation='nearest', cmap="plasma")
+        
+        
+        self.colorbar = scene.ColorBarWidget(cmap="grays", orientation='right', label='Intensity', 
+                                             label_color='white')
+        self.colorbarGrid.add_widget(self.colorbar)
+        self.colorbarCanvas.native.setFixedWidth(100)
+        # self.colorbarWidget.setFixedSize(100, 400)
+        
 
         # Create a ColorBarWidget (managed independently)
         # self.colorbar = scene.ColorBarWidget(orientation='right', cmap="plasma")
@@ -208,13 +232,13 @@ class VideoPlayerWidget(QWidget):
         # Update the image visual with the new frame
         self.Image.set_data(self.frames[self.frame_index])
         self.frame_index = (self.frame_index + 1) % len(self.frames)
-        self.vispyCanvas.update()
+        self.videoPlayerCanvas.update()
 
     def update_view_camera(self):
         # Adjust the camera to fit the entire image
         img_height, img_width = self.frames[0].shape
-        self.view.camera.set_range(x=(0, img_width), y=(0, img_height))
-        self.view.camera.aspect = 1.0 * img_width / img_height
+        self.videoView.camera.set_range(x=(0, img_width), y=(0, img_height))
+        self.videoView.camera.aspect = 1.0 * img_width / img_height
 
     def playPauseVideo(self):
         if self.timer.running:
