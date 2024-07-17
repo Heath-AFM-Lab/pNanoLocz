@@ -6,6 +6,13 @@ from utils.Folder_Opener_Module.folderOpener import FolderOpener
 import os
 from PyQt6.QtCore import QTimer
 from UI_components.LHS_Components.Dropdown_Module import DropdownWidget
+import matplotlib.pyplot as plt
+from matplotlib import animation
+import numpy as np
+import matplotlib.colors as colors
+
+AFM = np.load('utils/file_reader/AFM_cmap.npy')
+AFM = colors.ListedColormap(AFM)
 
 class CustomFileFilterProxyModel(QSortFilterProxyModel):
     def __init__(self, extensions, parent=None):
@@ -78,6 +85,7 @@ class CustomFileSystemModel(QFileSystemModel):
 class FileDetailingSystemWidget(QWidget):
     def __init__(self, folderOpener: FolderOpener):
         super().__init__()
+        # self.dropDown = DropdownWidget.dropdown2
         self.folderOpener = folderOpener
         self.currentFilePath = None
         self.currentChannel = None  # Default channel
@@ -166,29 +174,14 @@ class FileDetailingSystemWidget(QWidget):
         if ext == '.asd':
             try:
                 channel = 'TP'
-                frames, pixel_to_nanometre_scaling_factor, metadata = load_asd(file_path, channel)
+                frames, metadata, channels = load_asd(file_path, channel)
             except ValueError:
                 channel = 'PH'
-                frames, pixel_to_nanometre_scaling_factor, metadata = load_asd(file_path, channel)
-            fps = 1000.0 / metadata.get('frame_time', 1000.0)  # Default to 1 fps if frame_time is missing
-            line_rate = metadata.get('y_pixels', 1) / (metadata.get('frame_time', 1000.0) / 1000.0)
-            values = [
-            str(metadata.get('num_frames', 'N/A')),
-            str(metadata.get('x_nm', 'N/A')),
-            f"{int(fps)}",
-            f"{int(line_rate)}",
-            str(metadata.get('y_pixels', 'N/A')),
-            str(metadata.get('x_pixels', 'N/A')),
-            f"{pixel_to_nanometre_scaling_factor:.2f}",
-            f"{channel}"
-            ]
-            channels = []
-            channels.append(str(metadata.get('channel1', 'N/A')))
-            if str(metadata.get('channel2')):
-                channels.append(str(metadata.get('channel2')))
-            # DropdownWidget.updateChannels(DropdownWidget, channels)
+                frames, metadata, channels = load_asd(file_path, channel)
+            # self.dropDown.clear()
+            # self.dropDown.addItems(channels)
         elif ext == '.aris':
-            frames, metadata = open_aris(file_path, channel)
+            frames, metadata, channels = open_aris(file_path, channel)
         elif ext == '.ibw':
             frames, metadata = open_ibw(file_path, channel)
         elif ext == '.jpk':
@@ -203,9 +196,7 @@ class FileDetailingSystemWidget(QWidget):
             print(f"Unsupported file type: {ext}")
             return
 
-        self.updateMetadataTable(values)
-        
-
+        self.updateMetadataTable(metadata)
         self.displayData(frames)
 
     def updateMetadataTable(self, values):
@@ -214,21 +205,26 @@ class FileDetailingSystemWidget(QWidget):
             self.fileDetailsWidget.setItem(i, 1, QTableWidgetItem(value))
 
     def displayData(self, frames):
-        import matplotlib.pyplot as plt
-        from matplotlib import animation
-
         fig, axis = plt.subplots()
-        def update(frame):
-            axis.imshow(frames[frame])
-            return axis
-        self.animation = animation.FuncAnimation(fig, update, frames=len(frames), interval=200)
 
-        # Integrate the animation into the Qt event loop
-        timer = QTimer(self)
-        timer.timeout.connect(lambda: None)
-        timer.start(50)
+        if frames.ndim == 2:
+            axis.imshow(frames, cmap=AFM)
+            plt.colorbar(label='Height (nm)')
+            plt.show()
+        elif frames.ndim == 3:
+            def update(frame):
+                axis.imshow(frames[:, :, frame], cmap=AFM)
+                return axis
 
-        plt.show()
+            self.animation = animation.FuncAnimation(fig, update, frames=frames.shape[2], interval=200)
+
+            # Integrate the animation into the Qt event loop
+            timer = QTimer(self)
+            timer.timeout.connect(lambda: None)
+            timer.start(50)
+
+            plt.show()
+
 
     def onChannelChanged(self, channel):
         self.currentChannel = channel

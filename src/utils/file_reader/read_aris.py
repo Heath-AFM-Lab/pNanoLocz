@@ -16,13 +16,13 @@ logger = logging.getLogger(__name__)
 def explore_h5py_group(group, path=''):
     for key in group.keys():
         item = group[key]
-        logger.info(f"Found {type(item)}: {path}/{key}")
+        # logger.info(f"Found {type(item)}: {path}/{key}")
         if isinstance(item, h5py.Group):
             explore_h5py_group(item, path=f"{path}/{key}")
         elif isinstance(item, h5py.Dataset):
             logger.info(f"Dataset shape: {item.shape}")
 
-def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
+def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, list]:
     """
     Extract image and metadata from the ARIS file.
 
@@ -35,8 +35,8 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
 
     Returns
     -------
-    tuple[np.ndarray, dict]
-        A tuple containing the image and its metadata.
+    tuple[np.ndarray, dict, list]
+        A tuple containing the image, its metadata, and parameter values.
 
     Raises
     ------
@@ -61,9 +61,9 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
             X = list(map(int, newStr))
             M = sorted(range(len(X)), key=lambda k: X[k])
 
-            logger.info(f"Frame names: {Framename}")
-            logger.info(f"Frame indices: {X}")
-            logger.info(f"Sorted indices: {M}")
+            # logger.info(f"Frame names: {Framename}")
+            # logger.info(f"Frame indices: {X}")
+            # logger.info(f"Sorted indices: {M}")
 
             ch_info = file['/DataSetInfo/Global/Channels']
             found_ch = False
@@ -81,18 +81,18 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
                 s['channel'] = channel
 
             dim_scaling = file['/DataSetInfo/Global/Channels/HeightTrace/ImageDims'].attrs['DimScaling']
-            logger.info(f"DimScaling: {dim_scaling}")
+            # logger.info(f"DimScaling: {dim_scaling}")
             if isinstance(dim_scaling, np.ndarray):
                 scale0 = np.max(dim_scaling)
             else:
                 scale0 = dim_scaling
-            logger.info(f"Initial scale: {scale0}")
+            # logger.info(f"Initial scale: {scale0}")
 
             scan_size_list = datainfo['Frames']
             scan_size_frame = []
             ScanSize = []
 
-            logger.info(f"Scan size list length: {len(scan_size_list)}")
+            # logger.info(f"Scan size list length: {len(scan_size_list)}")
             for frame in scan_size_list:
                 try:
                     if isinstance(frame, h5py.Group):
@@ -106,8 +106,8 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
             scan_size_frame = [x for x in scan_size_frame if x != 0]
             ScanSize = [x for x in ScanSize if x != 0]
 
-            logger.info(f"Scan size frames: {scan_size_frame}")
-            logger.info(f"Scan sizes: {ScanSize}")
+            # logger.info(f"Scan size frames: {scan_size_frame}")
+            # logger.info(f"Scan sizes: {ScanSize}")
 
             if len(scan_size_frame) > 0:
                 Scale_sortV, Scale_sortID = zip(*sorted(zip(scan_size_frame, range(len(scan_size_frame)))))
@@ -129,12 +129,12 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
                     else:
                         s['scale'].append(s['scale'][-1])
 
-            logger.info(f"Scales: {s['scale']}")
+            # logger.info(f"Scales: {s['scale']}")
 
-            # Log all available attributes in DataSetInfo
-            logger.info(f"Available attributes in DataSetInfo: {list(datainfo.attrs.keys())}")
-            for key in datainfo.attrs.keys():
-                logger.info(f"{key}: {datainfo.attrs[key]}")
+            # # Log all available attributes in DataSetInfo
+            # logger.info(f"Available attributes in DataSetInfo: {list(datainfo.attrs.keys())}")
+            # for key in datainfo.attrs.keys():
+            #     logger.info(f"{key}: {datainfo.attrs[key]}")
 
             # Locate attributes for yPixel, xPixel, and frameAcqTime
             s['yPixel'] = datainfo.attrs.get('ScanLines', None)
@@ -146,7 +146,7 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
                 first_frame_loc = f'/DataSet/Resolution 0/Frame {X[M[0]]}/{channel}/Image'
                 first_frame_shape = file[first_frame_loc].shape
                 s['yPixel'], s['xPixel'] = first_frame_shape
-                logger.info(f"Dynamically determined yPixel: {s['yPixel']}, xPixel: {s['xPixel']}")
+                # logger.info(f"Dynamically determined yPixel: {s['yPixel']}, xPixel: {s['xPixel']}")
 
             s['numberofFrames'] = len(M)
 
@@ -158,6 +158,24 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
 
             im[np.isnan(im)] = 0
 
+            # Calculate additional parameters
+            fps = 1 / s['frameAcqTime'] if s['frameAcqTime'] != 0 else 0
+            line_rate = s['yPixel'] * fps if s['yPixel'] else 0
+            pixel_to_nanometre_scaling_factor = 1 / np.max(dim_scaling) if np.any(dim_scaling) else 0
+
+            values = [
+                str(s.get('numberofFrames', 'N/A')),
+                str(np.max(dim_scaling) if np.any(dim_scaling) else 'N/A'),
+                f"{int(fps)}",
+                f"{int(line_rate)}",
+                str(s.get('yPixel', 'N/A')),
+                str(s.get('xPixel', 'N/A')),
+                f"{pixel_to_nanometre_scaling_factor:.2f}",
+                channel
+            ]
+
+            channels = s['channels']
+
     except FileNotFoundError:
         logger.error(f"[{file_path}] File not found: {file_path}")
         raise
@@ -168,15 +186,16 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
         logger.error(f"Error processing {file_path}: {e}")
         raise
 
-    return im, s
+    return im, values, channels
 
 if __name__ == "__main__":
     file_path = 'data/00T2_P3_0000.ARIS'
     channel = 'HeightTrace'  # Replace with the appropriate channel name
     try:
-        image, info = open_aris(file_path, channel)
+        image, info, values = open_aris(file_path, channel)
         print(f"Metadata: {info}")
         print(f"Image shape: {image.shape}")
+        print(f"Parameter values: {values}")
         
         # Display the image using matplotlib
         if image.ndim == 2:
