@@ -98,7 +98,6 @@ class VideoControlWidget(QWidget):
 
         # Video slider
         self.videoSeekSlider = QSlider(Qt.Orientation.Horizontal)
-        # TODO: Update the range when a video has been loaded
         self.videoSeekSlider.setRange(0, 100)
         self.layout.addWidget(self.videoSeekSlider)
 

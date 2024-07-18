@@ -3,8 +3,9 @@ import os
 import numpy as np
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSizePolicy, QApplication
 from PyQt6.QtGui import QIcon
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from vispy import app, scene
+from vispy.scene import visuals
 from UI_components.RHS_Components.Video_Player_Components import VideoControlWidget, VideoDepthControlWidget, VisualRepresentationWidget, ExportAndVideoScaleWidget
 from utils.constants import PATH_TO_ICON_DIRECTORY
 
@@ -47,6 +48,107 @@ class FixedPanZoomCamera(scene.cameras.PanZoomCamera):
         
 #         self.freeze()
 
+
+class VispyVideoPlayerWidget(QWidget):
+    updateWidgets = pyqtSignal()
+
+    def __init__(self, video_frames, parent=None):
+        super().__init__(parent)
+        
+        # Store video frames
+        self.video_frames = video_frames
+        self.current_frame_index = 0
+        
+        # Create a layout for the widget
+        layout = QVBoxLayout(self)
+        
+        # Create a Vispy canvas
+        self.canvas = scene.SceneCanvas(keys='interactive', show=True)
+        layout.addWidget(self.canvas.native)
+        
+        # Create a viewbox to display the image
+        self.view = self.canvas.central_widget.add_view()
+        
+        # Create an Image visual
+        self.image = visuals.Image(video_frames[0], parent=self.view.scene, method='auto')
+        
+        # Adjust camera to fit the image without padding
+        self.view.camera = scene.cameras.PanZoomCamera(aspect=1)
+        self.view.camera.rect = (0, 0, video_frames[0].shape[1], video_frames[0].shape[0])
+
+        # Set the size policy to expand and fill the space
+        self.canvas.native.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.canvas.native.setMinimumSize(400, 400)  # Set a minimum size to prevent resizing issues
+
+        # Setup a timer to update the frames
+        # self.timer = app.Timer('auto', connect=self._update_frame, start=True)
+
+        self.timer = QTimer()
+        self.timer.timeout.connect(self._goToNextFrame)
+        self.set_fps(30)        # Baseline FPS, default 30
+        self.timer.stop()
+
+    def _update_frame(self):
+        self.image.set_data(self.video_frames[self.current_frame_index])
+        print(self.current_frame_index)
+        self.updateWidgets.emit()
+        self.canvas.update()
+        
+    def _goToNextFrame(self):
+        # Update the image with the next frame
+        self.image.set_data(self.video_frames[self.current_frame_index])
+        
+        self.current_frame_index = (self.current_frame_index + 1) % len(self.video_frames)
+        print(self.current_frame_index)
+        self.updateWidgets.emit()
+        self.canvas.update()
+
+    def set_fps(self, fps):
+        self.fps = fps
+        interval = 1000 // self.fps  # Calculate interval in milliseconds
+        self.timer.setInterval(interval)
+
+    def getFPS(self):
+        return self.fps
+
+        # self.timer.timeout.connect(self.update_frame)
+        # self.timer.start(30)  # Update frame every 30 ms (approx 33 FPS)
+
+    # def _update_frame(self):
+    #     # Update the image with the next frame
+    #     self.image.set_data(self.video_frames[self.current_frame_index])
+    #     self.currentFrameIndex = (self.current_frame_index + 1) % len(self.video_frames)
+    #     self.canvas.update()
+
+    def skipForward(self):
+        self.current_frame_index = min(self.current_frame_index + 30, len(self.video_frames) - 1)  # Skip 30 frames forward
+        self._update_frame()
+
+    def skipBackward(self):
+        self.current_frame_index = max(self.current_frame_index - 30, 0)  # Skip 30 frames backward
+        self._update_frame()
+
+    def updateFrame(self, currentFrameIndex):
+        self.current_frame_index = currentFrameIndex
+        self._update_frame()
+
+    def timerIsRunning(self):
+        return self.timer.isActive()
+
+    def stopTimer(self):
+        self.timer.stop()
+
+    def startTimer(self):
+        self.timer.start()
+
+    def goToFrameNo(self, frameNo):
+        self.current_frame_index = frameNo
+        self._update_frame()  # Update the frame immediately
+
+    def getFrameNumber(self):
+        return self.current_frame_index
+
+
 class VideoPlayerWidget(QWidget):
     def __init__(self):
         super().__init__()
@@ -56,7 +158,7 @@ class VideoPlayerWidget(QWidget):
         self.frame_index = 0
 
         # Timer to update the frames
-        self.timer = app.Timer('auto', connect=self.update_frame, start=False)
+        # self.timer = app.Timer('auto', connect=self.update_frame, start=False)
 
     def buildVideoPlayerWidgets(self):
         # Set up video player layout 
@@ -80,21 +182,24 @@ class VideoPlayerWidget(QWidget):
         ## EXPERIMENTAL
         self.videoPlayerLayout = QHBoxLayout()
 
+        
+
         # Set up first SceneCanvas to show the video
-        # self.videoPlayerContainer = QWidget()
-        self.videoPlayerCanvas = scene.SceneCanvas(keys='interactive', bgcolor="transparent", always_on_top=True)
-        # self.grid = self.vispyCanvas.central_widget.add_grid()
-        # self.vispyCanvas.native.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Expand to fill space
-        self.videoPlayerLayout.addWidget(self.videoPlayerCanvas.native)
-        self.videoPlayerCanvas.native.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.videoPlayerCanvas.native.setWindowFlags(Qt.WindowType.FramelessWindowHint)
-        self.videoPlayerCanvas.native
+        # # self.videoPlayerContainer = QWidget()
+        # self.videoPlayerCanvas = scene.SceneCanvas(keys='interactive', bgcolor="transparent", always_on_top=True, show=True)
+        # # self.grid = self.vispyCanvas.central_widget.add_grid()
+        # # self.vispyCanvas.native.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Expand to fill space
+        # self.videoPlayerLayout.addWidget(self.videoPlayerCanvas.native)
+        # # self.videoPlayerCanvas.native.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        # # self.videoPlayerCanvas.native.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        # self.videoPlayerCanvas.native.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        # self.videoPlayerCanvas.native.setMinimumSize(400, 400)  # Set a minimum size to prevent resizing issues
 
         # QWidget.
 
-        self.videoView = self.videoPlayerCanvas.central_widget.add_view()
-        self.videoView.camera = FixedPanZoomCamera()
-        self.videoView.camera.zoom_factor = 1.0  # Set initial zoom factor
+        # self.videoView = self.videoPlayerCanvas.central_widget.add_view()
+        # self.videoView.camera = FixedPanZoomCamera()
+        # self.videoView.camera.zoom_factor = 1.0  # Set initial zoom factor
 
 
         # Set up second SceneCanvas to show the colorbar
@@ -179,7 +284,24 @@ class VideoPlayerWidget(QWidget):
         width, height = 512, 512
         # Example: Generate random frames
         self.frames = [np.random.randint(0, 256, (height, width), dtype=np.uint8) for _ in range(100)]
-        self.Image = scene.visuals.Image(self.frames[0], parent=self.videoView.scene, interpolation='nearest', cmap="plasma")
+        # self.image = scene.visuals.Image(self.frames[0], parent=self.videoView.scene, interpolation='nearest', cmap="plasma", method="auto")
+        
+
+        # self.videoView = self.videoPlayerCanvas.central_widget.add_view()
+        # self.videoView.camera = scene.cameras.PanZoomCamera(aspect=1)
+        # self.videoView.camera.zoom_factor = 1.0  # Set initial zoom factor
+
+
+        # Eliminate black borders
+
+
+        # self.videoPlayerCanvas.size = (self.frames[0].shape[1], self.frames[0].shape[0])
+        # self.videoView.camera.set_range((100, self.frames[0].shape[1]), (0, self.frames[0].shape[1]))
+        # self.videoView.camera.rect = (0, 0, self.frames[0].shape[1], self.frames[0].shape[0])
+
+        self.vispyVideoPlayerWidget = VispyVideoPlayerWidget(self.frames)
+        self.videoPlayerLayout.addWidget(self.vispyVideoPlayerWidget)
+        self.vispyVideoPlayerWidget.updateWidgets.connect(self.update_frame)
         
         
         self.colorbar = scene.ColorBarWidget(cmap="grays", orientation='right', label='Intensity', 
@@ -187,6 +309,8 @@ class VideoPlayerWidget(QWidget):
         self.colorbarGrid.add_widget(self.colorbar)
         self.colorbarCanvas.native.setFixedWidth(100)
         # self.colorbarWidget.setFixedSize(100, 400)
+
+        self.colorbarCanvas.native.hide()
         
 
         # Create a ColorBarWidget (managed independently)
@@ -207,7 +331,7 @@ class VideoPlayerWidget(QWidget):
         self.enableWidgets()
         
         # Update the view camera to fit the entire image
-        self.update_view_camera()
+        # self.update_view_camera()
 
     def disableWidgets(self):
         self.videoControlWidget.setDisabled(True)
@@ -218,59 +342,64 @@ class VideoPlayerWidget(QWidget):
 
 ###     VIDEO CONTROL FUNCTIONALITY     ###
 # Following functions are for the video control widget, to play and control the video
-    def update_frame(self, event):
+    def update_frame(self):
         # Update the slider position
         self.videoControlWidget.videoSeekSlider.blockSignals(True)
-        self.videoControlWidget.videoSeekSlider.setValue(self.frame_index)
+        self.videoControlWidget.videoSeekSlider.setValue(self.vispyVideoPlayerWidget.getFrameNumber())
+        print("     slider val = ", self.vispyVideoPlayerWidget.getFrameNumber())
         self.videoControlWidget.videoSeekSlider.blockSignals(False)
 
         # Update frame number
         self.videoControlWidget.frameSpinBox.blockSignals(True)
-        self.videoControlWidget.frameSpinBox.setValue(self.frame_index + 1)
+        self.videoControlWidget.frameSpinBox.setValue(self.vispyVideoPlayerWidget.getFrameNumber() + 1)
+        print("     spin box val = ", self.vispyVideoPlayerWidget.getFrameNumber() + 1)
         self.videoControlWidget.frameSpinBox.blockSignals(False)
 
         # Update the image visual with the new frame
-        self.Image.set_data(self.frames[self.frame_index])
-        self.frame_index = (self.frame_index + 1) % len(self.frames)
-        self.videoPlayerCanvas.update()
+        # self.vispyVideoPlayerWidget.image.set_data(self.frames[self.frame_index])
+        # self.frame_index = (self.frame_index + 1) % len(self.frames)
+        # self.videoPlayerCanvas.update()
+        # self.vispyVideoPlayerWidget.update_frame(self.frame_index)
 
-    def update_view_camera(self):
-        # Adjust the camera to fit the entire image
-        img_height, img_width = self.frames[0].shape
-        self.videoView.camera.set_range(x=(0, img_width), y=(0, img_height))
-        self.videoView.camera.aspect = 1.0 * img_width / img_height
+    # def update_view_camera(self):
+    #     # Adjust the camera to fit the entire image
+    #     img_height, img_width = self.frames[0].shape
+    #     self.videoView.camera.set_range(x=(0, img_width), y=(0, img_height))
+    #     self.videoView.camera.aspect = 1.0 * img_width / img_height
 
     def playPauseVideo(self):
-        if self.timer.running:
-            self.timer.stop()
+        if self.vispyVideoPlayerWidget.timerIsRunning():
+            self.vispyVideoPlayerWidget.stopTimer()
             self.videoControlWidget.playIcon.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "play.png")))
             self.videoControlWidget.playIcon.setToolTip("Play")
         else:
-            self.timer.start()
+            self.vispyVideoPlayerWidget.startTimer()
             self.videoControlWidget.playIcon.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "pause.png")))
             self.videoControlWidget.playIcon.setToolTip("Pause")
 
     def skipForward(self):
+        self.vispyVideoPlayerWidget.skipForward()
         self.frame_index = min(self.frame_index + 29, len(self.frames) - 1)  # Skip 30 frames forward
         self.update_frame(None)
 
     def skipBackward(self):
+        self.vispyVideoPlayerWidget.skipBackward()
         self.frame_index = max(self.frame_index - 31, 0)  # Skip 30 frames backward
         self.update_frame(None)
 
     def changePlaybackRate(self, fps):
-        self.timer.interval = 1.0 / fps
+        self.vispyVideoPlayerWidget.set_fps(fps)
 
     def goToFrameNo(self, frameNo):
-        if 1 <= frameNo <= len(self.frames):
-            self.frame_index = frameNo - 1
-            self.update_frame(None)  # Update the frame immediately
+        self.vispyVideoPlayerWidget.goToFrameNo(frameNo - 1)
 
     def setVideoPosition(self, position):
-        self.frame_index = position
+        print("pos = ", position)
+        self.vispyVideoPlayerWidget.goToFrameNo(position)
+        
 
     def sliderReleased(self):
-        self.update_frame(None)
+        self.update_frame()
 
     # TODO: complete this func
     def deleteFrames(self, min, max):
