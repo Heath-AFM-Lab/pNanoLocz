@@ -29,7 +29,7 @@ def extract_metadata(tiff_page: tifffile.tifffile.TiffPage) -> dict:
     }
     return metadata
 
-def open_jpk(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
+def open_jpk(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, list]:
     file_path = Path(file_path)
     with tifffile.TiffFile(file_path) as tif:
         channel_list = {}
@@ -39,7 +39,7 @@ def open_jpk(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
             channel_list[f"{available_channel}_{tr_rt}"] = i + 1
         
         if channel not in channel_list:
-            raise KeyError(f"Channel '{channel}' not found. Available channels: {list(channel_list.keys())}")
+            channel = list(channel_list.keys())[0]
 
         channel_idx = channel_list[channel]
         channel_page = tif.pages[channel_idx]
@@ -56,21 +56,43 @@ def open_jpk(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
         metadata = extract_metadata(metadata_page)
         scaling_factor = _jpk_pixel_to_nm_scaling(metadata_page)
         metadata['scaling_factor'] = scaling_factor
-        metadata['channels'] = list(channel_list.keys())
+        channels = list(channel_list.keys())
 
         # Rotate the image 90 degrees clockwise
         image_flipped = np.flipud(image)
 
-    return image_flipped, metadata
+        # Extract required values
+        num_frames = len(tif.pages[1:])
+        x_range_nm = float(metadata.get('x_scan_length', '0')) * 1e9
+        y_pixels = int(metadata.get('y_scan_pixels', '0'))
+        x_pixels = int(metadata.get('x_scan_pixels', '0'))
+        scan_rate = float(metadata.get('Scan_Rate', '0'))
+        fps = 1 / scan_rate if scan_rate != 0 else 0
+        line_rate = y_pixels * fps if y_pixels else 0
+        pixel_to_nanometre_scaling_factor = scaling_factor
+
+        values = [
+            str(num_frames),
+            str(x_range_nm),
+            f"{int(fps)}",
+            f"{int(line_rate)}",
+            str(y_pixels),
+            str(x_pixels),
+            f"{pixel_to_nanometre_scaling_factor:.2f}",
+            channel
+        ]
+
+    return image_flipped, values, channels
 
 if __name__ == "__main__":
     file_path = 'data/save-2023.02.16-12.08.49.026.jpk'
     channel = 'height_trace'  # Replace with the appropriate channel name
     try:
-        image, metadata = open_jpk(file_path, channel)
+        image, metadata, values = open_jpk(file_path, channel)
         print(f"Scaling factor: {metadata['scaling_factor']} nm/pixel")
         print(f"Image shape: {image.shape}")
         print("Metadata:", metadata)
+        print(f"Parameter values: {values}")
 
         import matplotlib.pyplot as plt
         plt.imshow(image, cmap=AFM)

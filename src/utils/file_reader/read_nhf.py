@@ -11,7 +11,7 @@ AFM = colors.ListedColormap(AFM)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def open_nhf(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
+def open_nhf(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, list]:
     """
     Extract image and metadata from the NHF file.
 
@@ -24,8 +24,8 @@ def open_nhf(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
 
     Returns
     -------
-    tuple[np.ndarray, dict]
-        A tuple containing the image and its metadata.
+    tuple[np.ndarray, dict, list]
+        A tuple containing the image, its metadata, and parameter values.
     """
     logger.info(f"Loading image from: {file_path}")
     file_path = Path(file_path)
@@ -55,6 +55,9 @@ def open_nhf(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
         available_channels = [group[ds].attrs.get('name') for ds in datasets]
         logger.info(f"Available channels: {available_channels}")
         
+        if channel not in available_channels:
+            channel = available_channels[0]
+
         for ds in datasets:
             attrs = group[ds].attrs
             if attrs.get('name') == channel:
@@ -82,20 +85,41 @@ def open_nhf(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
         im = np.rot90(im, k=1, axes=(0, 1))
         im = np.fliplr(im)
 
-    return im, s
+        # Extract required values
+        num_frames = 1  # Assuming single frame for NHF
+        x_range_nm = scan_size * 1e9
+        y_pixels = y_pixel
+        x_pixels = x_pixel
+        fps = 1 / frame_acq_time if frame_acq_time != 0 else 0
+        line_rate = y_pixel * fps if y_pixel else 0
+        pixel_to_nanometre_scaling_factor = 1e9 / x_pixel  # Assuming equal scaling in x and y
+
+        values = [
+            str(num_frames),
+            str(x_range_nm),
+            f"{int(fps)}",
+            f"{int(line_rate)}",
+            str(y_pixels),
+            str(x_pixels),
+            f"{pixel_to_nanometre_scaling_factor:.2f}",
+            channel
+        ]
+
+    return im, values, available_channels
 
 if __name__ == "__main__":
     file_path = 'data/SBS-PS_example_data.nhf'
     channel = 'Topography'  # Replace with the appropriate channel name
     try:
-        image, meta = open_nhf(file_path, channel)
-        print(f"Metadata: {meta}")
+        image, metadata, values = open_nhf(file_path, channel)
+        print(f"Metadata: {metadata}")
         print(f"Image shape: {image.shape}")
+        print(f"Parameter values: {values}")
 
         # Display the image using matplotlib
         import matplotlib.pyplot as plt
         plt.imshow(image, cmap=AFM)
-        plt.colorbar(label=meta['channel_units'])
+        plt.colorbar(label=metadata['channel_units'])
         plt.show()
     except Exception as e:
         print(f"Error: {e}")

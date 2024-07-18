@@ -53,7 +53,7 @@ def extract_metadata(notes: str) -> dict:
             metadata[key.strip()] = val.strip()
     return metadata
 
-def open_ibw(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
+def open_ibw(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, list]:
     """
     Load image from Asylum Research (Igor) .ibw files.
 
@@ -66,8 +66,8 @@ def open_ibw(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
 
     Returns
     -------
-    tuple[np.ndarray, dict]
-        A tuple containing the image and metadata.
+    tuple[np.ndarray, dict, list]
+        A tuple containing the image, metadata, and parameter values.
 
     Raises
     ------
@@ -84,7 +84,7 @@ def open_ibw(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
             if label:
                 labels.append(label.decode())
     if channel not in labels:
-        raise ValueError(f"Channel '{channel}' not found in {file_path}. Available channels: {labels}")
+        channel = labels[0]
     
     channel_idx = labels.index(channel)
     image = scan["wave"]["wData"][:, :, channel_idx].T * 1e9  # Convert to nm
@@ -92,9 +92,28 @@ def open_ibw(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
     scaling = _ibw_pixel_to_nm_scaling(scan)
     metadata = extract_metadata(str(scan["wave"]["note"]))
     metadata['scaling_factor'] = scaling
-    metadata['channels'] = labels
 
-    return image, metadata
+    num_frames = 1  # IBW files are typically single frames
+    x_range_nm = float(metadata.get("FastScanSize", "0")) * 1e9
+    y_pixels = int(metadata.get("ScanLines", "0"))
+    x_pixels = int(metadata.get("ScanPoints", "0"))
+    scan_rate = float(metadata.get("ScanRate", "0"))
+    fps = 1 / scan_rate if scan_rate != 0 else 0
+    line_rate = y_pixels * fps if y_pixels else 0
+    pixel_to_nanometre_scaling_factor = scaling
+
+    values = [
+        str(num_frames),
+        str(x_range_nm),
+        f"{int(fps)}",
+        f"{int(line_rate)}",
+        str(y_pixels),
+        str(x_pixels),
+        f"{pixel_to_nanometre_scaling_factor:.2f}",
+        channel
+    ]
+
+    return image, values, labels
 
 if __name__ == "__main__":
     file_path = 'data/tops70s14_190g0000.ibw'

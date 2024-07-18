@@ -162,7 +162,7 @@ class FileDetailingSystemWidget(QWidget):
 
     def loadFileData(self, file_path, channel):
         # Import necessary file readers
-        from utils.file_reader.asd import load_asd
+        from utils.file_reader.asd import load_asd, create_animation
         from utils.file_reader.read_aris import open_aris
         from utils.file_reader.read_ibw import open_ibw
         from utils.file_reader.read_jpk import open_jpk
@@ -172,32 +172,67 @@ class FileDetailingSystemWidget(QWidget):
 
         ext = os.path.splitext(file_path)[1].lower()
         if ext == '.asd':
-            try:
-                channel = 'TP'
-                frames, metadata, channels = load_asd(file_path, channel)
-            except ValueError:
-                channel = 'PH'
-                frames, metadata, channels = load_asd(file_path, channel)
+            frames, metadata, channels = load_asd(file_path, channel)
+            self.displayDataASD(frames)
             # self.dropDown.clear()
-            # self.dropDown.addItems(channels)
+            # self.dropDown.addItems(channels)   
         elif ext == '.aris':
             frames, metadata, channels = open_aris(file_path, channel)
+            self.displayData(frames)
         elif ext == '.ibw':
-            frames, metadata = open_ibw(file_path, channel)
+            frames, metadata, channels = open_ibw(file_path, channel)
+            self.displayData(frames)
         elif ext == '.jpk':
-            frames, metadata = open_jpk(file_path, channel)
+            frames, metadata, channels = open_jpk(file_path, channel)
+            self.displayData(frames)
         elif ext == '.nhf':
-            frames, metadata = open_nhf(file_path, channel)
+            frames, metadata, channels = open_nhf(file_path, channel)
+            self.displayData(frames)
         elif ext == '.spm':
-            frames, metadata = open_spm(file_path, channel)
+            frames, metadata, channels = open_spm(file_path, channel)
+            self.displayData(frames)
         elif ext == '.gwy':
-            frames, metadata = open_gwy(file_path, channel)
+            frames, metadata, channels = open_gwy(file_path, channel)
+            self.displayDataGWY(frames)
         else:
             print(f"Unsupported file type: {ext}")
             return
 
         self.updateMetadataTable(metadata)
-        self.displayData(frames)
+       
+    def displayDataASD(self, frames):
+        fig, axis = plt.subplots()
+        def update(frame):
+            axis.imshow(frames[frame], cmap=AFM)
+            return axis
+        
+        self.animation = animation.FuncAnimation(fig, update, frames=len(frames), interval=200)
+
+        # Integrate the animation into the Qt event loop
+        timer = QTimer(self)
+        timer.timeout.connect(lambda: None)
+        timer.start(50)
+
+        plt.show()
+
+    
+    def displayDataGWY(self, images):
+        if len(images) == 1:
+            plt.imshow(images[0], cmap=AFM)
+            plt.colorbar(label='Height (nm)')
+            plt.show()
+        elif len(images) > 1:
+            fig, ax = plt.subplots()
+            frame_image = ax.imshow(images[0], cmap=AFM)
+
+            def update_frame(frame_number):
+                frame_image.set_data(images[frame_number])
+                return frame_image,
+
+            ani = animation.FuncAnimation(fig, update_frame, frames=len(images), interval=50, blit=True)
+            plt.show()
+        else:
+            print("No images found.")
 
     def updateMetadataTable(self, values):
 
@@ -209,14 +244,14 @@ class FileDetailingSystemWidget(QWidget):
 
         if frames.ndim == 2:
             axis.imshow(frames, cmap=AFM)
-            plt.colorbar(label='Height (nm)')
             plt.show()
         elif frames.ndim == 3:
             def update(frame):
+                axis.clear()  # Clear the previous frame
                 axis.imshow(frames[:, :, frame], cmap=AFM)
                 return axis
 
-            self.animation = animation.FuncAnimation(fig, update, frames=frames.shape[2], interval=200)
+            self.animation = animation.FuncAnimation(fig, update, frames=frames.shape[2], interval=200, blit=False)
 
             # Integrate the animation into the Qt event loop
             timer = QTimer(self)
@@ -224,6 +259,7 @@ class FileDetailingSystemWidget(QWidget):
             timer.start(50)
 
             plt.show()
+
 
 
     def onChannelChanged(self, channel):

@@ -1,7 +1,8 @@
+from __future__ import annotations
+from pathlib import Path
 import struct
 import numpy as np
 import logging
-from pathlib import Path
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -45,6 +46,12 @@ def read_component(f):
     elif dtype == 'D':
         size = struct.unpack('<I', f.read(4))[0]
         value = np.frombuffer(f.read(size * 8), dtype=np.float64)
+    elif dtype == 'S':  # Handling 'S' type for strings
+        length = struct.unpack('<I', f.read(4))[0]
+        value = f.read(length).decode('utf-8')
+    elif dtype == 'p':  # Handling 'p' type for binary data
+        length = struct.unpack('<I', f.read(4))[0]
+        value = f.read(length)
     else:
         raise ValueError(f"Unsupported data type: {dtype}")
 
@@ -71,7 +78,7 @@ def read_datafield(f, size):
     datafield['data'] = data
     return datafield
 
-def open_gwy(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
+def open_gwy(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, list]:
     """
     Extract image and metadata from the GWY file.
 
@@ -84,8 +91,8 @@ def open_gwy(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
 
     Returns
     -------
-    tuple[np.ndarray, dict]
-        A tuple containing the image and its metadata.
+    tuple[np.ndarray, dict, list]
+        A tuple containing the image, its metadata, and parameter values.
 
     Raises
     ------
@@ -128,20 +135,39 @@ def open_gwy(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
             # Filter images for the specified channel
             channel_indices = [i for i, (_, name) in enumerate(channels) if f'/{channel}/data' in name]
             if not channel_indices:
-                raise ValueError(f"Channel '{channel}' not found in the .gwy file.")
+                logger.warning(f"Channel '{channel}' not found. Using the first available channel instead.")
+                channel_indices = [0]  # Use the first available channel
             
             images = [channel_meta[i]['data'] for i in channel_indices]
             meta = channel_meta[channel_indices[0]] if channel_indices else {}
             if 'data' in meta:
                 meta.pop('data')
-            meta['channels'] = [channel]
-
-            logger.info(f"Metadata: {meta}")
+            meta['channels'] = [channels[channel_indices[0]][1].split('/')[1]]  # Update the channel name
 
             # Flip the image vertically
             images = [np.flipud(image) for image in images]
 
-            return images, meta
+            # Calculate additional values
+            num_frames = len(images)
+            y_pixels, x_pixels = images[0].shape
+            x_range_nm = float(meta['xreal']) * 1e9  # Convert to nm
+            scan_rate = meta.get('scan_rate', 0)
+            fps = 1 / scan_rate if scan_rate != 0 else 0
+            line_rate = y_pixels * fps if y_pixels else 0
+            pixel_to_nanometre_scaling_factor = x_range_nm / x_pixels
+
+            values = [
+                str(num_frames),
+                str(x_range_nm),
+                f"{int(fps)}",
+                f"{int(line_rate)}",
+                str(y_pixels),
+                str(x_pixels),
+                f"{pixel_to_nanometre_scaling_factor:.2f}",
+                meta['channels'][0]
+            ]
+
+            return images, values, meta['channels']
 
     except FileNotFoundError:
         logger.error(f"[{file_path}] File not found: {file_path}")
@@ -155,10 +181,11 @@ def open_gwy(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict]:
 
 if __name__ == "__main__":
     file_path = 'data/SBS-PS_example_data.gwy'
-    channel = '1'  # Replace with the appropriate channel name
+    channel = 'None'  # Replace with the appropriate channel name
     try:
-        images, meta = open_gwy(file_path, channel)
+        images, meta, values = open_gwy(file_path, channel)
         print(f"Metadata: {meta}")
+        print(f"Parameter values: {values}")
         for i, img in enumerate(images):
             print(f"Channel {i} image shape: {img.shape}")
 

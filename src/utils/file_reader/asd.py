@@ -249,10 +249,7 @@ def load_asd(file_path: Path, channel: str):
             length_of_all_first_channel_frames = header_dict["num_frames"] * size_of_single_frame_plus_header
             _ = open_file.read(length_of_all_first_channel_frames)
         else:
-            raise ValueError(
-                f"Channel {channel} not found in this file's available channels: "
-                f"{header_dict['channel1']}, {header_dict['channel2']}"
-            )
+            channel = header_dict["channel1"]
 
         scaling_factor = calculate_scaling_factor(
             channel=channel,
@@ -832,7 +829,7 @@ def read_channel_data(
 #     return converter
 
 
-def create_animation(file_name: str, frames: npt.NDArray, file_format: str = ".gif") -> None:
+def create_animation(frames: npt.NDArray) -> None:
     """
     Create animation from a numpy array of frames (2d numpy arrays).
 
@@ -871,10 +868,3 @@ def create_animation(file_name: str, frames: npt.NDArray, file_format: str = ".g
     ani = animation.FuncAnimation(fig, update, frames=frames.shape[0], interval=200)
 
     plt.show()
-
-    if file_format == ".mp4":
-        ani.save(f"{file_name}.mp4", writer="ffmpeg")
-    elif file_format == ".gif":
-        ani.save(f"{file_name}.gif", writer="imagemagick")
-    else:
-        raise ValueError(f"{file_format} format not supported yet.")
