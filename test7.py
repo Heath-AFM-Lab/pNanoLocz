@@ -1,6 +1,6 @@
 import sys
 import numpy as np
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QTimer, Qt
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QSizePolicy
 from vispy import scene, app
 from vispy.scene import visuals
@@ -44,6 +44,14 @@ class VispyWidget(QWidget):
         self.image.set_data(self.video_frames[self.current_frame_index])
         self.current_frame_index = (self.current_frame_index + 1) % len(self.video_frames)
         self.canvas.update()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        size = self.canvas.native.size()
+        new_size = min(size.width(), size.height())
+        self.canvas.native.resize(new_size, new_size)
+        self.view.camera.aspect = 1
+        
 
     def stopTimer(self):
         self.timer.stop()

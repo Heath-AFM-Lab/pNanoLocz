@@ -89,7 +89,7 @@ class VideoControlWidget(QWidget):
         self.fpsLabel = QLabel("Speed (FPS):")
         self.fpsTextBox = QLineEdit()
         self.fpsTextBox.setValidator(QIntValidator())
-        self.fpsTextBox.textChanged.connect(lambda text: self.fpsChanged.emit(int(text)) if text.isdigit() else None)
+        self.fpsTextBox.textChanged.connect(lambda text: self.fpsChanged.emit(int(text)) if text.isdigit() and int(text) != 0 else None)
         self.fpsTextBox.setMaximumSize(40, 21)
         self.buttonLayout.addWidget(self.fpsLabel)
         self.buttonLayout.addWidget(self.fpsTextBox)
