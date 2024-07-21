@@ -4,6 +4,10 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
 import numpy as np
+from core.cmaps import CMAPS
+
+WIDGET_TYPE = "matplotlib"
+DEFAULT_CMAP = CMAPS["AFM Brown"][WIDGET_TYPE]
 
 class MatplotlibColourBarWidget(QWidget):
     def __init__(self, parent=None):
@@ -25,25 +29,55 @@ class MatplotlibColourBarWidget(QWidget):
         layout.addWidget(self.canvas)
         
     def _create_colour_bar(self):
-        # Create a colormap
-        cmap = plt.get_cmap('viridis')
         
         # Create a normalizer
-        norm = plt.Normalize(vmin=0, vmax=1)
+        self.norm = plt.Normalize(vmin=0, vmax=1)
         
         # Create an axes for the colour bar with fixed aspect ratio
-        cax = self.fig.add_axes([0.2, 0.05, 0.6, 0.9], aspect=20)  # aspect set to 20 to maintain aspect ratio
+        self.cax = self.fig.add_axes([0.2, 0.05, 0.6, 0.9], aspect=25)  # aspect set to 20 to maintain aspect ratio
         
         # Create a colour bar with the specified orientation
-        cbar = self.fig.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), cax=cax, orientation='vertical')
+        self.cbar = self.fig.colorbar(plt.cm.ScalarMappable(norm=self.norm, cmap=DEFAULT_CMAP), cax=self.cax, orientation='vertical')
         
         # Move the colour bar to the right-hand side
-        cbar.ax.yaxis.set_ticks_position('right')
-        cbar.ax.yaxis.set_label_position('right')
+        self.cbar.ax.yaxis.set_ticks_position('right')
+        self.cbar.ax.yaxis.set_label_position('right')
 
         # Set axis label and tick colors to white
-        cbar.ax.yaxis.label.set_color('white')
-        cbar.ax.tick_params(axis='y', colors='white')
+        self.cbar.ax.yaxis.label.set_color('white')
+        self.cbar.ax.tick_params(axis='y', colors='white')
+
+
+    def set_cmap(self, cmap_name: str):
+        # Retrieve and set cmap
+        cmap = CMAPS[cmap_name][WIDGET_TYPE]
+        self.cbar.cmap = cmap
+        
+
+    def set_min_max_limits(self, *args):
+        """Set the minimum and maximum limits.
+
+        Args:
+            *args: A tuple (min, max) or two individual arguments min and max, both of type float.
+
+        Raises:
+            ValueError: If the inputs are not valid.
+        """
+        if len(args) == 1 and isinstance(args[0], tuple) and len(args[0]) == 2:
+            min, max = args[0]
+        elif len(args) == 2:
+            min, max = args
+        else:
+            raise ValueError("You must provide either a tuple (min, max) or two individual arguments min and max.")
+
+        if not (isinstance(min, float) and isinstance(max, float)):
+            raise ValueError("Both min and max must be of type float.")
+        
+        self.norm.vmax = max
+        self.norm.vmin = min
+
+
+
         
 if __name__ == "__main__":
     app = QApplication(sys.argv)

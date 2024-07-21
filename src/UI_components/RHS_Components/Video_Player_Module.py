@@ -104,6 +104,8 @@ class VideoPlayerWidget(QWidget):
         self.videoControlWidget.videoSeekSlider.valueChanged.connect(self.setVideoPosition)
         self.videoControlWidget.videoSeekSlider.sliderReleased.connect(self.sliderReleased)
 
+        self.visualRepresentationWidget.zScaleCheckboxChecked.connect(self.toggle_colorbar)
+
         # Fix all sizes
         self.videoControlWidget.setFixedSize(self.videoControlWidget.sizeHint())
         self.visualRepresentationWidget.setFixedSize(self.visualRepresentationWidget.sizeHint())
@@ -148,14 +150,15 @@ class VideoPlayerWidget(QWidget):
 
 
  
-        # TODO: refactor this to become a class 
+        
         self.colorbarWidget = MatplotlibColourBarWidget()
-        # self.colorbarWidget.setFixedSize(100, 400)
+        self.colorbarWidget.setFixedSize(self.colorbarWidget.sizeHint())
         self.videoPlayerLayout.addWidget(self.colorbarWidget)
-        print(self.colorbarWidget.size())
+        self.colorbarWidget.hide()
+        print(self.colorbarWidget.sizeHint())
 
 
-
+        # TODO: refactor this to become a class 
         # self.colorbar = scene.ColorBarWidget(cmap="grays", orientation='right', label='Intensity', 
         #                                      label_color='white')
         # self.colorbarGrid.add_widget(self.colorbar)
@@ -249,6 +252,16 @@ class VideoPlayerWidget(QWidget):
     # TODO: complete this func
     def deleteFrames(self, min, max):
         pass
+
+
+###     VISUAL REPRESENTATION FUNCTIONALITY    ###
+    def toggle_colorbar(self, z_scale_box_is_checked):
+        if z_scale_box_is_checked:
+            self.colorbarWidget.show()
+        else:
+            self.colorbarWidget.hide()
+
+
 
 
 

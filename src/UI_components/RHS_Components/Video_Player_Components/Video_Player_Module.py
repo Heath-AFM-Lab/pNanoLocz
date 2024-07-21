@@ -4,7 +4,10 @@ from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QSizePolicy, QSp
 from PyQt6.QtCore import QTimer, pyqtSignal, Qt, QSize
 from vispy import scene
 from vispy.scene import visuals
+from core.cmaps import CMAPS
 
+WIDGET_TYPE = "vispy"
+DEFAULT_CMAP = CMAPS["AFM Brown"][WIDGET_TYPE]
 DEFAULT_FPS = 30
 
 
@@ -35,7 +38,7 @@ class VispyVideoPlayerWidget(QWidget):
         self.view = self.canvas.central_widget.add_view()
         
         # Create an Image visual
-        self.image = visuals.Image(video_frames[0], parent=self.view.scene, method='auto')
+        self.image = visuals.Image(video_frames[0], parent=self.view.scene, method='auto', cmap=DEFAULT_CMAP)
         
         # Adjust camera to fit the image without padding
         self.view.camera = scene.cameras.PanZoomCamera(aspect=1)
@@ -93,7 +96,8 @@ class VispyVideoPlayerWidget(QWidget):
     def get_dims(self):
         return self.dims
 
-    ### Vispy video player functions
+
+### Vispy video player functions ###
     def _update_frame(self):
         self.image.set_data(self.video_frames[self.current_frame_index])
         self.update_widgets.emit()
@@ -142,6 +146,15 @@ class VispyVideoPlayerWidget(QWidget):
 
     def get_frame_number(self):
         return self.current_frame_index
+    
+
+### Visual control functions ###
+    def set_cmap(self, cmap_name: str):
+        # Retrieve and set cmap
+        cmap = CMAPS[cmap_name][WIDGET_TYPE]
+        self.cbar.cmap = cmap
+
+
 
 
 if __name__ == '__main__':
