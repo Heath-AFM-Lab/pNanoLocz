@@ -84,7 +84,7 @@ class VideoPlayerWidget(QWidget):
 
     # TODO: create proper load frames func that triggers after user selects a file to open
     def loadFrames(self):
-        width, height = 512, 512
+        width, height = 100, 100
         # Example: Generate random frames
         self.frames = [np.random.randint(0, 256, (height, width), dtype=np.uint8) for _ in range(100)]
 
