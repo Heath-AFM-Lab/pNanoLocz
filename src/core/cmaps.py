@@ -5,6 +5,8 @@ from vispy.color import Colormap
 from utils.constants import PATH_TO_CMAPS_DIRECTORY
 
 
+
+
 def load_npy_array(filename: str) -> np.ndarray:
     """Load a NumPy array from a .npy file.
 
@@ -30,8 +32,8 @@ def load_npy_array(filename: str) -> np.ndarray:
         raise ValueError(f"An error occurred while loading the file: {e}")
 
 
-def create_colormaps(cmap_array: np.ndarray):
-    """Create Matplotlib and Vispy colormaps from a NumPy array.
+def create_colormap(cmap_array: np.ndarray):
+    """Create Matplotlib colormaps from a NumPy array.
 
     Args:
         cmap_array (np.ndarray): The NumPy array defining the colormap.
@@ -42,10 +44,7 @@ def create_colormaps(cmap_array: np.ndarray):
     # Create Matplotlib colormap
     mpl_cmap = mcolors.ListedColormap(cmap_array)
     
-    # Create Vispy colormap
-    vispy_cmap = Colormap(cmap_array)
-    
-    return mpl_cmap, vispy_cmap
+    return mpl_cmap
 
 
 # Define and load colormap arrays
@@ -53,11 +52,12 @@ def create_colormaps(cmap_array: np.ndarray):
 CMAPS = {}
 
 cmap_names = ["AFM Brown", "AFM Dark Gold", "AFM Fire", "AFM Gold", "AFM Orange", "Rainbow"]
+DEFAULT_CMAP_NAME = cmap_names[0]
 for name in cmap_names:
     cmap_array = load_npy_array(f"{name.replace(' ', '_')}.npy")
-    mpl_cmap, vispy_cmap = create_colormaps(cmap_array)
-    CMAPS[name] = {"matplotlib": mpl_cmap, "vispy": vispy_cmap}
+    mpl_cmap = create_colormap(cmap_array)
+    CMAPS[name] = mpl_cmap
 
 # Example usage:
-# Access Matplotlib colormap: CMAPS["AFM Brown"]["matplotlib"]
-# Access Vispy colormap: CMAPS["AFM Brown"]["vispy"]
+# Access Matplotlib colormap: CMAPS["AFM Brown"]
+

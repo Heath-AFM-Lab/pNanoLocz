@@ -57,7 +57,9 @@ class VideoPlayerWidget(QWidget):
 
         # Visual representation widgets
         self.visualRepresentationWidget.zScaleCheckboxChecked.connect(self.toggle_colorbar)
-        
+        self.visualRepresentationWidget.scaleBarCheckboxChecked.connect(self.toggle_scale_bar)
+        self.visualRepresentationWidget.timescaleCheckboxChecked.connect(self.toggle_timescale)
+
 
         # Fix all sizes
         self.videoControlWidget.setFixedSize(self.videoControlWidget.sizeHint())
@@ -163,6 +165,19 @@ class VideoPlayerWidget(QWidget):
             self.colorbarWidget.show()
         else:
             self.colorbarWidget.hide()
+
+    def toggle_scale_bar(self, scale_bar_is_checked):
+        if scale_bar_is_checked:
+            self.vispyVideoPlayerWidget.show_scale_bar()
+        else:
+            self.vispyVideoPlayerWidget.hide_scale_bar()
+
+    def toggle_timescale(self, timescale_is_checked):
+        if timescale_is_checked:
+            self.vispyVideoPlayerWidget.show_timescale()
+        else:
+            self.vispyVideoPlayerWidget.hide_timescale()
+            
 
 # TODO: remove later
 if __name__ == "__main__":

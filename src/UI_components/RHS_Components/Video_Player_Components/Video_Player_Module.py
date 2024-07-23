@@ -8,8 +8,8 @@ from matplotlib import cm
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 from matplotlib.offsetbox import AnchoredText
 import matplotlib.font_manager as fm
+from core.cmaps import CMAPS, DEFAULT_CMAP_NAME
 
-DEFAULT_CMAP = "viridis"
 DEFAULT_FPS = 30
 
 class AspectRatioLayout(QLayout):
@@ -100,7 +100,7 @@ class MatplotlibVideoPlayerWidget(QWidget):
         self.ax.axis('off')
 
         # Display the first frame
-        self.image = self.ax.imshow(video_frames[0], cmap=DEFAULT_CMAP)
+        self.image = self.ax.imshow(video_frames[0], cmap=CMAPS[DEFAULT_CMAP_NAME])
 
         # Get image dimensions and calculate aspect ratio
         self.image_height, self.image_width = video_frames[0].shape[:2]
@@ -111,7 +111,7 @@ class MatplotlibVideoPlayerWidget(QWidget):
         self._add_scale_bar()
 
         # Add a timestamp to the image
-        self.timestamp = self._add_timestamp()
+        self._add_timestamp()
 
         # Set size policy
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
@@ -138,22 +138,7 @@ class MatplotlibVideoPlayerWidget(QWidget):
         # Redraw the canvas
         self.canvas.draw()
 
-    def _add_scale_bar(self):
-        fontprops = fm.FontProperties(size=10, weight='bold')
-        scale_bar = AnchoredSizeBar(self.ax.transData,
-                                    50, '50 nm', 'lower right', 
-                                    pad=0.1,
-                                    color='black',
-                                    frameon=False,
-                                    size_vertical=1,
-                                    fontproperties=fontprops)
-        self.ax.add_artist(scale_bar)
-
-    def _add_timestamp(self):
-        fontprops = fm.FontProperties(size=10, weight='bold')
-        timestamp = AnchoredText("100.0s", loc='upper left', prop={'size': 10, 'weight': 'bold'}, frameon=False)
-        self.ax.add_artist(timestamp)
-        return timestamp
+    
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -171,6 +156,7 @@ class MatplotlibVideoPlayerWidget(QWidget):
     ### Matplotlib video player functions ###
     def _update_frame(self):
         self.image.set_data(self.video_frames[self.current_frame_index])
+        # TODO: implement the timestamp and scale bar update functionality
         # self.timestamp.txt.set_text(f"{self.current_frame_index / self.fps:.1f}s")
         self.canvas.draw()
         self.update_widgets.emit()
@@ -217,9 +203,52 @@ class MatplotlibVideoPlayerWidget(QWidget):
         return self.current_frame_index
 
     ### Visual control functions ###
+
+    def _add_scale_bar(self):
+        fontprops = fm.FontProperties(size=10, weight='bold')
+        self.scale_bar = AnchoredSizeBar(self.ax.transData,
+                                    50, '50 nm', 'lower right', 
+                                    pad=0.1,
+                                    color='black',
+                                    frameon=False,
+                                    size_vertical=1,
+                                    fontproperties=fontprops)
+        self.ax.add_artist(self.scale_bar)
+        self.hide_scale_bar()
+
+    def _add_timestamp(self):
+        fontprops = fm.FontProperties(size=10, weight='bold')
+        self.timestamp = AnchoredText("100.0s", loc='upper left', prop={'size': 10, 'weight': 'bold'}, frameon=False)
+        self.ax.add_artist(self.timestamp)
+        self.hide_timescale()
+    
     def set_cmap(self, cmap_name: str):
-        self.image.set_cmap(cmap_name)
+        self.image.set_cmap(CMAPS[cmap_name])
         self.canvas.draw()
+
+    def show_scale_bar(self):
+        if not hasattr(self, 'scale_bar'):
+            self._add_scale_bar()  # Add scale bar if it does not exist
+        self.scale_bar.set_visible(True)
+        self.canvas.draw()
+
+    def hide_scale_bar(self):
+        if hasattr(self, 'scale_bar'):
+            self.scale_bar.set_visible(False)
+            self.canvas.draw()
+
+    def show_timescale(self):
+        if not hasattr(self, 'timestamp'):
+            self._add_timestamp()  # Add timestamp if it does not exist
+        self.timestamp.set_visible(True)
+        self.canvas.draw()
+
+    def hide_timescale(self):
+        if hasattr(self, 'timestamp'):
+            self.timestamp.set_visible(False)
+            self.canvas.draw()
+
+
 
 if __name__ == '__main__':
     # Generate a random video using NumPy (100 frames of 100x100 RGB images)

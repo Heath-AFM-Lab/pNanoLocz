@@ -4,10 +4,9 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
 import numpy as np
-from core.cmaps import CMAPS
+from core.cmaps import CMAPS, DEFAULT_CMAP_NAME
 
-WIDGET_TYPE = "matplotlib"
-DEFAULT_CMAP = CMAPS["AFM Brown"][WIDGET_TYPE]
+
 
 class MatplotlibColourBarWidget(QWidget):
     def __init__(self, parent=None):
@@ -37,7 +36,7 @@ class MatplotlibColourBarWidget(QWidget):
         self.cax = self.fig.add_axes([0.2, 0.05, 0.6, 0.9], aspect=25)  # aspect set to 25 to maintain aspect ratio
         
         # Create a colour bar with the specified orientation
-        self.cbar = self.fig.colorbar(plt.cm.ScalarMappable(norm=self.norm, cmap=DEFAULT_CMAP), cax=self.cax, orientation='vertical')
+        self.cbar = self.fig.colorbar(plt.cm.ScalarMappable(norm=self.norm, cmap=CMAPS[DEFAULT_CMAP_NAME]), cax=self.cax, orientation='vertical')
         
         # Move the colour bar to the right-hand side
         self.cbar.ax.yaxis.set_ticks_position('right')
@@ -50,7 +49,7 @@ class MatplotlibColourBarWidget(QWidget):
 
     def set_cmap(self, cmap_name: str):
         # Retrieve and set cmap
-        cmap = CMAPS[cmap_name][WIDGET_TYPE]
+        cmap = CMAPS[cmap_name]
         self.cbar.cmap = cmap
         
 
