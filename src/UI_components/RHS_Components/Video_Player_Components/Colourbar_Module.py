@@ -34,7 +34,7 @@ class MatplotlibColourBarWidget(QWidget):
         self.norm = plt.Normalize(vmin=0, vmax=1)
         
         # Create an axes for the colour bar with fixed aspect ratio
-        self.cax = self.fig.add_axes([0.2, 0.05, 0.6, 0.9], aspect=25)  # aspect set to 20 to maintain aspect ratio
+        self.cax = self.fig.add_axes([0.2, 0.05, 0.6, 0.9], aspect=25)  # aspect set to 25 to maintain aspect ratio
         
         # Create a colour bar with the specified orientation
         self.cbar = self.fig.colorbar(plt.cm.ScalarMappable(norm=self.norm, cmap=DEFAULT_CMAP), cax=self.cax, orientation='vertical')

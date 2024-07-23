@@ -1,115 +1,184 @@
 import sys
 import numpy as np
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QSizePolicy, QSpacerItem, QHBoxLayout
-from PyQt6.QtCore import QTimer, pyqtSignal, Qt, QSize
-from vispy import scene
-from vispy.scene import visuals
-from core.cmaps import CMAPS
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QSizePolicy, QLayout
+from PyQt6.QtCore import QTimer, pyqtSignal, QSize, QRect, QPoint
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib import cm
+from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
+from matplotlib.offsetbox import AnchoredText
+import matplotlib.font_manager as fm
 
-WIDGET_TYPE = "vispy"
-DEFAULT_CMAP = CMAPS["AFM Brown"][WIDGET_TYPE]
+DEFAULT_CMAP = "viridis"
 DEFAULT_FPS = 30
 
+class AspectRatioLayout(QLayout):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.item = None
+        self.aspect_ratio = 1.0
 
-class VispyVideoPlayerWidget(QWidget):
+    def setAspectRatio(self, aspect_ratio):
+        self.aspect_ratio = aspect_ratio
+
+    def addItem(self, item):
+        if self.item is not None:
+            raise ValueError("AspectRatioLayout can only manage one item")
+        self.item = item
+
+    def count(self):
+        return 1 if self.item else 0
+
+    def itemAt(self, index):
+        return self.item if index == 0 else None
+
+    def takeAt(self, index):
+        if index == 0:
+            item = self.item
+            self.item = None
+            return item
+        return None
+
+    def setGeometry(self, rect):
+        super().setGeometry(rect)
+        if self.item:
+            available_width = rect.width()
+            available_height = rect.height()
+            
+            if available_height <= 0:
+                # Handle the case where height is zero or negative
+                height = 1  # Set a minimum height
+                width = int(height * self.aspect_ratio)
+            elif available_width / available_height > self.aspect_ratio:
+                # Width is larger, constrain to height
+                height = available_height
+                width = int(height * self.aspect_ratio)
+            else:
+                # Height is larger, constrain to width
+                width = available_width
+                height = int(width / self.aspect_ratio)
+            
+            x = (available_width - width) // 2
+            y = (available_height - height) // 2
+            
+            self.item.setGeometry(QRect(QPoint(x, y), QSize(width, height)))
+
+    def sizeHint(self):
+        if self.item:
+            return self.item.sizeHint()
+        return QSize()
+
+    def minimumSize(self):
+        if self.item:
+            return self.item.minimumSize()
+        return QSize()
+
+class MatplotlibVideoPlayerWidget(QWidget):
     update_widgets = pyqtSignal()
 
     def __init__(self, video_frames, parent=None):
         super().__init__(parent)
-        
+        self.setContentsMargins(0, 0, 0, 0)
+    
         # Store video frames
         self.video_frames = video_frames
         self.current_frame_index = 0
-        self.resizing = False  # Flag to prevent recursive resize
-        
+
         # Create a layout for the widget
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        
-        # Create a Vispy canvas
-        self.canvas = scene.SceneCanvas(keys='interactive', show=True)
-        
-        # Add the Vispy canvas to the layout, centre widget
-        layout.addSpacing(1)
-        layout.addWidget(self.canvas.native)
-        layout.addSpacing(1)
+        self.layout = AspectRatioLayout(self)
+        self.setLayout(self.layout)
 
-        # Create a viewbox to display the image
-        self.view = self.canvas.central_widget.add_view()
-        
-        # Create an Image visual
-        self.image = visuals.Image(video_frames[0], parent=self.view.scene, method='auto', cmap=DEFAULT_CMAP)
-        
-        # Adjust camera to fit the image without padding
-        self.view.camera = scene.cameras.PanZoomCamera(aspect=1)
-        self.view.camera.rect = (0, 0, video_frames[0].shape[1], video_frames[0].shape[0])
+        # Create a Matplotlib Figure and Canvas
+        self.fig = Figure(figsize=(5, 5), dpi=100)
+        self.fig.patch.set_alpha(0)  # Set the figure background to transparent
+        self.canvas = FigureCanvas(self.fig)
+        self.canvas.setStyleSheet("background-color: transparent;")  # Set the canvas background to transparent
+        self.layout.addWidget(self.canvas)
 
-        # Adjust size policy
-        # if video_frames[0].shape[1] > video_frames[0].shape[0]:
-        #     self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
-        # else:
-        #     self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        # Create an Axes for displaying the image
+        self.ax = self.fig.add_subplot(111)
+        self.ax.axis('off')
 
-        # Lock the camera
-        self.view.camera.interactive = False
+        # Display the first frame
+        self.image = self.ax.imshow(video_frames[0], cmap=DEFAULT_CMAP)
+
+        # Get image dimensions and calculate aspect ratio
+        self.image_height, self.image_width = video_frames[0].shape[:2]
+        self.aspect_ratio = self.image_width / self.image_height
+        self.layout.setAspectRatio(self.aspect_ratio)
+
+        # Add a scale bar to the image
+        self._add_scale_bar()
+
+        # Add a timestamp to the image
+        self.timestamp = self._add_timestamp()
+
+        # Set size policy
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         # Setup a timer to update the frames
         self.timer = QTimer()
         self.timer.timeout.connect(self._go_to_next_frame)
-        self.set_fps(DEFAULT_FPS)  # Baseline FPS, default is DEFAULT_FPS
+        self.set_fps(DEFAULT_FPS)
         self.timer.stop()
 
-    ### Override methods for dimensions
+        # Connect the resize event
+        self.canvas.mpl_connect('resize_event', self.on_resize)
+
+    def on_resize(self, event):
+        # Update the figure size to match the new canvas size
+        self.fig.set_size_inches(event.width / 100, event.height / 100)
+        
+        # Adjust the subplot to fill the figure
+        self.fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+        
+        # Update the image aspect ratio
+        self.ax.set_aspect('auto')
+        
+        # Redraw the canvas
+        self.canvas.draw()
+
+    def _add_scale_bar(self):
+        fontprops = fm.FontProperties(size=10, weight='bold')
+        scale_bar = AnchoredSizeBar(self.ax.transData,
+                                    50, '50 nm', 'lower right', 
+                                    pad=0.1,
+                                    color='black',
+                                    frameon=False,
+                                    size_vertical=1,
+                                    fontproperties=fontprops)
+        self.ax.add_artist(scale_bar)
+
+    def _add_timestamp(self):
+        fontprops = fm.FontProperties(size=10, weight='bold')
+        timestamp = AnchoredText("100.0s", loc='upper left', prop={'size': 10, 'weight': 'bold'}, frameon=False)
+        self.ax.add_artist(timestamp)
+        return timestamp
+
     def resizeEvent(self, event):
-        if self.resizing:
-            return
-        self.resizing = True
         super().resizeEvent(event)
-        widget_width = self.width()
-        widget_height = self.height()
+        self.updateGeometry()
 
-        video_aspect_ratio = self.video_frames[0].shape[1] / self.video_frames[0].shape[0]
-        widget_aspect_ratio = widget_width / widget_height
+    def heightForWidth(self, width):
+        return int(width / self.aspect_ratio)
 
-        if widget_aspect_ratio > video_aspect_ratio:
-            new_width = int(widget_height * video_aspect_ratio)
-            new_height = widget_height
-            # self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
-        else:
-            new_width = widget_width
-            new_height = int(widget_width / video_aspect_ratio)
-            # self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+    def widthForHeight(self, height):
+        return int(height * self.aspect_ratio)
 
-        # print("image dims", self.video_frames[0].shape[1], self.video_frames[0].shape[0])
-        # print("new dims", new_height, new_width)
-        # print("widget dims", widget_height, widget_width)
+    def hasHeightForWidth(self):
+        return self.aspect_ratio > 1
 
-        self.canvas.native.resize(new_width, new_height)
-        self.resize(new_width, new_height)
-        self.update()
-        # print("new widget size", self.size())
-        self.view.camera.aspect = 1  # Keep the aspect ratio 1 for camera to avoid distortion
-        self.view.camera.set_range(x=(0, self.video_frames[0].shape[1]), y=(0, self.video_frames[0].shape[0]), margin=0)
-        self.view.camera.rect = (0, 0, self.video_frames[0].shape[1], self.video_frames[0].shape[0])
-        self.resizing = False
-
-    def get_dims(self):
-        return self.dims
-
-
-### Vispy video player functions ###
+    ### Matplotlib video player functions ###
     def _update_frame(self):
         self.image.set_data(self.video_frames[self.current_frame_index])
+        # self.timestamp.txt.set_text(f"{self.current_frame_index / self.fps:.1f}s")
+        self.canvas.draw()
         self.update_widgets.emit()
-        self.canvas.update()
-        
+
     def _go_to_next_frame(self):
         # Update the image with the next frame
         self.current_frame_index = (self.current_frame_index + 1) % len(self.video_frames)
-        self.image.set_data(self.video_frames[self.current_frame_index])
-
-        self.update_widgets.emit()
-        self.canvas.update()
+        self._update_frame()
 
     def set_fps(self, fps):
         self.fps = fps
@@ -146,36 +215,31 @@ class VispyVideoPlayerWidget(QWidget):
 
     def get_frame_number(self):
         return self.current_frame_index
-    
 
-### Visual control functions ###
+    ### Visual control functions ###
     def set_cmap(self, cmap_name: str):
-        # Retrieve and set cmap
-        cmap = CMAPS[cmap_name][WIDGET_TYPE]
-        self.cbar.cmap = cmap
-
-
-
+        self.image.set_cmap(cmap_name)
+        self.canvas.draw()
 
 if __name__ == '__main__':
     # Generate a random video using NumPy (100 frames of 100x100 RGB images)
     video_frames = np.random.rand(100, 100, 100, 3).astype(np.float32)
-    
+
     # Create the PyQt6 application
     app = QApplication(sys.argv)
-    
+
     # Create the main window
     main_window = QWidget()
-    main_window.setWindowTitle('Vispy Video Display')
-    
-    # Create and add the Vispy widget to the main window
-    vispy_widget = VispyVideoPlayerWidget(video_frames)
+    main_window.setWindowTitle('Matplotlib Video Display')
+
+    # Create and add the Matplotlib widget to the main window
+    matplotlib_widget = MatplotlibVideoPlayerWidget(video_frames)
     layout = QVBoxLayout()
     main_window.setLayout(layout)
-    layout.addWidget(vispy_widget)
-    
+    layout.addWidget(matplotlib_widget)
+
     # Show the main window
     main_window.show()
-    
+
     # Start the PyQt6 event loop
     sys.exit(app.exec())
