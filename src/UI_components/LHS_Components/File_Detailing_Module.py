@@ -14,6 +14,8 @@ import matplotlib.colors as colors
 AFM = np.load('utils/file_reader/AFM_cmap.npy')
 AFM = colors.ListedColormap(AFM)
 
+from utils.file_reader.read_folders import ImageLoader
+
 class CustomFileFilterProxyModel(QSortFilterProxyModel):
     def __init__(self, extensions, parent=None):
         super().__init__(parent)
@@ -170,6 +172,13 @@ class FileDetailingSystemWidget(QWidget):
         from utils.file_reader.read_spm import open_spm
         from utils.file_reader.read_gwy import open_gwy
 
+        if os.path.isdir(file_path):
+            image_loader = ImageLoader(file_path)
+            frames = [data['image'] for data in image_loader._data_dict.values()]
+            metadata = [data['metadata'] for data in image_loader._data_dict.values()]
+            self.displayDataFolders(frames, metadata, file_path)
+            return
+
         ext = os.path.splitext(file_path)[1].lower()
         if ext == '.asd':
             frames, metadata, channels = load_asd(file_path, channel)
@@ -234,10 +243,39 @@ class FileDetailingSystemWidget(QWidget):
         else:
             print("No images found.")
 
-    def updateMetadataTable(self, values):
+    def displayDataFolders(self, frames, metadata, file_path):
+        fig, axis = plt.subplots()
+        im = axis.imshow(frames[0], cmap=AFM)
+        metadata_text = axis.text(0.02, 0.95, '', transform=axis.transAxes, color='white', fontsize=8, verticalalignment='top', bbox=dict(facecolor='black', alpha=0.5))
 
-        for i, value in enumerate(values):
-            self.fileDetailsWidget.setItem(i, 1, QTableWidgetItem(value))
+        previous_meta = metadata[0]  # Initialize previous metadata
+
+        def update(frame):
+            nonlocal previous_meta  # Use nonlocal to modify previous_meta inside update
+            current_image = frames[frame]
+            im.set_array(current_image)
+            current_meta = metadata[frame]
+            if self._check_metadata_change(current_meta, previous_meta):
+                metadata_text.set_text(str(current_meta))
+                self.updateMetadataTable(current_meta)
+                previous_meta = current_meta  # Update previous_meta
+            return im, metadata_text
+
+        self.animation = animation.FuncAnimation(fig, update, frames=len(frames), interval=200, blit=True)
+
+        # Integrate the animation into the Qt event loop
+        timer = QTimer(self)
+        timer.timeout.connect(lambda: None)
+        timer.start(50)
+
+        plt.show()
+
+    def _check_metadata_change(self, current_meta, previous_meta):
+        return current_meta != previous_meta
+
+    def updateMetadataTable(self, metadata):
+        for i, value in enumerate(metadata):
+            self.fileDetailsWidget.setItem(i, 1, QTableWidgetItem(str(value)))
 
     def displayData(self, frames):
         fig, axis = plt.subplots()
@@ -259,8 +297,6 @@ class FileDetailingSystemWidget(QWidget):
             timer.start(50)
 
             plt.show()
-
-
 
     def onChannelChanged(self, channel):
         self.currentChannel = channel
