@@ -8,4 +8,10 @@ pytorch
 torchvision
 torchaudio
 pytorch-cuda
+matplotlib
+numpy
+
+# EXPERIMENTAL 
+# pyopengl
+# pyopengl-accelerate
 

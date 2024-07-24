@@ -44,7 +44,6 @@ class CustomFileFilterProxyModel(QSortFilterProxyModel):
         else:
             return 0
 
-
 class CustomFileSystemModel(QFileSystemModel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
