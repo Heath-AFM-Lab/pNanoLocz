@@ -4,7 +4,6 @@ from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QSizePolicy, QLa
 from PyQt6.QtCore import QTimer, pyqtSignal, QSize, QRect, QPoint
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib import cm
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 from matplotlib.offsetbox import AnchoredText
 import matplotlib.font_manager as fm
@@ -201,6 +200,7 @@ class MatplotlibVideoPlayerWidget(QWidget):
 
     def get_frame_number(self):
         return self.current_frame_index
+
 
     ### Visual control functions ###
 

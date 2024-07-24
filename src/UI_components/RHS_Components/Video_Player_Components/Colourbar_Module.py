@@ -3,7 +3,6 @@ from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
-import numpy as np
 from core.cmaps import CMAPS, DEFAULT_CMAP_NAME
 
 

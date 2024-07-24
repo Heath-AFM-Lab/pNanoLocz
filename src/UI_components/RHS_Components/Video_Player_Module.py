@@ -3,9 +3,6 @@ import os
 import numpy as np
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSizePolicy, QApplication
 from PyQt6.QtGui import QIcon
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal
-from vispy import app, scene
-from vispy.scene import visuals
 from UI_components.RHS_Components.Video_Player_Components import VideoControlWidget, VideoDepthControlWidget, VisualRepresentationWidget, ExportAndVideoScaleWidget, MatplotlibVideoPlayerWidget, MatplotlibColourBarWidget
 from utils.constants import PATH_TO_ICON_DIRECTORY
 
@@ -88,11 +85,11 @@ class VideoPlayerWidget(QWidget):
         # Example: Generate random frames
         self.frames = [np.random.randint(0, 256, (height, width), dtype=np.uint8) for _ in range(100)]
 
-        self.vispyVideoPlayerWidget = MatplotlibVideoPlayerWidget(self.frames)
-        self.vispyVideoPlayerWidget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.videoPlayerLayout.addWidget(self.vispyVideoPlayerWidget, stretch=1)
-        self.vispyVideoPlayerWidget.update_widgets.connect(self.update_widgets)
-        self.vispyVideoPlayerWidget.setMinimumSize(10, 10)
+        self.videoPlayerWidget = MatplotlibVideoPlayerWidget(self.frames)
+        self.videoPlayerWidget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.videoPlayerLayout.addWidget(self.videoPlayerWidget, stretch=1)
+        self.videoPlayerWidget.update_widgets.connect(self.update_widgets)
+        self.videoPlayerWidget.setMinimumSize(10, 10)
 
         self.colorbarWidget = MatplotlibColourBarWidget()
         self.videoPlayerLayout.addWidget(self.colorbarWidget)
@@ -105,7 +102,7 @@ class VideoPlayerWidget(QWidget):
         self.videoControlWidget.frameSpinBox.setRange(1, len(self.frames))
 
         # Update FPS box with base FPS
-        self.videoControlWidget.fpsTextBox.setText(str(self.vispyVideoPlayerWidget.get_fps()))
+        self.videoControlWidget.fpsTextBox.setText(str(self.videoPlayerWidget.get_fps()))
 
         # Enable widgets
         self.enableWidgets()
@@ -121,40 +118,40 @@ class VideoPlayerWidget(QWidget):
     def update_widgets(self):
         # Update the slider position
         self.videoControlWidget.videoSeekSlider.blockSignals(True)
-        self.videoControlWidget.videoSeekSlider.setValue(self.vispyVideoPlayerWidget.get_frame_number())
+        self.videoControlWidget.videoSeekSlider.setValue(self.videoPlayerWidget.get_frame_number())
         self.videoControlWidget.videoSeekSlider.blockSignals(False)
 
         # Update frame number
         self.videoControlWidget.frameSpinBox.blockSignals(True)
-        self.videoControlWidget.frameSpinBox.setValue(self.vispyVideoPlayerWidget.get_frame_number() + 1)
+        self.videoControlWidget.frameSpinBox.setValue(self.videoPlayerWidget.get_frame_number() + 1)
         self.videoControlWidget.frameSpinBox.blockSignals(False)
 
     def playPauseVideo(self):
-        if self.vispyVideoPlayerWidget.timer_is_running():
-            self.vispyVideoPlayerWidget.stop_timer()
+        if self.videoPlayerWidget.timer_is_running():
+            self.videoPlayerWidget.stop_timer()
             self.videoControlWidget.playIcon.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "play.png")))
             self.videoControlWidget.playIcon.setToolTip("Play")
         else:
-            self.vispyVideoPlayerWidget.start_timer()
+            self.videoPlayerWidget.start_timer()
             self.videoControlWidget.playIcon.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "pause.png")))
             self.videoControlWidget.playIcon.setToolTip("Pause")
 
     def skipForward(self):
-        self.vispyVideoPlayerWidget.skip_forward()
+        self.videoPlayerWidget.skip_forward()
         self.update_widgets()
 
     def skipBackward(self):
-        self.vispyVideoPlayerWidget.skip_backward()
+        self.videoPlayerWidget.skip_backward()
         self.update_widgets()
 
     def changePlaybackRate(self, fps):
-        self.vispyVideoPlayerWidget.set_fps(fps)
+        self.videoPlayerWidget.set_fps(fps)
 
     def goToFrameNo(self, frameNo):
-        self.vispyVideoPlayerWidget.go_to_frame_no(frameNo - 1)
+        self.videoPlayerWidget.go_to_frame_no(frameNo - 1)
 
     def setVideoPosition(self, position):
-        self.vispyVideoPlayerWidget.go_to_frame_no(position)
+        self.videoPlayerWidget.go_to_frame_no(position)
 
     def sliderReleased(self):
         self.update_widgets()
@@ -168,15 +165,15 @@ class VideoPlayerWidget(QWidget):
 
     def toggle_scale_bar(self, scale_bar_is_checked):
         if scale_bar_is_checked:
-            self.vispyVideoPlayerWidget.show_scale_bar()
+            self.videoPlayerWidget.show_scale_bar()
         else:
-            self.vispyVideoPlayerWidget.hide_scale_bar()
+            self.videoPlayerWidget.hide_scale_bar()
 
     def toggle_timescale(self, timescale_is_checked):
         if timescale_is_checked:
-            self.vispyVideoPlayerWidget.show_timescale()
+            self.videoPlayerWidget.show_timescale()
         else:
-            self.vispyVideoPlayerWidget.hide_timescale()
+            self.videoPlayerWidget.hide_timescale()
             
 
 # TODO: remove later
