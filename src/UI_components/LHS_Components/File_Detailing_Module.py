@@ -2,7 +2,7 @@ import sys
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTreeView, QTableWidget, QTableWidgetItem
 from PyQt6.QtGui import QFileSystemModel
 from PyQt6.QtCore import Qt, QSortFilterProxyModel
-from utils.Folder_Opener_Module.folderOpener import FolderOpener
+from utils.Folder_Opener_Module.Folder_Opener import FolderOpener
 import os
 
 class CustomFileFilterProxyModel(QSortFilterProxyModel):
@@ -93,7 +93,6 @@ class FileDetailingSystemWidget(QWidget):
 
         self.fileTreeView.setModel(self.fileFilterProxyModel)
         self.fileTreeView.setColumnWidth(0, 250)
-        self.fileTreeView.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.fileTreeView.setSortingEnabled(True)  # Enable sorting
 
         # Connect the sorting signal

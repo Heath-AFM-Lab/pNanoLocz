@@ -2,7 +2,7 @@ import os
 import sys
 from PyQt6.QtWidgets import QApplication, QWidget, QHBoxLayout, QPushButton, QCheckBox, QVBoxLayout
 from PyQt6.QtGui import QIcon
-from utils.Folder_Opener_Module.folderOpener import FolderOpener
+from utils.Folder_Opener_Module.Folder_Opener import FolderOpener
 from utils.constants import PATH_TO_ICON_DIRECTORY
 
 class FileSystemWidget(QWidget):

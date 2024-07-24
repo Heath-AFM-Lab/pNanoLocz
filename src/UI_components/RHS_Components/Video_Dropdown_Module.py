@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QComboBox
-from core.cmaps import CMAPS
+from core.Colormaps import CMAPS
 
 class VideoDropdownWidget(QWidget):
     def __init__(self):

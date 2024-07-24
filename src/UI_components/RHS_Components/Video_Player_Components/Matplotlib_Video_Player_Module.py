@@ -7,7 +7,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 from matplotlib.offsetbox import AnchoredText
 import matplotlib.font_manager as fm
-from core.cmaps import CMAPS, DEFAULT_CMAP_NAME
+from core.Colormaps import CMAPS, DEFAULT_CMAP_NAME
 
 DEFAULT_FPS = 30
 

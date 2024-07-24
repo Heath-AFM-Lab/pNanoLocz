@@ -1,7 +1,7 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout
 from UI_components.LHS_Components import DropdownWidget, FileDetailingSystemWidget, FileSystemWidget, TabWidget, ToggleableWidget
-from utils.Folder_Opener_Module.folderOpener import FolderOpener
+from utils.Folder_Opener_Module.Folder_Opener import FolderOpener
 
 class LHSWidgets(QWidget):
     def __init__(self, folderOpener: FolderOpener):
