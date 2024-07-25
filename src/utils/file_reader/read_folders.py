@@ -36,7 +36,7 @@ class ImageLoader:
             self._load_time = 0
 
     def _check_folder(self):
-        file_list = list(Path(self._folder_path).rglob('*'))
+        file_list = list(Path(self._folder_path).glob('*'))  # Only look at files directly inside the folder
         file_format_count = {}
 
         for file_path in file_list:
@@ -49,16 +49,11 @@ class ImageLoader:
         dominant_format_files = []
 
         for ext, count in file_format_count.items():
-            if count >= 5 and all(other_count < 3 for other_ext, other_count in file_format_count.items() if other_ext != ext):
+            if count >= 10 and all(other_count < 6 for other_ext, other_count in file_format_count.items() if other_ext != ext):
                 dominant_format = ext
                 dominant_format_files = [str(file_path) for file_path in file_list if file_path.suffix == dominant_format]
                 break
 
-        if dominant_format is None:
-            logger.info("No folders with a sufficient series of images found.")
-        else:
-            logger.info(f"Dominant format: {dominant_format}")
-            logger.info(f"Number of files: {len(dominant_format_files)}")
 
         return dominant_format, dominant_format_files
     
@@ -86,7 +81,6 @@ class ImageLoader:
 
     def play_images(self):
         if not self._data_dict:
-            logger.info("No images to display.")
             return
 
         fig, ax = plt.subplots()
@@ -95,19 +89,22 @@ class ImageLoader:
         im = ax.imshow(self._data_dict[initial_file_path]['image'], animated=True, cmap=AFM)
         metadata_text = ax.text(0.02, 0.95, '', transform=ax.transAxes, color='white', fontsize=8, verticalalignment='top', bbox=dict(facecolor='black', alpha=0.5))
 
-        previous_meta = self._data_dict[initial_file_path]['metadata']  # Initialize previous_meta outside the function
+        previous_meta = self._data_dict[initial_file_path]['metadata']
 
         def updatefig(i):
-            nonlocal previous_meta  # Declare previous_meta as nonlocal to modify it inside the function
+            nonlocal previous_meta
             current_file_path = file_paths[i]
             current_image = self._data_dict[current_file_path]['image']
             current_meta = self._data_dict[current_file_path]['metadata']
             im.set_array(current_image)
             if self._check_metadata_change(current_meta, previous_meta):
                 metadata_text.set_text(current_meta)
-                print("Metadata updated:", (current_meta))
+                print("Metadata updated:", current_meta)
                 previous_meta = current_meta
             return im, metadata_text
 
         ani = animation.FuncAnimation(fig, updatefig, frames=len(file_paths), interval=100, blit=True)
         plt.show()
+
+    def _check_metadata_change(self, current_meta, previous_meta):
+        return current_meta != previous_meta
