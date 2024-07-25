@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib import animation
 import numpy as np
 import matplotlib.colors as colors
+from utils.constants import FILE_EXTS
 
 AFM = np.load('utils/file_reader/AFM_cmap.npy')
 AFM = colors.ListedColormap(AFM)
@@ -100,7 +101,7 @@ class FileDetailingSystemWidget(QWidget):
         self.fileTreeView = QTreeView(self)
         self.fileSystemModel = CustomFileSystemModel(parent=self)
         self.fileFilterProxyModel = CustomFileFilterProxyModel(
-            extensions=['.asd', '.ibw', '.spm', '.jpk', '.gwy', '.ARIS', '.nhf'], parent=self
+            extensions= FILE_EXTS, parent=self
         )
         self.fileFilterProxyModel.setSourceModel(self.fileSystemModel)
 

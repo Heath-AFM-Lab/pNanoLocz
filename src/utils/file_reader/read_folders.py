@@ -11,6 +11,7 @@ from utils.file_reader.read_spm import open_spm
 from utils.file_reader.read_gwy import open_gwy
 import matplotlib.colors as colors
 import time
+from utils.constants import IMG_EXTS
 
 AFM = np.load('utils/file_reader/AFM_cmap.npy')
 AFM = colors.ListedColormap(AFM)
@@ -18,8 +19,6 @@ AFM = colors.ListedColormap(AFM)
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-EXPECTED_FILE_TYPES = {'.nhf', '.jpk', '.ibw', '.spm', '.gwy'}
 
 class ImageLoader:
     def __init__(self, folder_path: str):
@@ -43,7 +42,7 @@ class ImageLoader:
         for file_path in file_list:
             if file_path.is_file():
                 ext = file_path.suffix
-                if ext in EXPECTED_FILE_TYPES:
+                if ext in IMG_EXTS:
                     file_format_count[ext] = file_format_count.get(ext, 0) + 1
 
         dominant_format = None
