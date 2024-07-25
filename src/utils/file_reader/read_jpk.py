@@ -70,6 +70,7 @@ def open_jpk(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
         fps = 1 / scan_rate if scan_rate != 0 else 0
         line_rate = y_pixels * fps if y_pixels else 0
         pixel_to_nanometre_scaling_factor = scaling_factor
+        print(pixel_to_nanometre_scaling_factor)
 
         values = [
             str(num_frames),
@@ -78,7 +79,7 @@ def open_jpk(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
             f"{int(line_rate)}",
             str(y_pixels),
             str(x_pixels),
-            f"{pixel_to_nanometre_scaling_factor:.2f}",
+            f"{pixel_to_nanometre_scaling_factor:.4f}",
             channel
         ]
 

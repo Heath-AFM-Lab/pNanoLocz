@@ -288,7 +288,7 @@ def load_asd(file_path: Path, channel: str):
             f"{int(line_rate)}",
             str(header_dict.get('y_pixels', 'N/A')),
             str(header_dict.get('x_pixels', 'N/A')),
-            f"{pixel_to_nanometre_scaling_factor:.2f}",
+            f"{pixel_to_nanometre_scaling_factor:.4f}",
             f"{channel}"
         ]
         

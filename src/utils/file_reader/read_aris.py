@@ -178,7 +178,7 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
                 f"{int(line_rate)}",
                 str(s.get('yPixel', 'N/A')),
                 str(s.get('xPixel', 'N/A')),
-                f"{pixel_to_nanometre_scaling_factor:.2f}",
+                f"{pixel_to_nanometre_scaling_factor:.4f}",
                 channel
             ]
 

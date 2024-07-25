@@ -128,7 +128,7 @@ def open_spm(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
         f"{int(line_rate)}",
         str(y_pixels),
         str(x_pixels),
-        f"{pixel_to_nanometre_scaling_factor:.2f}",
+        f"{pixel_to_nanometre_scaling_factor:.4f}",
         channel
     ]
 

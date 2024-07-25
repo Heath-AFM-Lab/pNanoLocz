@@ -163,7 +163,7 @@ def open_gwy(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
                 f"{int(line_rate)}",
                 str(y_pixels),
                 str(x_pixels),
-                f"{pixel_to_nanometre_scaling_factor:.2f}",
+                f"{pixel_to_nanometre_scaling_factor:.4f}",
                 meta['channels'][0]
             ]
 
