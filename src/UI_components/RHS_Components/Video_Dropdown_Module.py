@@ -1,4 +1,5 @@
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QComboBox
+from core.cmaps import CMAPS
 
 class VideoDropdownWidget(QWidget):
     def __init__(self):
@@ -17,9 +18,8 @@ class VideoDropdownWidget(QWidget):
         dropdownLayout.addWidget(self.previewDropdown)
 
         # Change colour scale dropdown
-        # TODO: Add more if need more
         self.colourScaleDropdown = QComboBox()
-        self.colourScaleDropdown.addItems(["AFM brown", "AFM dark gold", "AFD gold", "Fire", "Rainbow"])
+        self.colourScaleDropdown.addItems(CMAPS.keys())
         self.colourScaleDropdown.setFixedSize(self.colourScaleDropdown.sizeHint())
         dropdownLayout.addWidget(self.colourScaleDropdown)
 
@@ -46,7 +46,7 @@ class VideoDropdownWidget(QWidget):
 
         # Add last dropdown (it seems to just be "Off", but edited later once video is processed)
         # TODO: investigate the rest of the items that are meant to be in here
-        # and rename this variable using Ctrl + F
+        # and rename this variable using Ctrl + F to find and replace
         self.dropdown6 = QComboBox()
         self.dropdown6.addItems(["Off"])
         self.dropdown6.setFixedSize(self.dropdown6.sizeHint())

@@ -3,27 +3,16 @@ import os
 import numpy as np
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSizePolicy, QApplication
 from PyQt6.QtGui import QIcon
-from PyQt6.QtCore import Qt
-from vispy import app, scene
-from vispy.gloo import set_clear_color
-from UI_components.RHS_Components.Video_Player_Components import VideoControlWidget, VideoDepthControlWidget, VisualRepresentationWidget, ExportAndVideoScaleWidget
+from UI_components.RHS_Components.Video_Player_Components import VideoControlWidget, VideoDepthControlWidget, VisualRepresentationWidget, ExportAndVideoScaleWidget, MatplotlibVideoPlayerWidget, MatplotlibColourBarWidget
 from utils.constants import PATH_TO_ICON_DIRECTORY
-
-class FixedPanZoomCamera(scene.cameras.PanZoomCamera):
-    def viewbox_mouse_event(self, event):
-        # Ignore all mouse events to lock the video in place
-        return
 
 class VideoPlayerWidget(QWidget):
     def __init__(self):
         super().__init__()
         self.buildVideoPlayerWidgets()
+        self.framesLoaded = False
         # TODO: reconfigure to actually load a file
         self.loadFrames()
-        self.frame_index = 0
-
-        # Timer to update the frames
-        self.timer = app.Timer('auto', connect=self.update_frame, start=False)
 
     def buildVideoPlayerWidgets(self):
         # Set up video player layout 
@@ -43,17 +32,9 @@ class VideoPlayerWidget(QWidget):
         self.iconLayout.addWidget(self.screenshotIcon)
         self.mediaLayout.addLayout(self.iconLayout)
 
-        # Set up Vispy canvas
-        self.videoPlayerContainer = QWidget()
-        self.vispyCanvas = scene.SceneCanvas(keys='interactive', parent=self.videoPlayerContainer, bgcolor=None)
-        # self.vispyCanvas.native.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Expand to fill space
-        self.mediaLayout.addWidget(self.vispyCanvas.native)
-
-        self.view = self.vispyCanvas.central_widget.add_view()
-        self.view.camera = FixedPanZoomCamera()
-        self.view.camera.zoom_factor = 1.0  # Set initial zoom factor
-
-        self.setLayout(self.mediaLayout)
+        # Set and add a layout to store video player and colour bar
+        self.videoPlayerLayout = QHBoxLayout()
+        self.mediaLayout.addLayout(self.videoPlayerLayout)
 
         # Initialize the rest of the widgets
         self.videoControlWidget = VideoControlWidget()
@@ -62,6 +43,7 @@ class VideoPlayerWidget(QWidget):
         self.exportAndVideoScaleWidget = ExportAndVideoScaleWidget()
 
         # Connect signals to slots
+        # Video player control widgets
         self.videoControlWidget.playClicked.connect(self.playPauseVideo)
         self.videoControlWidget.skipBackClicked.connect(self.skipBackward)
         self.videoControlWidget.skipForwardClicked.connect(self.skipForward)
@@ -69,6 +51,12 @@ class VideoPlayerWidget(QWidget):
         self.videoControlWidget.specificVideoFrameGiven.connect(self.goToFrameNo)
         self.videoControlWidget.videoSeekSlider.valueChanged.connect(self.setVideoPosition)
         self.videoControlWidget.videoSeekSlider.sliderReleased.connect(self.sliderReleased)
+
+        # Visual representation widgets
+        self.visualRepresentationWidget.zScaleCheckboxChecked.connect(self.toggle_colorbar)
+        self.visualRepresentationWidget.scaleBarCheckboxChecked.connect(self.toggle_scale_bar)
+        self.visualRepresentationWidget.timescaleCheckboxChecked.connect(self.toggle_timescale)
+
 
         # Fix all sizes
         self.videoControlWidget.setFixedSize(self.videoControlWidget.sizeHint())
@@ -85,24 +73,27 @@ class VideoPlayerWidget(QWidget):
 
         self.mediaLayout.addLayout(videoControlLayout)
         self.mediaLayout.addWidget(self.exportAndVideoScaleWidget)
-
-        # Adapt the video player widget to match the size of the lower control widgets
-        self.adjustSizeToFitBottomWidgets()
         
         # Disable widgets until loadFrames is called
         self.disableWidgets()
 
-    def adjustSizeToFitBottomWidgets(self):
-        widthOfControlWidgets = self.videoControlWidget.width() + self.visualRepresentationWidget.width() + self.videoDepthControlWidget.width()
-        self.videoPlayerContainer.setFixedSize(widthOfControlWidgets, widthOfControlWidgets)
+        self.setLayout(self.mediaLayout)
 
-
-    # TODO: create proper load frames func that 
-    # triggers after user selects a file to open
+    # TODO: create proper load frames func that triggers after user selects a file to open
     def loadFrames(self):
+        width, height = 100, 100
         # Example: Generate random frames
-        self.frames = [np.random.randint(0, 256, (512, 512), dtype=np.uint8) for _ in range(100)]
-        self.image_visual = scene.visuals.Image(self.frames[0], parent=self.view.scene, interpolation='nearest')
+        self.frames = [np.random.randint(0, 256, (height, width), dtype=np.uint8) for _ in range(100)]
+
+        self.videoPlayerWidget = MatplotlibVideoPlayerWidget(self.frames)
+        self.videoPlayerWidget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.videoPlayerLayout.addWidget(self.videoPlayerWidget, stretch=1)
+        self.videoPlayerWidget.update_widgets.connect(self.update_widgets)
+        self.videoPlayerWidget.setMinimumSize(10, 10)
+
+        self.colorbarWidget = MatplotlibColourBarWidget()
+        self.videoPlayerLayout.addWidget(self.colorbarWidget)
+        self.colorbarWidget.hide()
 
         # Update slider with max frames
         self.videoControlWidget.videoSeekSlider.setRange(0, len(self.frames) - 1)
@@ -110,76 +101,82 @@ class VideoPlayerWidget(QWidget):
         # Update frame selector with max frames
         self.videoControlWidget.frameSpinBox.setRange(1, len(self.frames))
 
+        # Update FPS box with base FPS
+        self.videoControlWidget.fpsTextBox.setText(str(self.videoPlayerWidget.get_fps()))
+
         # Enable widgets
         self.enableWidgets()
-        
-        # Update the view camera to fit the entire image
-        self.update_view_camera()
+        self.framesLoaded = True
 
     def disableWidgets(self):
         self.videoControlWidget.setDisabled(True)
-    
+
     def enableWidgets(self):
         self.videoControlWidget.setEnabled(True)
 
-    # Following functions are for the video control widget, to play and control the video
-    def update_frame(self, event):
+    ### VIDEO CONTROL FUNCTIONALITY ###
+    def update_widgets(self):
         # Update the slider position
         self.videoControlWidget.videoSeekSlider.blockSignals(True)
-        self.videoControlWidget.videoSeekSlider.setValue(self.frame_index)
+        self.videoControlWidget.videoSeekSlider.setValue(self.videoPlayerWidget.get_frame_number())
         self.videoControlWidget.videoSeekSlider.blockSignals(False)
 
         # Update frame number
         self.videoControlWidget.frameSpinBox.blockSignals(True)
-        self.videoControlWidget.frameSpinBox.setValue(self.frame_index + 1)
+        self.videoControlWidget.frameSpinBox.setValue(self.videoPlayerWidget.get_frame_number() + 1)
         self.videoControlWidget.frameSpinBox.blockSignals(False)
 
-        # Update the image visual with the new frame
-        self.image_visual.set_data(self.frames[self.frame_index])
-        self.frame_index = (self.frame_index + 1) % len(self.frames)
-        self.vispyCanvas.update()
-
-    def update_view_camera(self):
-        # Adjust the camera to fit the entire image
-        img_height, img_width = self.frames[0].shape
-        self.view.camera.set_range(x=(0, img_width), y=(0, img_height))
-        self.view.camera.aspect = 1.0 * img_width / img_height
-
     def playPauseVideo(self):
-        if self.timer.running:
-            self.timer.stop()
+        if self.videoPlayerWidget.timer_is_running():
+            self.videoPlayerWidget.stop_timer()
             self.videoControlWidget.playIcon.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "play.png")))
             self.videoControlWidget.playIcon.setToolTip("Play")
         else:
-            self.timer.start()
+            self.videoPlayerWidget.start_timer()
             self.videoControlWidget.playIcon.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "pause.png")))
             self.videoControlWidget.playIcon.setToolTip("Pause")
 
     def skipForward(self):
-        self.frame_index = min(self.frame_index + 29, len(self.frames) - 1)  # Skip 30 frames forward
-        self.update_frame(None)
+        self.videoPlayerWidget.skip_forward()
+        self.update_widgets()
 
     def skipBackward(self):
-        self.frame_index = max(self.frame_index - 31, 0)  # Skip 30 frames backward
-        self.update_frame(None)
+        self.videoPlayerWidget.skip_backward()
+        self.update_widgets()
 
     def changePlaybackRate(self, fps):
-        self.timer.interval = 1.0 / fps
+        self.videoPlayerWidget.set_fps(fps)
 
     def goToFrameNo(self, frameNo):
-        if 1 <= frameNo <= len(self.frames):
-            self.frame_index = frameNo - 1
-            self.update_frame(None)  # Update the frame immediately
+        self.videoPlayerWidget.go_to_frame_no(frameNo - 1)
 
     def setVideoPosition(self, position):
-        self.frame_index = position
+        self.videoPlayerWidget.go_to_frame_no(position)
 
     def sliderReleased(self):
-        self.update_frame(None)
+        self.update_widgets()
 
-    def deleteFrames(self, min, max):
-        pass
+    ### VISUAL REPRESENTATION FUNCTIONALITY ###
+    def toggle_colorbar(self, z_scale_box_is_checked):
+        if z_scale_box_is_checked:
+            self.colorbarWidget.show()
+        else:
+            self.colorbarWidget.hide()
 
+    def toggle_scale_bar(self, scale_bar_is_checked):
+        if scale_bar_is_checked:
+            self.videoPlayerWidget.show_scale_bar()
+        else:
+            self.videoPlayerWidget.hide_scale_bar()
+
+    def toggle_timescale(self, timescale_is_checked):
+        if timescale_is_checked:
+            self.videoPlayerWidget.show_timescale()
+        else:
+            self.videoPlayerWidget.hide_timescale()
+            
+
+# TODO: remove later
 if __name__ == "__main__":
     # Path to icon directory
     ICON_DIRECTORY = "../../../assets/icons"

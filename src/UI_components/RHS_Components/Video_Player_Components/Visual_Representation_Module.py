@@ -29,7 +29,5 @@ class VisualRepresentationWidget(QWidget):
         self.timescaleCheckbox.setToolTip("Enable or disable Timescale")
         self.timescaleCheckbox.clicked.connect(self.timescaleCheckboxChecked.emit)
         self.layout.addWidget(self.timescaleCheckbox)
-
-        self.layout.addStretch(1)       # Might be redundant
-
+        
         self.setLayout(self.layout)

@@ -11,3 +11,9 @@ pytorch-cuda
 matplotlib
 AFMReader
 h5py
+numpy
+
+# EXPERIMENTAL 
+# pyopengl
+# pyopengl-accelerate
+

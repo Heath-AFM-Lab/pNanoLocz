@@ -3,10 +3,14 @@ from .Video_Control_Module import VideoControlWidget
 from .Video_Depth_Control_Module import VideoDepthControlWidget
 from .Visual_Representation_Module import VisualRepresentationWidget
 from .Export_and_Video_Scale_Module import ExportAndVideoScaleWidget
+from .Matplotlib_Video_Player_Module import MatplotlibVideoPlayerWidget
+from .Colourbar_Module import MatplotlibColourBarWidget
 
 __all__ = [
     "VideoControlWidget",
     "VideoDepthControlWidget",
     "VisualRepresentationWidget",
-    "ExportAndVideoScaleWidget"
+    "ExportAndVideoScaleWidget",
+    "MatplotlibVideoPlayerWidget",
+    "MatplotlibColourBarWidget"
 ]

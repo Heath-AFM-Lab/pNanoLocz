@@ -89,7 +89,7 @@ class VideoControlWidget(QWidget):
         self.fpsLabel = QLabel("Speed (FPS):")
         self.fpsTextBox = QLineEdit()
         self.fpsTextBox.setValidator(QIntValidator())
-        self.fpsTextBox.textChanged.connect(lambda text: self.fpsChanged.emit(int(text)) if text.isdigit() else None)
+        self.fpsTextBox.textChanged.connect(lambda text: self.fpsChanged.emit(int(text)) if text.isdigit() and int(text) != 0 else None)
         self.fpsTextBox.setMaximumSize(40, 21)
         self.buttonLayout.addWidget(self.fpsLabel)
         self.buttonLayout.addWidget(self.fpsTextBox)
@@ -98,7 +98,6 @@ class VideoControlWidget(QWidget):
 
         # Video slider
         self.videoSeekSlider = QSlider(Qt.Orientation.Horizontal)
-        # TODO: Update the range when a video has been loaded
         self.videoSeekSlider.setRange(0, 100)
         self.layout.addWidget(self.videoSeekSlider)
 

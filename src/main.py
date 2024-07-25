@@ -1,10 +1,12 @@
 import sys
+import os
 from PyQt6.QtWidgets import (
     QSizePolicy, QWidget, QApplication, QMainWindow, QFileDialog, 
     QMessageBox, QHBoxLayout
 )
-from PyQt6.QtGui import QAction
+from PyQt6.QtGui import QAction, QIcon
 from UI_components import LHSWidgets, RHSWidgets
+from utils.constants import PATH_TO_ICON_DIRECTORY
 from utils.Folder_Opener_Module.folderOpener import FolderOpener
 
 class MyApp(QMainWindow):
@@ -53,6 +55,10 @@ class MyApp(QMainWindow):
 
         # Create menu for application
         self.createMenu()
+
+        # Add icon and title to main window
+        self.setWindowIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "pNanoLocz.png")))
+        self.setWindowTitle("pNanoLocz")
 
     def createMenu(self):
         menubar = self.menuBar()
