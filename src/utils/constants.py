@@ -1,5 +1,9 @@
 import os
 
+# NanoLocz File and Image Extensions
+FILE_EXTS = ['.asd', '.ibw', '.spm', '.jpk', '.gwy', '.ARIS', '.nhf']
+IMG_EXTS = {'.nhf', '.jpk', '.ibw', '.spm', '.gwy'}
+
 
 def get_path_to(directory: str) -> str:
     """Get the absolute path to a directory."""
