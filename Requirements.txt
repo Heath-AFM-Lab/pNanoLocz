@@ -9,6 +9,8 @@ torchvision
 torchaudio
 pytorch-cuda
 matplotlib
+AFMReader
+h5py
 numpy
 
 # EXPERIMENTAL 
