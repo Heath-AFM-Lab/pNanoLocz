@@ -5,7 +5,7 @@ import os
 def install_with_conda(package):
     """Attempt to install a package with conda."""
     try:
-        subprocess.check_call(['conda', 'install', '--yes', package, '-c', 'conda-forge', "-c", "pytorch", "-c", "nvidia" ])
+        subprocess.check_call(['conda', 'install', '--yes', package, '-c', 'conda-forge', "-c", "pytorch", "-c", "nvidia"])
         print(f'Successfully installed {package} with conda')
     except subprocess.CalledProcessError:
         print(f'Failed to install {package} with conda, falling back to pip')
@@ -25,10 +25,16 @@ def main(requirements_file):
         print(f'Error: {requirements_file} does not exist.')
         return
 
+    is_macos = sys.platform == 'darwin'
+
     with open(requirements_file, 'r') as f:
         for line in f:
             package = line.strip()
             if package and not package.startswith('#'):
+                if is_macos and 'cuda' in package.lower():
+                    print(f'Skipping {package} installation on macOS.')
+                    continue
+                
                 print(f'Installing {package}...')
                 if package.lower().startswith('pyqt6'):
                     install_with_pip(package)
