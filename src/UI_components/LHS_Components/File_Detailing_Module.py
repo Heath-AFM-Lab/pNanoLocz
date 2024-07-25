@@ -162,7 +162,18 @@ class FileDetailingSystemWidget(QWidget):
         self.currentFilePath = file_path
         self.loadFileData(file_path, self.currentChannel)
 
+
     def loadFileData(self, file_path, channel):
+        if os.path.isdir(file_path):
+            image_loader = ImageLoader(file_path)
+            if image_loader._dominant_format is not None:  # Only display data if criteria met
+                frames = [data['image'] for data in image_loader._data_dict.values()]
+                metadata = [data['metadata'] for data in image_loader._data_dict.values()]
+                self.displayDataFolders(frames, metadata, file_path)
+            else:
+                print("Folder does not meet the criteria for image series.")
+            return
+
         # Import necessary file readers
         from utils.file_reader.asd import load_asd, create_animation
         from utils.file_reader.read_aris import open_aris
@@ -171,13 +182,6 @@ class FileDetailingSystemWidget(QWidget):
         from utils.file_reader.read_nhf import open_nhf
         from utils.file_reader.read_spm import open_spm
         from utils.file_reader.read_gwy import open_gwy
-
-        if os.path.isdir(file_path):
-            image_loader = ImageLoader(file_path)
-            frames = [data['image'] for data in image_loader._data_dict.values()]
-            metadata = [data['metadata'] for data in image_loader._data_dict.values()]
-            self.displayDataFolders(frames, metadata, file_path)
-            return
 
         ext = os.path.splitext(file_path)[1].lower()
         if ext == '.asd':

@@ -27,7 +27,7 @@ def open_nhf(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
     tuple[np.ndarray, dict, list]
         A tuple containing the image, its metadata, and parameter values.
     """
-    logger.info(f"Loading image from: {file_path}")
+    # logger.info(f"Loading image from: {file_path}")
     file_path = Path(file_path)
 
     with h5py.File(file_path, 'r') as f:
@@ -53,7 +53,7 @@ def open_nhf(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
 
         # List all available channels
         available_channels = [group[ds].attrs.get('name') for ds in datasets]
-        logger.info(f"Available channels: {available_channels}")
+        # logger.info(f"Available channels: {available_channels}")
         
         if channel not in available_channels:
             channel = available_channels[0]

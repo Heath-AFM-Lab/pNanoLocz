@@ -157,22 +157,22 @@ def calculate_scaling_factor(
         in the .asd file.
     """
     if channel == "TP":
-        logger.info(
-            f"Scaling factor: Type: {channel} -> TP | piezo extension {z_piezo_gain} "
-            f"* piezo gain {z_piezo_extension} = scaling factor {z_piezo_gain * z_piezo_extension}"
-        )
+        # logger.info(
+        #     f"Scaling factor: Type: {channel} -> TP | piezo extension {z_piezo_gain} "
+        #     f"* piezo gain {z_piezo_extension} = scaling factor {z_piezo_gain * z_piezo_extension}"
+        # )
         return z_piezo_gain * z_piezo_extension
     if channel == "ER":
-        logger.info(
-            f"Scaling factor: Type: {channel} -> ER | - scanner sensitivity {-scanner_sensitivity} "
-            f"= scaling factor {-scanner_sensitivity}"
-        )
+        # logger.info(
+        #     f"Scaling factor: Type: {channel} -> ER | - scanner sensitivity {-scanner_sensitivity} "
+        #     f"= scaling factor {-scanner_sensitivity}"
+        # )
         return -scanner_sensitivity
     if channel == "PH":
-        logger.info(
-            f"Scaling factor: Type: {channel} -> PH | - phase sensitivity {-phase_sensitivity} "
-            f"= scaling factor {-phase_sensitivity}"
-        )
+        # logger.info(
+        #     f"Scaling factor: Type: {channel} -> PH | - phase sensitivity {-phase_sensitivity} "
+        #     f"= scaling factor {-phase_sensitivity}"
+        # )
         return -phase_sensitivity
 
     raise ValueError(f"channel {channel} not known for .asd file type.")
@@ -223,7 +223,7 @@ def load_asd(file_path: Path, channel: str):
                 f"File version {file_version} unknown. Please add support if you "
                 "know how to decode this file version."
             )
-        logger.debug(f"header dict: \n{header_dict}")
+        # logger.debug(f"header dict: \n{header_dict}")
 
         pixel_to_nanometre_scaling_factor_x = header_dict["x_nm"] / header_dict["x_pixels"]
         pixel_to_nanometre_scaling_factor_y = header_dict["y_nm"] / header_dict["y_pixels"]
@@ -238,7 +238,7 @@ def load_asd(file_path: Path, channel: str):
         if channel == header_dict["channel1"]:
             logger.info(f"Requested channel {channel} matches first channel in file: {header_dict['channel1']}")
         elif channel == header_dict["channel2"]:
-            logger.info(f"Requested channel {channel} matches second channel in file: " f"{header_dict['channel2']}")
+            # logger.info(f"Requested channel {channel} matches second channel in file: " f"{header_dict['channel2']}")
 
             # Skip first channel data
             _size_of_frame_header = header_dict["frame_header_length"]
@@ -314,7 +314,7 @@ def read_file_version(open_file: BinaryIO) -> int:
         Integer file version decoded from file.
     """
     file_version = read_int32(open_file)
-    logger.info(f"file version: {file_version}")
+    # logger.info(f"file version: {file_version}")
     return file_version
 
 

@@ -101,7 +101,7 @@ def open_gwy(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
     ValueError
         If the channel is not found in the .gwy file.
     """
-    logger.info(f"Loading image from: {file_path}")
+    # logger.info(f"Loading image from: {file_path}")
     file_path = Path(file_path)
     
     try:
@@ -124,7 +124,7 @@ def open_gwy(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
                     channels.append((ch_no, name))
                     channel_meta.append(value)
 
-            logger.info(f"Found channels: {channels}")
+            # logger.info(f"Found channels: {channels}")
 
             # Ensure correct reshaping of image data
             for meta in channel_meta:
@@ -135,7 +135,7 @@ def open_gwy(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
             # Filter images for the specified channel
             channel_indices = [i for i, (_, name) in enumerate(channels) if f'/{channel}/data' in name]
             if not channel_indices:
-                logger.warning(f"Channel '{channel}' not found. Using the first available channel instead.")
+                # logger.warning(f"Channel '{channel}' not found. Using the first available channel instead.")
                 channel_indices = [0]  # Use the first available channel
             
             images = [channel_meta[i]['data'] for i in channel_indices]

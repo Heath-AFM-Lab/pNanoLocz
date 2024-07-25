@@ -39,8 +39,8 @@ def spm_pixel_to_nm_scaling(filename: str, channel_data: pySPM.SPM.SPM_image) ->
     )[0]
     if px_to_real[0][0] == 0 and px_to_real[1][0] == 0:
         pixel_to_nm_scaling = 1
-        logger.info(f"[{filename}] : Pixel size not found in metadata, defaulting to 1nm")
-    logger.info(f"[{filename}] : Pixel to nm scaling : {pixel_to_nm_scaling}")
+        # logger.info(f"[{filename}] : Pixel size not found in metadata, defaulting to 1nm")
+    # logger.info(f"[{filename}] : Pixel to nm scaling : {pixel_to_nm_scaling}")
     return pixel_to_nm_scaling
 
 def open_spm(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, list]:
@@ -66,12 +66,12 @@ def open_spm(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
     ValueError
         If the channel is not found in the .spm file.
     """
-    logger.info(f"Loading image from : {file_path}")
+    # logger.info(f"Loading image from : {file_path}")
     file_path = Path(file_path)
     filename = file_path.stem
     try:
         scan = pySPM.Bruker(file_path)
-        logger.info(f"[{filename}] : Loaded image from : {file_path}")
+        # logger.info(f"[{filename}] : Loaded image from : {file_path}")
 
         labels = []
         for layer in scan.layers:
@@ -81,11 +81,11 @@ def open_spm(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
                 labels.append(channel_name)
 
         if channel not in labels:
-            logger.warning(f"[{filename}] : Channel '{channel}' not found. Using first available channel: {labels[0]}")
+            # logger.warning(f"[{filename}] : Channel '{channel}' not found. Using first available channel: {labels[0]}")
             channel = labels[0]
 
         channel_data = scan.get_channel(channel)
-        logger.info(f"[{filename}] : Extracted channel {channel}")
+        # logger.info(f"[{filename}] : Extracted channel {channel}")
         image = np.flipud(np.array(channel_data.pixels))
     except FileNotFoundError:
         logger.error(f"[{filename}] File not found : {file_path}")

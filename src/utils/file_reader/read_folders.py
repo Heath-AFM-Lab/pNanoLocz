@@ -26,11 +26,15 @@ class ImageLoader:
         self._folder_path = folder_path
         self._dominant_format, self._file_paths = self._check_folder()
         
-        start_time = time.time()  # Start timing before loading images
-        self._data_dict = self._load_images()
-        end_time = time.time()  # End timing after loading images
+        if self._dominant_format is not None:  # Only proceed if criteria met
+            start_time = time.time()  # Start timing before loading images
+            self._data_dict = self._load_images()
+            end_time = time.time()  # End timing after loading images
 
-        self._load_time = end_time - start_time  # Calculate the duration
+            self._load_time = end_time - start_time  # Calculate the duration
+        else:
+            self._data_dict = {}
+            self._load_time = 0
 
     def _check_folder(self):
         file_list = list(Path(self._folder_path).rglob('*'))
@@ -42,14 +46,20 @@ class ImageLoader:
                 if ext in EXPECTED_FILE_TYPES:
                     file_format_count[ext] = file_format_count.get(ext, 0) + 1
 
-        if not file_format_count:
-            raise ValueError("No files found with expected formats.")
+        dominant_format = None
+        dominant_format_files = []
 
-        dominant_format = max(file_format_count, key=file_format_count.get)
-        dominant_format_files = [str(file_path) for file_path in file_list if file_path.suffix == dominant_format]
+        for ext, count in file_format_count.items():
+            if count >= 5 and all(other_count < 3 for other_ext, other_count in file_format_count.items() if other_ext != ext):
+                dominant_format = ext
+                dominant_format_files = [str(file_path) for file_path in file_list if file_path.suffix == dominant_format]
+                break
 
-        logger.info(f"Dominant format: {dominant_format}")
-        logger.info(f"Number of files: {len(dominant_format_files)}")
+        if dominant_format is None:
+            logger.info("No folders with a sufficient series of images found.")
+        else:
+            logger.info(f"Dominant format: {dominant_format}")
+            logger.info(f"Number of files: {len(dominant_format_files)}")
 
         return dominant_format, dominant_format_files
     
@@ -61,26 +71,25 @@ class ImageLoader:
 
         for file_path in self._file_paths:
             if self._dominant_format == '.nhf':
-                im, meta = open_nhf(file_path, 'Topography')
+                im, meta, channels = open_nhf(file_path, 'Topography')
             elif self._dominant_format == '.jpk':
-                im, meta = open_jpk(file_path, "height_trace")
+                im, meta, channels = open_jpk(file_path, "height_trace")
             elif self._dominant_format == '.ibw':
-                im, meta = open_ibw(file_path, 1)
+                im, meta, channels = open_ibw(file_path, 1)
             elif self._dominant_format == '.spm':
                 im, meta, channels = open_spm(file_path, "Height")
             elif self._dominant_format == '.gwy':
-                im, meta = open_gwy(file_path, 1)
+                im, meta, channels = open_gwy(file_path, 1)
+            meta[0] = len(self._file_paths)
             data_dict[file_path] = {'image': im, 'metadata': meta}
 
         return data_dict
 
-    def _check_metadata_change(self, current_meta, previous_meta):
-        for i in range(0, 8):
-            if current_meta[i] != previous_meta[i]:
-                return True
-        return False
-
     def play_images(self):
+        if not self._data_dict:
+            logger.info("No images to display.")
+            return
+
         fig, ax = plt.subplots()
         file_paths = list(self._data_dict.keys())
         initial_file_path = file_paths[0]
@@ -103,10 +112,3 @@ class ImageLoader:
 
         ani = animation.FuncAnimation(fig, updatefig, frames=len(file_paths), interval=100, blit=True)
         plt.show()
-
-
-if __name__ == "__main__":
-    folder_path = 'data/3-2-2023 PS with 2000xPSD'  # Replace with folder path
-    image_loader = ImageLoader(folder_path)
-    print(f"Time taken to load images: {image_loader.get_load_time()} seconds")
-    image_loader.play_images()

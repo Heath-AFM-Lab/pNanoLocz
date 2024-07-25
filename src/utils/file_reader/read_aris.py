@@ -19,8 +19,8 @@ def explore_h5py_group(group, path=''):
         # logger.info(f"Found {type(item)}: {path}/{key}")
         if isinstance(item, h5py.Group):
             explore_h5py_group(item, path=f"{path}/{key}")
-        elif isinstance(item, h5py.Dataset):
-            logger.info(f"Dataset shape: {item.shape}")
+        # elif isinstance(item, h5py.Dataset):
+            # logger.info(f"Dataset shape: {item.shape}")
 
 def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, list]:
     """
@@ -45,7 +45,7 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
     ValueError
         If the channel is not found in the .aris file.
     """
-    logger.info(f"Loading image from: {file_path}")
+    # logger.info(f"Loading image from: {file_path}")
     file_path = Path(file_path)
     
     try:
@@ -152,9 +152,17 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
 
             # Load Images
             im = np.zeros((s['yPixel'], s['xPixel'], s['numberofFrames']))
+
             for i in range(len(M)):
                 img_loc = f'/DataSet/Resolution 0/Frame {X[M[i]]}'
-                im[:, :, i] = file[f'{img_loc}/{channel}/Image'][()].T
+                image_data = file[f'{img_loc}/{channel}/Image'][()]
+                
+                # Check the shape of the image data before transposing
+                if image_data.shape != (s['xPixel'], s['yPixel']):
+                    image_data.shape = (s['xPixel'], s['yPixel'])
+                    image_data = image_data.T
+
+                im[:, :, i] = image_data
 
             im[np.isnan(im)] = 0
 
