@@ -11,10 +11,7 @@ import numpy.typing as npt
 import matplotlib.pyplot as plt
 from matplotlib import animation
 import matplotlib.colors as colors
-
-AFM = np.load('utils/file_reader/AFM_cmap.npy')
-AFM = colors.ListedColormap(AFM)
-
+from utils.constants import STANDARDISED_METADATA_DICT_KEYS
 
 from AFMReader.logging import logger
 from AFMReader.io import (
@@ -282,19 +279,25 @@ def load_asd(file_path: Path, channel: str):
         fps = 1000.0 / header_dict.get('frame_time', 1000.0)  # Default to 1 fps if frame_time is missing
         line_rate = header_dict.get('y_pixels', 1) / (header_dict.get('frame_time', 1000.0) / 1000.0)
         values = [
-            str(header_dict.get('num_frames', 'N/A')),
-            str(header_dict.get('x_nm', 'N/A')),
-            f"{int(fps)}",
-            f"{int(line_rate)}",
-            str(header_dict.get('y_pixels', 'N/A')),
-            str(header_dict.get('x_pixels', 'N/A')),
-            f"{pixel_to_nanometre_scaling_factor:.4f}",
-            f"{channel}"
+            header_dict.get('num_frames', 'N/A'),
+            header_dict.get('x_nm', 'N/A'),
+            fps,
+            line_rate,
+            header_dict.get('y_pixels', 'N/A'),
+            header_dict.get('x_pixels', 'N/A'),
+            pixel_to_nanometre_scaling_factor,
+            channel
         ]
+
+        if len(values) != len(STANDARDISED_METADATA_DICT_KEYS):
+            raise ValueError(f"The length of the values in .spm does not match the required metadata keys.")
+
+        # Create the metadata dictionary
+        file_metadata = dict(zip(STANDARDISED_METADATA_DICT_KEYS, values))
         
         
 
-        return frames, values, channels
+        return frames, file_metadata, channels
 
 
 def read_file_version(open_file: BinaryIO) -> int:

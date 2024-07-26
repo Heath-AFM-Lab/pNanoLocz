@@ -2,9 +2,7 @@ import numpy as np
 from pathlib import Path
 import tifffile
 import matplotlib.colors as colors
-
-AFM = np.load('utils/file_reader/AFM_cmap.npy')
-AFM = colors.ListedColormap(AFM)
+from utils.constants import STANDARDISED_METADATA_DICT_KEYS
 
 def _jpk_pixel_to_nm_scaling(tiff_page: tifffile.tifffile.TiffPage) -> float:
     length = tiff_page.tags["32834"].value  # Grid-uLength (fast)
@@ -70,20 +68,25 @@ def open_jpk(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
         fps = 1 / scan_rate if scan_rate != 0 else 0
         line_rate = y_pixels * fps if y_pixels else 0
         pixel_to_nanometre_scaling_factor = scaling_factor
-        print(pixel_to_nanometre_scaling_factor)
 
         values = [
-            str(num_frames),
-            str(x_range_nm),
-            f"{int(fps)}",
-            f"{int(line_rate)}",
-            str(y_pixels),
-            str(x_pixels),
-            f"{pixel_to_nanometre_scaling_factor:.4f}",
+            num_frames,
+            x_range_nm,
+            fps,
+            line_rate,
+            y_pixels,
+            x_pixels,
+            pixel_to_nanometre_scaling_factor,
             channel
         ]
 
-    return image_flipped, values, channels
+        if len(values) != len(STANDARDISED_METADATA_DICT_KEYS):
+            raise ValueError(f"The length of the values in .jpk does not match the required metadata keys.")
+
+        # Create the metadata dictionary
+        file_metadata = dict(zip(STANDARDISED_METADATA_DICT_KEYS, values))
+
+    return image_flipped, file_metadata, channels
 
 if __name__ == "__main__":
     file_path = 'data/save-2023.02.16-12.08.49.026.jpk'

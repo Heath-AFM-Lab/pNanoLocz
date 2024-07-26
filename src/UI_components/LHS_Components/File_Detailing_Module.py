@@ -167,13 +167,19 @@ class FileDetailingSystemWidget(QWidget):
             if image_loader._dominant_format is not None:  # Only display data if criteria met
                 frames = [data['image'] for data in image_loader._data_dict.values()]
                 metadata = [data['metadata'] for data in image_loader._data_dict.values()]
+                channels = [data['channels'] for data in image_loader._data_dict.values()]
+                print(f"New set of data from folder: {image_loader._dominant_format}")
+                print(metadata)
+                print(channels)
+                print(frames)
+
                 # self.displayDataFolders(frames, metadata, file_path)
             else:
                 print("Folder does not meet the criteria for image series.")
             return
 
         # Import necessary file readers
-        from utils.file_reader.asd import load_asd, create_animation
+        from utils.file_reader.asd import load_asd
         from utils.file_reader.read_aris import open_aris
         from utils.file_reader.read_ibw import open_ibw
         from utils.file_reader.read_jpk import open_jpk

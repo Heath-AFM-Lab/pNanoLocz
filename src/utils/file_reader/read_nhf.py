@@ -2,10 +2,8 @@ import h5py
 import numpy as np
 import logging
 from pathlib import Path
-import matplotlib.colors as colors
-
-AFM = np.load('utils/file_reader/AFM_cmap.npy')
-AFM = colors.ListedColormap(AFM)
+import matplotlib.colors as color
+from utils.constants import STANDARDISED_METADATA_DICT_KEYS
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -95,17 +93,23 @@ def open_nhf(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
         pixel_to_nanometre_scaling_factor = 1e9 / x_pixel  # Assuming equal scaling in x and y
 
         values = [
-            str(num_frames),
-            str(x_range_nm),
-            f"{int(fps)}",
-            f"{int(line_rate)}",
-            str(y_pixels),
-            str(x_pixels),
-            f"{pixel_to_nanometre_scaling_factor:.4f}",
+            num_frames,
+            x_range_nm,
+            fps,
+            line_rate,
+            y_pixels,
+            x_pixels,
+            pixel_to_nanometre_scaling_factor,
             channel
         ]
 
-    return im, values, available_channels
+        if len(values) != len(STANDARDISED_METADATA_DICT_KEYS):
+            raise ValueError(f"The length of the values in .spm does not match the required metadata keys.")
+
+        # Create the metadata dictionary
+        file_metadata = dict(zip(STANDARDISED_METADATA_DICT_KEYS, values))
+
+    return im, file_metadata, available_channels
 
 if __name__ == "__main__":
     file_path = 'data/SBS-PS_example_data.nhf'

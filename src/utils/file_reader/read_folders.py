@@ -13,9 +13,6 @@ import matplotlib.colors as colors
 import time
 from utils.constants import IMG_EXTS
 
-AFM = np.load('utils/file_reader/AFM_cmap.npy')
-AFM = colors.ListedColormap(AFM)
-
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -75,7 +72,7 @@ class ImageLoader:
             elif self._dominant_format == '.gwy':
                 im, meta, channels = open_gwy(file_path, 1)
             meta[0] = len(self._file_paths)
-            data_dict[file_path] = {'image': im, 'metadata': meta}
+            data_dict[file_path] = {'image': im, 'metadata': meta, 'channels': channels}
 
         return data_dict
 

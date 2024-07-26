@@ -5,9 +5,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib.colors as colors
-
-AFM = np.load('utils/file_reader/AFM_cmap.npy')
-AFM = colors.ListedColormap(AFM)
+from utils.constants import STANDARDISED_METADATA_DICT_KEYS
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -172,15 +170,21 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
             pixel_to_nanometre_scaling_factor = 1 / np.max(dim_scaling) if np.any(dim_scaling) else 0
 
             values = [
-                str(s.get('numberofFrames', 'N/A')),
-                str(np.max(dim_scaling) if np.any(dim_scaling) else 'N/A'),
-                f"{int(fps)}",
-                f"{int(line_rate)}",
-                str(s.get('yPixel', 'N/A')),
-                str(s.get('xPixel', 'N/A')),
-                f"{pixel_to_nanometre_scaling_factor:.4f}",
+                s.get('numberofFrames', 'N/A'),
+                (np.max(dim_scaling) if np.any(dim_scaling) else 'N/A'),
+                fps,
+                line_rate,
+                s.get('yPixel', 'N/A'),
+                s.get('xPixel', 'N/A'),
+                pixel_to_nanometre_scaling_factor,
                 channel
             ]
+
+            if len(values) != len(STANDARDISED_METADATA_DICT_KEYS):
+                raise ValueError(f"The length of the values in .spm does not match the required metadata keys.")
+
+            # Create the metadata dictionary
+            file_metadata = dict(zip(STANDARDISED_METADATA_DICT_KEYS, values))
 
             channels = s['channels']
 
@@ -194,7 +198,7 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
         logger.error(f"Error processing {file_path}: {e}")
         raise
 
-    return im, values, channels
+    return im, file_metadata, channels
 
 if __name__ == "__main__":
     file_path = 'data/00T2_P3_0000.ARIS'
