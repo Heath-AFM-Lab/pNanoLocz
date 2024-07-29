@@ -9,7 +9,6 @@ from utils.file_reader.read_jpk import open_jpk
 from utils.file_reader.read_nhf import open_nhf
 from utils.file_reader.read_spm import open_spm
 from utils.file_reader.read_gwy import open_gwy
-import matplotlib.colors as colors
 import time
 from utils.constants import IMG_EXTS
 
@@ -72,6 +71,7 @@ class ImageLoader:
             elif self._dominant_format == '.gwy':
                 im, meta, channels = open_gwy(file_path, 1)
             meta[0] = len(self._file_paths)
+
             data_dict[file_path] = {'image': im, 'metadata': meta, 'channels': channels}
 
         return data_dict

@@ -3,7 +3,6 @@ from pathlib import Path
 import numpy as np
 from igor2 import binarywave
 import matplotlib.pyplot as plt
-import matplotlib.colors as colors
 from utils.constants import STANDARDISED_METADATA_DICT_KEYS
 
 def _ibw_pixel_to_nm_scaling(scan: dict) -> float:

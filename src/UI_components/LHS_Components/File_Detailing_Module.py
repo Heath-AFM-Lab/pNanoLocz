@@ -1,4 +1,5 @@
 import sys
+from collections import Counter
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTreeView, QTableWidget, QTableWidgetItem
 from PyQt6.QtGui import QFileSystemModel
 from PyQt6.QtCore import Qt, QSortFilterProxyModel
@@ -168,9 +169,33 @@ class FileDetailingSystemWidget(QWidget):
                 frames = [data['image'] for data in image_loader._data_dict.values()]
                 metadata = [data['metadata'] for data in image_loader._data_dict.values()]
                 channels = [data['channels'] for data in image_loader._data_dict.values()]
+
+                # Eliminate repeating channel names
+                # Takes a the set of channels from an image and compares it to the next
+                # Eliminates channels that does not appear across all frames/images
+                print("Initial channels:", channels)
+                repeating_channels = []
+                for frame_number, frame_channels in enumerate(channels):
+                    if frame_number == 0:
+                        repeating_channels = frame_channels
+                        continue
+
+                    # Counter of the current repeating_channels
+                    counter1 = Counter(repeating_channels)
+                    # Counter of the current frame_channels
+                    counter2 = Counter(frame_channels)
+                    
+                    # Intersection with counts
+                    common_counter = counter1 & counter2
+                    
+                    # Convert the common elements counter to a list
+                    repeating_channels = list(common_counter.elements())
+
+                print("Repeating channels:", repeating_channels)
+
                 print(f"New set of data from folder: {image_loader._dominant_format}")
                 print(metadata)
-                print(channels)
+                print(repeating_channels)
                 print(frames)
 
                 # self.displayDataFolders(frames, metadata, file_path)

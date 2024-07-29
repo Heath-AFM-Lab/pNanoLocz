@@ -3,7 +3,6 @@ from pathlib import Path
 import struct
 import numpy as np
 import logging
-import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from utils.constants import STANDARDISED_METADATA_DICT_KEYS
