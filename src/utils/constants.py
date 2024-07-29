@@ -22,8 +22,9 @@ FILE_METADATA_DICT_KEYS = [
     "Frames", "Speed (FPS)", "Line/s (Hz)", "Y Pixel Dimensions", 
     "X Pixel Dimensions", "Current channel", "Available Channels"
 ]
+
 IMAGE_METADATA_DICT_KEYS = [
-    "X Range (nm)", "Pixel/nm Scaling Factor",
+    "X Range (nm)", "Pixel/nm Scaling Factor", "Max pixel value", "Min pixel value"
 ]
 
 # TODO: This needs to be edited later to include additional metadata that is not ready yet

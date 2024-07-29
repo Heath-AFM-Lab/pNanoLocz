@@ -11,6 +11,7 @@ from matplotlib import animation
 import numpy as np
 import matplotlib.colors as colors
 from utils.constants import FILE_EXTS
+from core.Image_Storage_Class import MediaDataManager
 
 # AFM = np.load('utils/file_reader/AFM_cmap.npy')
 # AFM = colors.ListedColormap(AFM)
@@ -163,6 +164,9 @@ class FileDetailingSystemWidget(QWidget):
 
 
     def loadFileData(self, file_path, channel):
+        # Instantiate class to store file metadata
+        media_data_manager = MediaDataManager()
+
         if os.path.isdir(file_path):
             image_loader = ImageLoader(file_path)
             if image_loader._dominant_format is not None:  # Only display data if criteria met
@@ -173,7 +177,7 @@ class FileDetailingSystemWidget(QWidget):
                 # Eliminate repeating channel names
                 # Takes a the set of channels from an image and compares it to the next
                 # Eliminates channels that does not appear across all frames/images
-                print("Initial channels:", channels)
+                # print("Initial channels:", channels)
                 repeating_channels = []
                 for frame_number, frame_channels in enumerate(channels):
                     if frame_number == 0:
@@ -191,12 +195,12 @@ class FileDetailingSystemWidget(QWidget):
                     # Convert the common elements counter to a list
                     repeating_channels = list(common_counter.elements())
 
-                print("Repeating channels:", repeating_channels)
+                # print("Repeating channels:", repeating_channels)
 
-                print(f"New set of data from folder: {image_loader._dominant_format}")
-                print(metadata)
-                print(repeating_channels)
-                print(frames)
+                # print(f"New set of data from folder: {image_loader._dominant_format}")
+                # print(metadata)
+                # print(repeating_channels)
+                # print(frames)
 
                 # self.displayDataFolders(frames, metadata, file_path)
             else:
@@ -240,10 +244,13 @@ class FileDetailingSystemWidget(QWidget):
             print(f"Unsupported file type: {ext}")
             return
         
-        print(f"New set of data from {ext}")
-        print(metadata)
-        print(channels)
-        print(frames)
+        media_data_manager.load_new_file_data(filepath=file_path, file_ext=ext, frames=frames,
+                                              file_metadata=metadata, channels=channels)
+        
+        # print(f"New set of data from {ext}")
+        # print(metadata)
+        # print(channels)
+        # print(frames)
 
 
         # self.updateMetadataTable(metadata)
