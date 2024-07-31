@@ -186,6 +186,9 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
             # Create the metadata dictionary
             file_metadata = dict(zip(STANDARDISED_METADATA_DICT_KEYS, values))
 
+            # Reshape array
+            im = np.transpose(im, (2, 0, 1))
+
             channels = s['channels']
 
     except FileNotFoundError:

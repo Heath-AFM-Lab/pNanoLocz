@@ -60,7 +60,7 @@ def open_jpk(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
         image_flipped = np.flipud(image)
 
         # Extract required values
-        num_frames = len(tif.pages[1:])
+        num_frames = int(len(tif.pages[1:]) / len(channels))
         x_range_nm = float(metadata.get('x_scan_length', '0')) * 1e9
         y_pixels = int(metadata.get('y_scan_pixels', '0'))
         x_pixels = int(metadata.get('x_scan_pixels', '0'))

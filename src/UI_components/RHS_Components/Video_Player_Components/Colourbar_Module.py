@@ -27,7 +27,6 @@ class MatplotlibColourBarWidget(QWidget):
         layout.addWidget(self.canvas)
         
     def _create_colour_bar(self):
-        
         # Create a normalizer
         self.norm = plt.Normalize(vmin=0, vmax=1)
         
@@ -47,9 +46,28 @@ class MatplotlibColourBarWidget(QWidget):
 
 
     def set_cmap(self, cmap_name: str):
-        # Retrieve and set cmap
+        # Retrieve the new colormap
         cmap = CMAPS[cmap_name]
-        self.cbar.cmap = cmap
+        
+        # Remove the existing colorbar
+        self.cax.clear()
+        
+        # Create a new ScalarMappable with the updated colormap
+        sm = plt.cm.ScalarMappable(norm=self.norm, cmap=cmap)
+        
+        # Create a new colorbar with the updated ScalarMappable
+        self.cbar = self.fig.colorbar(sm, cax=self.cax, orientation='vertical')
+        
+        # Move the colorbar to the right-hand side (if necessary)
+        self.cbar.ax.yaxis.set_ticks_position('right')
+        self.cbar.ax.yaxis.set_label_position('right')
+
+        # Set axis label and tick colours to white
+        self.cbar.ax.yaxis.label.set_color('white')
+        self.cbar.ax.tick_params(axis='y', colors='white')
+
+        # Redraw the canvas to update the colour bar
+        self.canvas.draw()
         
 
     def set_min_max_limits(self, *args):

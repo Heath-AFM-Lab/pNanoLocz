@@ -1,13 +1,22 @@
 import sys
 import numpy as np
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QSizePolicy, QLayout
-from PyQt6.QtCore import QTimer, pyqtSignal, QSize, QRect, QPoint
+from PyQt6.QtCore import QTimer, pyqtSignal, QSize, QRect, QPoint, QThread
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 from matplotlib.offsetbox import AnchoredText
 import matplotlib.font_manager as fm
 from core.Colormaps import CMAPS, DEFAULT_CMAP_NAME
+import warnings
+
+# Try to import cupy for GPU acceleration
+try:
+    import cupy as cp
+    HAS_GPU = True
+except ImportError:
+    HAS_GPU = False
+    warnings.warn("CuPy not available. GPU acceleration will not be used.")
 
 DEFAULT_FPS = 30
 
@@ -71,35 +80,107 @@ class AspectRatioLayout(QLayout):
         if self.item:
             return self.item.minimumSize()
         return QSize()
+    
+
+class FrameProcessor(QThread):
+    frame_ready = pyqtSignal(object, float, float)
+
+    def __init__(self, video_frames, video_frames_metadata):
+        super().__init__()
+        if HAS_GPU:
+            self.video_frames = cp.asarray(video_frames)  # Move data to GPU
+        else:
+            self.video_frames = video_frames
+        self.video_frames_metadata = video_frames_metadata
+        self.current_frame_index = 0
+        self.running = False
+        self.fps = DEFAULT_FPS
+
+    def run(self):
+        while self.running:
+            frame = self.video_frames[self.current_frame_index]
+            if HAS_GPU:
+                processed_frame = cp.asnumpy(frame)  # Move back to CPU for display
+            else:
+                processed_frame = frame
+            vmin = self.video_frames_metadata[self.current_frame_index]["Min pixel value"]
+            vmax = self.video_frames_metadata[self.current_frame_index]["Max pixel value"]
+            self.frame_ready.emit(processed_frame, vmin, vmax)
+            self.current_frame_index = (self.current_frame_index + 1) % len(self.video_frames)
+            QThread.msleep(int(1000 / self.fps))
+
+    def stop(self):
+        self.running = False
+
+    def set_fps(self, fps: int):
+        self.fps = fps
+
+    def seek_to_frame(self, frame_no):
+        if 0 <= frame_no < len(self.video_frames):
+            self.current_frame_index = frame_no
+            frame = self.video_frames[self.current_frame_index]
+            if HAS_GPU:
+                processed_frame = cp.asnumpy(frame)  # Move back to CPU for display
+            else:
+                processed_frame = frame
+            vmin = self.video_frames_metadata[self.current_frame_index]["Min pixel value"]
+            vmax = self.video_frames_metadata[self.current_frame_index]["Max pixel value"]
+            self.frame_ready.emit(processed_frame, vmin, vmax)
+
 
 class MatplotlibVideoPlayerWidget(QWidget):
     update_widgets = pyqtSignal()
+    reset_widgets = pyqtSignal()
 
-    def __init__(self, video_frames, parent=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
-        self.setContentsMargins(0, 0, 0, 0)
-    
-        # Store video frames
-        self.video_frames = video_frames
+        self.layout = None
+        self.fig = None
+        self.canvas = None
+        self.ax = None
+        self.image = None
+        self.video_frames = None
         self.current_frame_index = 0
+        self.aspect_ratio = 1.0
+        self.fps = DEFAULT_FPS
+        self.cmap_name = DEFAULT_CMAP_NAME
+        self.scale_bar = None
+        self.timestamp = None
+        self.has_content = False
+        self.frame_processor = None
+        self.is_playing = False
+
+    def load_video_frames(self, video_frames: np.ndarray, video_frames_metadata: dict):
+        self.setContentsMargins(0, 0, 0, 0)
+        self.reset()
+
+        self.has_content = True
+    
+        # Create and start the frame processor
+        self.frame_processor = FrameProcessor(video_frames, video_frames_metadata)
+        self.frame_processor.frame_ready.connect(self._update_frame)
 
         # Create a layout for the widget
-        self.layout = AspectRatioLayout(self)
-        self.setLayout(self.layout)
+        if self.layout is None:
+            self.layout = AspectRatioLayout(self)
+            self.setLayout(self.layout)
 
         # Create a Matplotlib Figure and Canvas
-        self.fig = Figure(figsize=(5, 5), dpi=100)
-        self.fig.patch.set_alpha(0)  # Set the figure background to transparent
-        self.canvas = FigureCanvas(self.fig)
-        self.canvas.setStyleSheet("background-color: transparent;")  # Set the canvas background to transparent
-        self.layout.addWidget(self.canvas)
+        if self.fig is None:
+            self.fig = Figure(figsize=(5, 5), dpi=100)
+            self.fig.patch.set_alpha(0)  # Set the figure background to transparent
+            self.canvas = FigureCanvas(self.fig)
+            self.canvas.setStyleSheet("background-color: transparent;")  # Set the canvas background to transparent
+            self.layout.addWidget(self.canvas)
 
         # Create an Axes for displaying the image
-        self.ax = self.fig.add_subplot(111)
+        if self.ax is None:
+            self.ax = self.fig.add_subplot(111)
         self.ax.axis('off')
 
         # Display the first frame
-        self.image = self.ax.imshow(video_frames[0], cmap=CMAPS[DEFAULT_CMAP_NAME])
+        self.image = self.ax.imshow(video_frames[0], cmap=CMAPS[self.cmap_name])
+        self.enable_cbar_autoscale(True)
 
         # Get image dimensions and calculate aspect ratio
         self.image_height, self.image_width = video_frames[0].shape[:2]
@@ -115,14 +196,25 @@ class MatplotlibVideoPlayerWidget(QWidget):
         # Set size policy
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
-        # Setup a timer to update the frames
-        self.timer = QTimer()
-        self.timer.timeout.connect(self._go_to_next_frame)
-        self.set_fps(DEFAULT_FPS)
-        self.timer.stop()
-
         # Connect the resize event
         self.canvas.mpl_connect('resize_event', self.on_resize)
+
+    def reset(self):
+        if not self.has_content:
+            return
+        if self.frame_processor:
+            self.frame_processor.stop()
+            self.frame_processor.wait()
+            self.frame_processor = None
+        self.layout.setAspectRatio(1.0)
+        self.ax.clear()
+        self.ax.axis('off')
+        self.canvas.draw()
+        self.scale_bar = None
+        self.timestamp = None
+        self.fps = DEFAULT_FPS
+
+        self.reset_widgets.emit()
 
     def on_resize(self, event):
         # Update the figure size to match the new canvas size
@@ -137,8 +229,6 @@ class MatplotlibVideoPlayerWidget(QWidget):
         # Redraw the canvas
         self.canvas.draw()
 
-    
-
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self.updateGeometry()
@@ -149,61 +239,63 @@ class MatplotlibVideoPlayerWidget(QWidget):
     def widthForHeight(self, height):
         return int(height * self.aspect_ratio)
 
-    def hasHeightForWidth(self):
-        return self.aspect_ratio > 1
-
     ### Matplotlib video player functions ###
-    def _update_frame(self):
-        self.image.set_data(self.video_frames[self.current_frame_index])
-        # TODO: implement the timestamp and scale bar update functionality
-        # self.timestamp.txt.set_text(f"{self.current_frame_index / self.fps:.1f}s")
+    def _update_frame(self, frame, vmin, vmax):
+        self.image.set_data(frame)
+        self.image.set_clim(vmin, vmax)
         self.canvas.draw()
         self.update_widgets.emit()
 
     def _go_to_next_frame(self):
-        # Update the image with the next frame
-        self.current_frame_index = (self.current_frame_index + 1) % len(self.video_frames)
-        self._update_frame()
+        if self.frame_processor:
+            self.frame_processor.current_frame_index = (self.frame_processor.current_frame_index + 1) % len(self.frame_processor.video_frames)
 
     def set_fps(self, fps):
         self.fps = fps
-        interval = 1000 // self.fps  # Calculate interval in milliseconds
-        self.timer.setInterval(interval)
+        if self.frame_processor:
+            self.frame_processor.fps = fps
+
+    def stop_timer(self):
+        if self.frame_processor and self.is_playing:
+            self.frame_processor.stop()
+            self.is_playing = False
+
+    def start_timer(self):
+        if self.frame_processor and not self.is_playing:
+            self.frame_processor.running = True
+            self.frame_processor.start()
+            self.is_playing = True
 
     def get_fps(self):
         return self.fps
 
     def skip_forward(self):
-        self.current_frame_index = min(self.current_frame_index + 30, len(self.video_frames) - 1)  # Skip 30 frames forward
-        self._update_frame()
+        if self.frame_processor:
+            self.frame_processor.current_frame_index = min(
+                self.frame_processor.current_frame_index + 30, 
+                len(self.frame_processor.video_frames) - 1
+            )
 
     def skip_backward(self):
-        self.current_frame_index = max(self.current_frame_index - 30, 0)  # Skip 30 frames backward
-        self._update_frame()
-
-    def update_frame(self, current_frame_index):
-        self.current_frame_index = current_frame_index
-        self._update_frame()
+        if self.frame_processor:
+            self.frame_processor.current_frame_index = max(
+                self.frame_processor.current_frame_index - 30, 
+                0
+            )
 
     def timer_is_running(self):
-        return self.timer.isActive()
-
-    def stop_timer(self):
-        self.timer.stop()
-
-    def start_timer(self):
-        self.timer.start()
+        return self.is_playing
 
     def go_to_frame_no(self, frame_no):
-        self.current_frame_index = frame_no
-        self._update_frame()  # Update the frame immediately
+        if self.frame_processor:
+            self.frame_processor.seek_to_frame(frame_no)
+            self.current_frame_index = frame_no
 
     def get_frame_number(self):
-        return self.current_frame_index
-
+        return self.frame_processor.current_frame_index if self.frame_processor else 0
+    
 
     ### Visual control functions ###
-
     def _add_scale_bar(self):
         fontprops = fm.FontProperties(size=10, weight='bold')
         self.scale_bar = AnchoredSizeBar(self.ax.transData,
@@ -223,8 +315,11 @@ class MatplotlibVideoPlayerWidget(QWidget):
         self.hide_timescale()
     
     def set_cmap(self, cmap_name: str):
-        self.image.set_cmap(CMAPS[cmap_name])
-        self.canvas.draw()
+        if self.image:
+            self.image.set_cmap(CMAPS[cmap_name])
+            self.canvas.draw()
+
+        self.cmap_name = cmap_name
 
     def show_scale_bar(self):
         if not hasattr(self, 'scale_bar'):
@@ -248,6 +343,10 @@ class MatplotlibVideoPlayerWidget(QWidget):
             self.timestamp.set_visible(False)
             self.canvas.draw()
 
+    ### Autoscale color bar controls ###
+    def enable_cbar_autoscale(self, enable_autoscale: bool):
+        # TODO: refresh by accessing frame metadata for vmin and vmax values
+        pass
 
 
 if __name__ == '__main__':
@@ -262,10 +361,13 @@ if __name__ == '__main__':
     main_window.setWindowTitle('Matplotlib Video Display')
 
     # Create and add the Matplotlib widget to the main window
-    matplotlib_widget = MatplotlibVideoPlayerWidget(video_frames)
+    matplotlib_widget = MatplotlibVideoPlayerWidget()
     layout = QVBoxLayout()
     main_window.setLayout(layout)
     layout.addWidget(matplotlib_widget)
+
+    # Load video frames into the Matplotlib widget
+    matplotlib_widget.load_video_frames(video_frames)
 
     # Show the main window
     main_window.show()

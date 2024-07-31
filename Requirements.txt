@@ -3,6 +3,7 @@ vispy
 # cmake         # Accidentally installed on windows machine. unquote if something is broken/missing
 # opencv        # Same here
 cudatoolkit
+cupy
 imageio
 pytorch
 torchvision
@@ -12,7 +13,6 @@ matplotlib
 AFMReader
 h5py
 numpy
-
 # EXPERIMENTAL 
 # pyopengl
 # pyopengl-accelerate

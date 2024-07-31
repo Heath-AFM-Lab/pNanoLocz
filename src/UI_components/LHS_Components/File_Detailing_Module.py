@@ -4,19 +4,21 @@ from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTr
 from PyQt6.QtGui import QFileSystemModel
 from PyQt6.QtCore import Qt, QSortFilterProxyModel
 from utils.Folder_Opener_Module.Folder_Opener import FolderOpener
+from utils.file_reader.File_Reader import loadFileData
 import os
-from PyQt6.QtCore import QTimer
-import matplotlib.pyplot as plt
-from matplotlib import animation
-import numpy as np
-import matplotlib.colors as colors
+# from PyQt6.QtCore import QTimer
+# import matplotlib.pyplot as plt
+# from matplotlib import animation
+# import numpy as np
+# import matplotlib.colors as colors
 from utils.constants import FILE_EXTS
 from core.Image_Storage_Class import MediaDataManager
+# from core.Image_Storage_Class import MediaDataManager
 
-# AFM = np.load('utils/file_reader/AFM_cmap.npy')
-# AFM = colors.ListedColormap(AFM)
+# # AFM = np.load('utils/file_reader/AFM_cmap.npy')
+# # AFM = colors.ListedColormap(AFM)
 
-from utils.file_reader.read_folders import ImageLoader
+
 
 class CustomFileFilterProxyModel(QSortFilterProxyModel):
     def __init__(self, extensions, parent=None):
@@ -90,12 +92,10 @@ class FileDetailingSystemWidget(QWidget):
         super().__init__()
         # self.dropDown = DropdownWidget.dropdown2
         self.folderOpener = folderOpener
-        self.currentFilePath = None
-        self.currentChannel = None  # Default channel
-        self.animation = None  # Store the animation object
         self.buildFileDetailingSystem()
 
     def buildFileDetailingSystem(self):
+        self.media_data_manager = MediaDataManager()
         fileDetailingLayout = QHBoxLayout(self)
 
         self.fileTreeView = QTreeView(self)
@@ -133,14 +133,16 @@ class FileDetailingSystemWidget(QWidget):
         self.fileDetailsWidget.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.fileDetailsWidget.resizeColumnsToContents()
         self.fileDetailsWidget.resizeRowsToContents()
+        self.fileDetailsWidget.setSizeAdjustPolicy(QTableWidget.SizeAdjustPolicy.AdjustToContents)
+        self.adjustTableSize()
 
-        column_width = self.fileDetailsWidget.verticalHeader().width()
-        for column in range(self.fileDetailsWidget.columnCount()):
-            column_width += self.fileDetailsWidget.columnWidth(column)
+        # column_width = self.fileDetailsWidget.verticalHeader().width()
+        # for column in range(self.fileDetailsWidget.columnCount()):
+        #     column_width += self.fileDetailsWidget.columnWidth(column)
 
-        self.fileDetailsWidget.setFixedWidth(column_width)
-        total_height = sum(self.fileDetailsWidget.rowHeight(1) for i in range(self.fileDetailsWidget.rowCount() + 1))
-        self.fileDetailsWidget.setFixedHeight(total_height + 2 * self.fileDetailsWidget.frameWidth())
+        # self.fileDetailsWidget.setFixedWidth(column_width)
+        # total_height = sum(self.fileDetailsWidget.rowHeight(1) for i in range(self.fileDetailsWidget.rowCount() + 1))
+        # self.fileDetailsWidget.setFixedHeight(total_height + 2 * self.fileDetailsWidget.frameWidth())
 
         fileDetailslayout = QVBoxLayout()
         fileDetailslayout.addWidget(self.fileDetailsWidget)
@@ -149,7 +151,43 @@ class FileDetailingSystemWidget(QWidget):
 
         self.setLayout(fileDetailingLayout)
         self.folderOpener.folderReceived.connect(self.populateFileTree)
+        self.media_data_manager.new_file_loaded.connect(self.load_table_data)
 
+
+
+    ###     DATA TABLE RELATED FUNCTIONS    ###
+    def load_table_data(self):
+        self.fileDetailsWidget.setItem(0, 1, QTableWidgetItem(str(self.media_data_manager.get_frames_amount())))
+        self.fileDetailsWidget.setItem(1, 1, QTableWidgetItem(str(round(self.media_data_manager.get_initial_x_range(), 3))))
+        self.fileDetailsWidget.setItem(2, 1, QTableWidgetItem(str(round(self.media_data_manager.get_fps_speed(), 3))))
+        self.fileDetailsWidget.setItem(3, 1, QTableWidgetItem(str(round(self.media_data_manager.get_line_frequency(), 3))))
+        self.fileDetailsWidget.setItem(4, 1, QTableWidgetItem(str(self.media_data_manager.get_y_dims())))
+        self.fileDetailsWidget.setItem(5, 1, QTableWidgetItem(str(self.media_data_manager.get_x_dims())))
+        self.fileDetailsWidget.setItem(6, 1, QTableWidgetItem(str(round(self.media_data_manager.get_initial_pix_nm_scaling(), 3))))
+        self.fileDetailsWidget.setItem(7, 1, QTableWidgetItem(str(self.media_data_manager.get_cw_channel())))
+        self.adjustTableSize()
+
+    def adjustTableSize(self):
+        # Resize columns to content
+        self.fileDetailsWidget.resizeColumnsToContents()
+        
+        # Resize rows to content
+        self.fileDetailsWidget.resizeRowsToContents()
+        
+        # Calculate total width and height
+        width = self.fileDetailsWidget.verticalHeader().width() + 4  # Add some padding
+        for i in range(self.fileDetailsWidget.columnCount()):
+            width += self.fileDetailsWidget.columnWidth(i)
+        
+        height = self.fileDetailsWidget.horizontalHeader().height() + 4  # Add some padding
+        for i in range(self.fileDetailsWidget.rowCount()):
+            height += self.fileDetailsWidget.rowHeight(i)
+        
+        # Set the table widget size
+        self.fileDetailsWidget.setFixedSize(width, height)
+
+
+    ###     FILE SYSTEM RELATED FUNCTIONS    ###
     def onSortIndicatorChanged(self, logicalIndex, order):
         self.fileTreeView.sortByColumn(logicalIndex, order)
 
@@ -159,101 +197,13 @@ class FileDetailingSystemWidget(QWidget):
 
     def onFileDoubleClicked(self, index):
         file_path = self.fileSystemModel.filePath(self.fileFilterProxyModel.mapToSource(index))
-        self.currentFilePath = file_path
-        self.loadFileData(file_path, self.currentChannel)
+        # This will automatically establish a new class to store the file data and metadata to
+        # Call upon the class name MediaDataManager to access the values anywhere in the code
+        # Repeated calls of this function will wipe any currently saved data
+        loadFileData(file_path)
 
 
-    def loadFileData(self, file_path, channel):
-        # Instantiate class to store file metadata
-        media_data_manager = MediaDataManager()
 
-        if os.path.isdir(file_path):
-            image_loader = ImageLoader(file_path)
-            if image_loader._dominant_format is not None:  # Only display data if criteria met
-                frames = [data['image'] for data in image_loader._data_dict.values()]
-                metadata = [data['metadata'] for data in image_loader._data_dict.values()]
-                channels = [data['channels'] for data in image_loader._data_dict.values()]
-
-                # Eliminate repeating channel names
-                # Takes a the set of channels from an image and compares it to the next
-                # Eliminates channels that does not appear across all frames/images
-                # print("Initial channels:", channels)
-                repeating_channels = []
-                for frame_number, frame_channels in enumerate(channels):
-                    if frame_number == 0:
-                        repeating_channels = frame_channels
-                        continue
-
-                    # Counter of the current repeating_channels
-                    counter1 = Counter(repeating_channels)
-                    # Counter of the current frame_channels
-                    counter2 = Counter(frame_channels)
-                    
-                    # Intersection with counts
-                    common_counter = counter1 & counter2
-                    
-                    # Convert the common elements counter to a list
-                    repeating_channels = list(common_counter.elements())
-
-                # print("Repeating channels:", repeating_channels)
-
-                # print(f"New set of data from folder: {image_loader._dominant_format}")
-                # print(metadata)
-                # print(repeating_channels)
-                # print(frames)
-
-                # self.displayDataFolders(frames, metadata, file_path)
-            else:
-                print("Folder does not meet the criteria for image series.")
-            return
-
-        # Import necessary file readers
-        from utils.file_reader.asd import load_asd
-        from utils.file_reader.read_aris import open_aris
-        from utils.file_reader.read_ibw import open_ibw
-        from utils.file_reader.read_jpk import open_jpk
-        from utils.file_reader.read_nhf import open_nhf
-        from utils.file_reader.read_spm import open_spm
-        from utils.file_reader.read_gwy import open_gwy
-
-        ext = os.path.splitext(file_path)[1].lower()
-        if ext == '.asd':
-            frames, metadata, channels = load_asd(file_path, channel)
-            # self.displayDataASD(frames)
-            # self.dropDown.clear()
-            # self.dropDown.addItems(channels)   
-        elif ext == '.aris':
-            frames, metadata, channels = open_aris(file_path, channel)
-            # self.displayData(frames)
-        elif ext == '.ibw':
-            frames, metadata, channels = open_ibw(file_path, channel)
-            # self.displayData(frames)
-        elif ext == '.jpk':
-            frames, metadata, channels = open_jpk(file_path, channel)
-            # self.displayData(frames)
-        elif ext == '.nhf':
-            frames, metadata, channels = open_nhf(file_path, channel)
-            # self.displayData(frames)
-        elif ext == '.spm':
-            frames, metadata, channels = open_spm(file_path, channel)
-            # self.displayData(frames)
-        elif ext == '.gwy':
-            frames, metadata, channels = open_gwy(file_path, channel)
-            # self.displayDataGWY(frames)
-        else:
-            print(f"Unsupported file type: {ext}")
-            return
-        
-        media_data_manager.load_new_file_data(filepath=file_path, file_ext=ext, frames=frames,
-                                              file_metadata=metadata, channels=channels)
-        
-        # print(f"New set of data from {ext}")
-        # print(metadata)
-        # print(channels)
-        # print(frames)
-
-
-        # self.updateMetadataTable(metadata)
        
     # def displayDataASD(self, frames):
     #     fig, axis = plt.subplots()

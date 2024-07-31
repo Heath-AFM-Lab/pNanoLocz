@@ -20,7 +20,7 @@ PATH_TO_CMAPS_DIRECTORY = get_path_to(CMAPS_DIRECTORY)
 
 FILE_METADATA_DICT_KEYS = [
     "Frames", "Speed (FPS)", "Line/s (Hz)", "Y Pixel Dimensions", 
-    "X Pixel Dimensions", "Current channel", "Available Channels"
+    "X Pixel Dimensions", "Current channel", "Available channels"
 ]
 
 IMAGE_METADATA_DICT_KEYS = [
