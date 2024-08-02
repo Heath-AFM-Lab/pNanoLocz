@@ -1,3 +1,4 @@
+# Import necessary modules
 import os
 from pathlib import Path
 import logging
@@ -65,6 +66,12 @@ class ImageLoader:
                 im, meta, channels = open_nhf(file_path, 'Topography')
             elif self._dominant_format == '.jpk':
                 im, meta, channels = open_jpk(file_path, "height_trace")
+                # Calculate elapsed time for JPK files
+                if meta['Speed (FPS)'] > 0:
+                    meta['Timestamp'] = time_stamps[-1] + (1 / meta['Speed (FPS)']) if time_stamps else 0
+                else:
+                    meta['Timestamp'] = 0
+                time_stamps.append(meta['Timestamp'])
             elif self._dominant_format == '.ibw':
                 im, meta, channels = open_ibw(file_path, 1)
             elif self._dominant_format == '.spm':
@@ -118,7 +125,9 @@ class ImageLoader:
                 previous_meta = current_meta
             return im, metadata_text
 
-        ani = animation.FuncAnimation(fig, updatefig, frames=len(file_paths), interval=100, blit=True)
+        # Use FPS from the first JPK file to set the interval for the animation
+        initial_fps = self._data_dict[file_paths[0]]['metadata'].get('fps', 1)
+        ani = animation.FuncAnimation(fig, updatefig, frames=len(file_paths), interval=1000 / initial_fps, blit=True)
         plt.show()
 
     def _check_metadata_change(self, current_meta, previous_meta):

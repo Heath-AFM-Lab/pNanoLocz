@@ -1,7 +1,6 @@
 import numpy as np
 from pathlib import Path
 import tifffile
-import matplotlib.colors as colors
 from utils.constants import STANDARDISED_METADATA_DICT_KEYS
 
 def _jpk_pixel_to_nm_scaling(tiff_page: tifffile.tifffile.TiffPage) -> float:
@@ -23,7 +22,7 @@ def extract_metadata(tiff_page: tifffile.tifffile.TiffPage) -> dict:
         'Reference_Amp': tiff_page.tags.get("32821", np.nan).value,
         'Set_Amplitude': tiff_page.tags.get("32822", np.nan).value,
         'Oscillation_Freq': tiff_page.tags.get("32823", np.nan).value,
-        'Scan_Rate': tiff_page.tags.get("32841", np.nan).value,
+        'Scan_Rate': tiff_page.tags.get("32841", np.nan).value,  # Corrected to 'Scan_Rate'
     }
     return metadata
 
@@ -65,19 +64,23 @@ def open_jpk(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
         y_pixels = int(metadata.get('y_scan_pixels', '0'))
         x_pixels = int(metadata.get('x_scan_pixels', '0'))
         scan_rate = float(metadata.get('Scan_Rate', '0'))
-        fps = 1 / scan_rate if scan_rate != 0 else 0
-        line_rate = y_pixels * fps if y_pixels else 0
+        scan_speed = scan_rate / y_pixels if y_pixels else 0
+        fps = 1 / scan_speed if scan_speed != 0 else 0
         pixel_to_nanometre_scaling_factor = scaling_factor
+
+        # Add calculated FPS to metadata
+        metadata['fps'] = fps
 
         values = [
             num_frames,
             x_range_nm,
             fps,
-            line_rate,
+            scan_rate,
             y_pixels,
             x_pixels,
             pixel_to_nanometre_scaling_factor,
-            channel
+            channel,
+            ""
         ]
 
         if len(values) != len(STANDARDISED_METADATA_DICT_KEYS):
@@ -99,7 +102,7 @@ if __name__ == "__main__":
         print(f"Parameter values: {values}")
 
         import matplotlib.pyplot as plt
-        plt.imshow(image, cmap=AFM)
+        plt.imshow(image, cmap='gray')
         plt.colorbar(label='Height (nm)')
         plt.show()
     except Exception as e:
