@@ -51,7 +51,6 @@ class ImageLoader:
                 dominant_format_files = [str(file_path) for file_path in file_list if file_path.suffix == dominant_format]
                 break
 
-
         return dominant_format, dominant_format_files
     
     def get_load_time(self):
@@ -59,6 +58,7 @@ class ImageLoader:
 
     def _load_images(self):
         data_dict = {}
+        time_stamps = []
 
         for file_path in self._file_paths:
             if self._dominant_format == '.nhf':
@@ -69,12 +69,29 @@ class ImageLoader:
                 im, meta, channels = open_ibw(file_path, 1)
             elif self._dominant_format == '.spm':
                 im, meta, channels = open_spm(file_path, "Height")
+                time_stamps.append(meta['Timestamp'])  # Extract timestamp from metadata
             elif self._dominant_format == '.gwy':
                 im, meta, channels = open_gwy(file_path, 1)
             meta[0] = len(self._file_paths)
             data_dict[file_path] = {'image': im, 'metadata': meta, 'channels': channels}
 
+        if self._dominant_format == '.spm':
+            elapsed_times = self._convert_to_elapsed_time(time_stamps)
+            for i, file_path in enumerate(self._file_paths):
+                data_dict[file_path]['metadata']['elapsed_time'] = elapsed_times[i]
+
         return data_dict
+
+    def _convert_to_elapsed_time(self, time_stamps):
+        pattern = '%I:%M:%S %p %A'
+        time_in_seconds = []
+
+        for time_str in time_stamps:
+            time_struct = time.strptime(time_str, pattern)
+            time_in_seconds.append(time.mktime(time_struct))
+
+        elapsed_times = [t - time_in_seconds[0] for t in time_in_seconds]
+        return elapsed_times
 
     def play_images(self):
         if not self._data_dict:
@@ -83,7 +100,7 @@ class ImageLoader:
         fig, ax = plt.subplots()
         file_paths = list(self._data_dict.keys())
         initial_file_path = file_paths[0]
-        im = ax.imshow(self._data_dict[initial_file_path]['image'], animated=True, cmap=AFM)
+        im = ax.imshow(self._data_dict[initial_file_path]['image'], animated=True, cmap='gray')
         metadata_text = ax.text(0.02, 0.95, '', transform=ax.transAxes, color='white', fontsize=8, verticalalignment='top', bbox=dict(facecolor='black', alpha=0.5))
 
         previous_meta = self._data_dict[initial_file_path]['metadata']
@@ -95,7 +112,8 @@ class ImageLoader:
             current_meta = self._data_dict[current_file_path]['metadata']
             im.set_array(current_image)
             if self._check_metadata_change(current_meta, previous_meta):
-                metadata_text.set_text(current_meta)
+                elapsed_time = current_meta.get('elapsed_time', 'N/A')
+                metadata_text.set_text(f"Elapsed Time: {elapsed_time:.2f} s")
                 print("Metadata updated:", current_meta)
                 previous_meta = current_meta
             return im, metadata_text
