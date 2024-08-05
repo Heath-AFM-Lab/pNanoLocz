@@ -154,10 +154,6 @@ class VideoPlayerWidget(QWidget):
         self.videoControlWidget.playIcon.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "play.png")))
         self.videoControlWidget.playIcon.setToolTip("Play")
         self.videoControlWidget.fpsTextBox.setText(str(self.videoPlayerWidget.get_fps()))
-        # self.visualRepresentationWidget.scaleBarCheckbox.setChecked(False)
-        # self.visualRepresentationWidget.zScaleCheckbox.setChecked(False)
-        # self.visualRepresentationWidget.timescaleCheckbox.setChecked(False)
-        # self.colorbarWidget.hide()
         self.blockSignals(False)
 
     ### VIDEO CONTROL FUNCTIONALITY ###
@@ -175,9 +171,7 @@ class VideoPlayerWidget(QWidget):
         self.videoControlWidget.frameSpinBox.blockSignals(False)
 
         # Update colourbar with frame cmap
-        # print(frame_metadata["Max pixel value"], frame_metadata["Min pixel value"])
         self.colorbarWidget.set_min_max_limits(frame_metadata["Min pixel value"], frame_metadata["Max pixel value"])
-        # print(frame_metadata["Max pixel value"], frame_metadata["Min pixel value"])
 
     def playPauseVideo(self):
         if self.videoPlayerWidget.timer_is_running():
