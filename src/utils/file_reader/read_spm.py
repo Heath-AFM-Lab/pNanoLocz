@@ -132,6 +132,8 @@ def open_spm(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
 
     if len(values) != len(STANDARDISED_METADATA_DICT_KEYS):
         raise ValueError(f"The length of the values in .spm does not match the required metadata keys.")
+    
+    print(image.shape)
 
     # Create the metadata dictionary
     file_metadata = dict(zip(STANDARDISED_METADATA_DICT_KEYS, values))

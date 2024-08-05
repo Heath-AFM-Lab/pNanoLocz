@@ -1,7 +1,6 @@
 import os
 from pathlib import Path
 import logging
-import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from utils.file_reader.read_ibw import open_ibw
@@ -108,3 +107,4 @@ class ImageLoader:
 
     def _check_metadata_change(self, current_meta, previous_meta):
         return current_meta != previous_meta
+

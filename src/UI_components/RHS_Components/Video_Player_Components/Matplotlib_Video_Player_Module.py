@@ -105,7 +105,7 @@ class FrameProcessor(QThread):
                 processed_frame = frame
             vmin = self.video_frames_metadata[self.current_frame_index]["Min pixel value"]
             vmax = self.video_frames_metadata[self.current_frame_index]["Max pixel value"]
-            self.frame_ready.emit(processed_frame, vmin, vmax)
+            self.frame_ready.emit(processed_frame, vmin, vmax, )
             self.current_frame_index = (self.current_frame_index + 1) % len(self.video_frames)
             QThread.msleep(int(1000 / self.fps))
 
@@ -140,12 +140,15 @@ class MatplotlibVideoPlayerWidget(QWidget):
         self.ax = None
         self.image = None
         self.video_frames = None
+        self.video_frames_metadata = None
         self.current_frame_index = 0
         self.aspect_ratio = 1.0
         self.fps = DEFAULT_FPS
         self.cmap_name = DEFAULT_CMAP_NAME
         self.scale_bar = None
+        self.scale_bar_shown = False
         self.timestamp = None
+        self.timestamp_shown = False
         self.has_content = False
         self.frame_processor = None
         self.is_playing = False
@@ -155,7 +158,7 @@ class MatplotlibVideoPlayerWidget(QWidget):
         self.reset()
 
         self.has_content = True
-    
+
         # Create and start the frame processor
         self.frame_processor = FrameProcessor(video_frames, video_frames_metadata)
         self.frame_processor.frame_ready.connect(self._update_frame)
@@ -180,7 +183,7 @@ class MatplotlibVideoPlayerWidget(QWidget):
 
         # Display the first frame
         self.image = self.ax.imshow(video_frames[0], cmap=CMAPS[self.cmap_name])
-        self.enable_cbar_autoscale(True)
+        # self.enable_cbar_autoscale(True)
 
         # Get image dimensions and calculate aspect ratio
         self.image_height, self.image_width = video_frames[0].shape[:2]
@@ -199,6 +202,9 @@ class MatplotlibVideoPlayerWidget(QWidget):
         # Connect the resize event
         self.canvas.mpl_connect('resize_event', self.on_resize)
 
+        # Load first frame
+        self.go_to_frame_no(0)
+
     def reset(self):
         if not self.has_content:
             return
@@ -210,8 +216,6 @@ class MatplotlibVideoPlayerWidget(QWidget):
         self.ax.clear()
         self.ax.axis('off')
         self.canvas.draw()
-        self.scale_bar = None
-        self.timestamp = None
         self.fps = DEFAULT_FPS
 
         self.reset_widgets.emit()
@@ -244,6 +248,8 @@ class MatplotlibVideoPlayerWidget(QWidget):
         self.image.set_data(frame)
         self.image.set_clim(vmin, vmax)
         self.canvas.draw()
+        # TODO: Update timestamp and scale bar if active
+
         self.update_widgets.emit()
 
     def _go_to_next_frame(self):
@@ -306,13 +312,19 @@ class MatplotlibVideoPlayerWidget(QWidget):
                                     size_vertical=1,
                                     fontproperties=fontprops)
         self.ax.add_artist(self.scale_bar)
-        self.hide_scale_bar()
+        if self.scale_bar_shown:
+            self.show_scale_bar()
+        else:
+            self.hide_scale_bar()
 
     def _add_timestamp(self):
         fontprops = fm.FontProperties(size=10, weight='bold')
         self.timestamp = AnchoredText("100.0s", loc='upper left', prop={'size': 10, 'weight': 'bold'}, frameon=False)
         self.ax.add_artist(self.timestamp)
-        self.hide_timescale()
+        if self.scale_bar_shown:
+            self.show_timescale()
+        else:
+            self.hide_timescale()
     
     def set_cmap(self, cmap_name: str):
         if self.image:
@@ -322,26 +334,24 @@ class MatplotlibVideoPlayerWidget(QWidget):
         self.cmap_name = cmap_name
 
     def show_scale_bar(self):
-        if not hasattr(self, 'scale_bar'):
-            self._add_scale_bar()  # Add scale bar if it does not exist
         self.scale_bar.set_visible(True)
+        self.scale_bar_shown = True
         self.canvas.draw()
 
     def hide_scale_bar(self):
-        if hasattr(self, 'scale_bar'):
-            self.scale_bar.set_visible(False)
-            self.canvas.draw()
+        self.scale_bar.set_visible(False)
+        self.scale_bar_shown = False
+        self.canvas.draw()
 
     def show_timescale(self):
-        if not hasattr(self, 'timestamp'):
-            self._add_timestamp()  # Add timestamp if it does not exist
         self.timestamp.set_visible(True)
+        self.timestamp_shown = True
         self.canvas.draw()
 
     def hide_timescale(self):
-        if hasattr(self, 'timestamp'):
-            self.timestamp.set_visible(False)
-            self.canvas.draw()
+        self.timestamp.set_visible(False)
+        self.timestamp_shown = True
+        self.canvas.draw()
 
     ### Autoscale color bar controls ###
     def enable_cbar_autoscale(self, enable_autoscale: bool):

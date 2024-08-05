@@ -1,6 +1,7 @@
 import numpy as np
 from PyQt6.QtWidgets import QMessageBox
 from PyQt6.QtCore import QObject, pyqtSignal
+from collections import Counter
 from utils.constants import FILE_METADATA_DICT_KEYS, IMAGE_METADATA_DICT_KEYS, STANDARDISED_METADATA_DICT_KEYS
 
 class MediaDataManager(QObject):
@@ -83,16 +84,19 @@ class MediaDataManager(QObject):
         self.new_file_loaded.emit()
         self.output_file_data()
 
-
-
     def load_new_folder_data(self, folder_path: str, dominant_file_ext: str, frames: np.ndarray | list | tuple, 
-                           folder_metadata: list, channels: list):
+                             folder_metadata: list, channels: list):
+        """Load new folder data into the manager, resetting previous data."""
         # Reset all variables
         self.reset()
 
         # Convert frames to np.array if not already
         if isinstance(frames, (list, tuple)):
-            frames = np.array(frames, dtype=np.float16)
+            try:
+                frames = np.array(frames, dtype=np.float16)
+            except ValueError:
+                frames, folder_metadata, removed_indices = self._filter_arrays_by_common_shape(frames, folder_metadata)
+                print(len(frames), removed_indices, folder_metadata)
 
         if frames.ndim not in [2, 3]:
             raise ValueError("Frames must be a 2D or 3D array.")
@@ -107,7 +111,7 @@ class MediaDataManager(QObject):
         # Run checks across all metadata from each file. TODO
         # Store file metadata
         file_metadata_values = [
-            folder_metadata[0]["Frames"],
+            len(frames),
             folder_metadata[0]["Speed (FPS)"],
             folder_metadata[0]["Line/s (Hz)"],
             folder_metadata[0]["Y Pixel Dimensions"],
@@ -116,9 +120,8 @@ class MediaDataManager(QObject):
             channels
         ]
 
-        for metadata_value in folder_metadata:
-            if (file_metadata_values[0] != metadata_value["Frames"] or
-                file_metadata_values[1] != metadata_value["Speed (FPS)"] or
+        for index, metadata_value in enumerate(folder_metadata):
+            if (file_metadata_values[1] != metadata_value["Speed (FPS)"] or
                 file_metadata_values[2] != metadata_value["Line/s (Hz)"] or
                 file_metadata_values[3] != metadata_value["Y Pixel Dimensions"] or
                 file_metadata_values[4] != metadata_value["X Pixel Dimensions"] or
@@ -133,7 +136,7 @@ class MediaDataManager(QObject):
                 msg_box.setText("File metadata does not match across all files inside selected folder. This may be because a file with the same file extension exists inside this folder that does not belong in there")
 
                 # Set detailed text if needed
-                msg_box.setInformativeText("Click OK to proceed unloading the images. Doing so may result in undefined behaviour")
+                msg_box.setInformativeText("Click OK to proceed unloading the images. Doing so may result in undefined behaviour.")
 
                 # Add standard buttons to the message box
                 msg_box.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
@@ -141,18 +144,21 @@ class MediaDataManager(QObject):
                 # Show the message box
                 response = msg_box.exec()
 
+                print(metadata_value, index)
+                print(folder_metadata[index])
+
                 # Handle the response
                 if response == QMessageBox.StandardButton.Ok:
                     break
                 else:
                     self.reset()
                     return
-
-                # raise ValueError("File metadata does not match across all files inside selected folder. This may be because a file exists inside this folder that does not belong in there")
+                
+                
 
         frame_metadata_dictionary = {}
         # Store frames metadata
-        for frame_no in range(folder_metadata[0]["Frames"]):
+        for frame_no in range(len(frames)):
             frame_metadata_values = [
                 folder_metadata[frame_no]["X Range (nm)"],
                 folder_metadata[frame_no]["Pixel/nm Scaling Factor"],
@@ -160,7 +166,6 @@ class MediaDataManager(QObject):
                 np.min(frames[frame_no])
             ]
             frame_metadata_dictionary[frame_no] = dict(zip(IMAGE_METADATA_DICT_KEYS, frame_metadata_values))
-
 
         # Store the rest of the variables to the class
         self.file_path = folder_path
@@ -173,9 +178,38 @@ class MediaDataManager(QObject):
         self.new_file_loaded.emit()
         self.output_file_data()
 
-
-
-
+    @staticmethod
+    def _filter_arrays_by_common_shape(arrays, metadata):
+        """
+        Filters a list of 2D numpy arrays, keeping only those with the most common shape.
+        
+        Parameters:
+        arrays (list of np.ndarray): List of 2D numpy arrays.
+        metadata (list of dict): List of metadata dictionaries corresponding to each array.
+        
+        Returns:
+        tuple: Filtered list of arrays with the most common shape, filtered metadata, and the indices of the removed arrays.
+        """
+        # Get the shape of each array
+        shapes = [arr.shape for arr in arrays]
+        
+        # Find the most common shape
+        shape_counts = Counter(shapes)
+        most_common_shape = shape_counts.most_common(1)[0][0]
+        
+        # Filter the arrays and metadata to keep only those with the most common shape
+        filtered_arrays = []
+        filtered_metadata = []
+        removed_indices = []
+        for i, (arr, md) in enumerate(zip(arrays, metadata)):
+            if arr.shape == most_common_shape:
+                filtered_arrays.append(arr)
+                filtered_metadata.append(md)
+            else:
+                removed_indices.append(i)
+        
+        return np.array(filtered_arrays), filtered_metadata, removed_indices
+    
     # Getter functions, direct from dict
     def get_file_path(self) -> str:
         return self.file_path
@@ -219,11 +253,6 @@ class MediaDataManager(QObject):
     
     def get_frames(self) -> np.ndarray:
         return self.image_data
-    
-
-    
-    
-    
     
     # Debugger function
     def output_file_data(self, show_image_data: bool = False):

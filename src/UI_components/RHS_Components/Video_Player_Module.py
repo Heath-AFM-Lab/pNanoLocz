@@ -100,19 +100,26 @@ class VideoPlayerWidget(QWidget):
     # TODO: create proper load frames func that triggers after user selects a file to open
     def load_frames_data(self):
         self.frames = self.media_data_manager.get_frames()
+        self.number_of_frames = len(self.frames)
         self.videoPlayerWidget.load_video_frames(self.frames, self.media_data_manager.get_frames_metadata())
 
         # Update slider with max frames
-        self.videoControlWidget.videoSeekSlider.setRange(0, len(self.frames) - 1)
+        self.videoControlWidget.videoSeekSlider.setRange(0, self.number_of_frames - 1)
 
         # Update frame selector with max frames
-        self.videoControlWidget.frameSpinBox.setRange(1, len(self.frames))
+        self.videoControlWidget.frameSpinBox.setRange(1, self.number_of_frames)
 
         # Update FPS box with base FPS
         self.videoControlWidget.fpsTextBox.setText(str(self.videoPlayerWidget.get_fps()))
 
         # Update widgets
         self.update_widgets()
+
+        # set either image viewer mode or video player mode
+        if self.number_of_frames == 1:
+            self.hide_video_player_widgets()
+        else:
+            self.show_video_player_widgets()
 
         # Enable widgets
         self.enableWidgets()
@@ -129,6 +136,17 @@ class VideoPlayerWidget(QWidget):
         self.videoDepthControlWidget.setEnabled(True)
         self.exportAndVideoScaleWidget.setEnabled(True)
 
+    def hide_video_player_widgets(self):
+        self.videoControlWidget.setVisible(False)
+        self.visualRepresentationWidget.timescaleCheckbox.setVisible(False)
+        self.toggle_timescale(False)
+        
+    def show_video_player_widgets(self):
+        self.videoControlWidget.setVisible(True)
+        self.visualRepresentationWidget.timescaleCheckbox.setVisible(True)
+        self.toggle_timescale(self.visualRepresentationWidget.timescaleCheckbox.isChecked())
+        
+
     def reset_widgets(self):
         self.blockSignals(True)
         self.videoControlWidget.videoSeekSlider.setValue(0)
@@ -136,9 +154,9 @@ class VideoPlayerWidget(QWidget):
         self.videoControlWidget.playIcon.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "play.png")))
         self.videoControlWidget.playIcon.setToolTip("Play")
         self.videoControlWidget.fpsTextBox.setText(str(self.videoPlayerWidget.get_fps()))
-        self.visualRepresentationWidget.scaleBarCheckbox.setChecked(False)
+        # self.visualRepresentationWidget.scaleBarCheckbox.setChecked(False)
         # self.visualRepresentationWidget.zScaleCheckbox.setChecked(False)
-        self.visualRepresentationWidget.timescaleCheckbox.setChecked(False)
+        # self.visualRepresentationWidget.timescaleCheckbox.setChecked(False)
         # self.colorbarWidget.hide()
         self.blockSignals(False)
 
