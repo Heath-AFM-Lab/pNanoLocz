@@ -49,7 +49,8 @@ class ImageLoader:
         for ext, count in file_format_count.items():
             if count >= 10 and all(other_count < 6 for other_ext, other_count in file_format_count.items() if other_ext != ext):
                 dominant_format = ext
-                dominant_format_files = [str(file_path) for file_path in file_list if file_path.suffix == dominant_format]
+                # Sort the files by name in ascending order
+                dominant_format_files = sorted([str(file_path) for file_path in file_list if file_path.suffix == dominant_format])
                 break
 
         return dominant_format, dominant_format_files
@@ -60,26 +61,53 @@ class ImageLoader:
     def _load_images(self):
         data_dict = {}
         time_stamps = []
+        elapsed_time = 0
 
         for file_path in self._file_paths:
             if self._dominant_format == '.nhf':
                 im, meta, channels = open_nhf(file_path, 'Topography')
+                # Calculate elapsed time for NHF files
+                fps = meta.get('Speed (FPS)', 0)
+                if fps > 0:
+                    meta['Timestamp'] = elapsed_time
+                    elapsed_time += 1 / fps
+                else:
+                    meta['Timestamp'] = elapsed_time
+                time_stamps.append(meta['Timestamp'])
             elif self._dominant_format == '.jpk':
                 im, meta, channels = open_jpk(file_path, "height_trace")
                 # Calculate elapsed time for JPK files
-                if meta['Speed (FPS)'] > 0:
-                    meta['Timestamp'] = time_stamps[-1] + (1 / meta['Speed (FPS)']) if time_stamps else 0
+                fps = meta.get('Speed (FPS)', 0)
+                if fps > 0:
+                    meta['Timestamp'] = elapsed_time
+                    elapsed_time += 1 / fps
                 else:
-                    meta['Timestamp'] = 0
+                    meta['Timestamp'] = elapsed_time
                 time_stamps.append(meta['Timestamp'])
             elif self._dominant_format == '.ibw':
                 im, meta, channels = open_ibw(file_path, 1)
+                # Calculate elapsed time for IBW files
+                fps = meta.get('Speed (FPS)', 0)
+                if fps > 0:
+                    meta['Timestamp'] = elapsed_time
+                    elapsed_time += 1 / fps
+                else:
+                    meta['Timestamp'] = elapsed_time
+                time_stamps.append(meta['Timestamp'])
             elif self._dominant_format == '.spm':
                 im, meta, channels = open_spm(file_path, "Height")
                 time_stamps.append(meta['Timestamp'])  # Extract timestamp from metadata
             elif self._dominant_format == '.gwy':
                 im, meta, channels = open_gwy(file_path, 1)
-            meta[0] = len(self._file_paths)
+                # Calculate elapsed time for GWY files
+                fps = meta.get('Speed (FPS)', 0)
+                if fps > 0:
+                    meta['Timestamp'] = elapsed_time
+                    elapsed_time += 1 / fps
+                else:
+                    meta['Timestamp'] = elapsed_time
+                time_stamps.append(meta['Timestamp'])
+            meta['Frames'] = len(self._file_paths)
             data_dict[file_path] = {'image': im, 'metadata': meta, 'channels': channels}
 
         if self._dominant_format == '.spm':
@@ -119,14 +147,14 @@ class ImageLoader:
             current_meta = self._data_dict[current_file_path]['metadata']
             im.set_array(current_image)
             if self._check_metadata_change(current_meta, previous_meta):
-                elapsed_time = current_meta.get('elapsed_time', 'N/A')
+                elapsed_time = current_meta.get('Timestamp', 'N/A')
                 metadata_text.set_text(f"Elapsed Time: {elapsed_time:.2f} s")
                 print("Metadata updated:", current_meta)
                 previous_meta = current_meta
             return im, metadata_text
 
-        # Use FPS from the first JPK file to set the interval for the animation
-        initial_fps = self._data_dict[file_paths[0]]['metadata'].get('fps', 1)
+        # Use FPS from the first file to set the interval for the animation
+        initial_fps = self._data_dict[file_paths[0]]['metadata'].get('Speed (FPS)', 1)
         ani = animation.FuncAnimation(fig, updatefig, frames=len(file_paths), interval=1000 / initial_fps, blit=True)
         plt.show()
 

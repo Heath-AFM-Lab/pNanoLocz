@@ -286,7 +286,8 @@ def load_asd(file_path: Path, channel: str):
             header_dict.get('y_pixels', 'N/A'),
             header_dict.get('x_pixels', 'N/A'),
             pixel_to_nanometre_scaling_factor,
-            channel
+            channel,
+            ""
         ]
 
         if len(values) != len(STANDARDISED_METADATA_DICT_KEYS):

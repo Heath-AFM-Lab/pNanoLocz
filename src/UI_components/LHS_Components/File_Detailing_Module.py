@@ -171,7 +171,7 @@ class FileDetailingSystemWidget(QWidget):
                 print(f"New set of data from folder: {image_loader._dominant_format}")
                 print(metadata)
                 print(channels)
-                print(frames)
+                # print(frames)
 
                 # self.displayDataFolders(frames, metadata, file_path)
             else:

@@ -69,7 +69,6 @@ def extract_timestamp_from_file(file_path: Path) -> str:
         logger.error(f"Error extracting timestamp: {e}")
         return "Unknown"
 
-
 def open_spm(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, list]:
     """
     Extract image and pixel to nm scaling from the Bruker .spm file.
@@ -127,23 +126,22 @@ def open_spm(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
         'timestamp': timestamp
     }
 
-    # print(labels)
-
     # Extract required values
     num_frames = 1  # Assuming single frame for SPM
     y_pixels, x_pixels = image.shape
     x_range_nm = x_pixels * scaling_factor
 
     # Attempt to extract the scan rate from available metadata
-    scan_rate = 0
+    relative_frame_time = 0.0
     for layer in scan.layers:
         for key, value in layer.items():
             key_str = key.decode("latin1", errors="ignore") if isinstance(key, bytes) else key
-            if 'Scan Rate' in key_str:
-                scan_rate = float(value)
+            if 'Relative frame time' in key_str:
+                relative_frame_time = float(value[0])
                 break
 
-    fps = 1 / scan_rate if scan_rate != 0 else 0
+    relative_frame_time_sec = relative_frame_time / 1000.0  # Convert milliseconds to seconds
+    fps = 1 / relative_frame_time_sec if relative_frame_time_sec != 0 else 0
     line_rate = y_pixels * fps if y_pixels else 0
     pixel_to_nanometre_scaling_factor = scaling_factor
 

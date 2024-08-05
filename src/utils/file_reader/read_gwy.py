@@ -162,7 +162,8 @@ def open_gwy(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
                 y_pixels,
                 x_pixels,
                 pixel_to_nanometre_scaling_factor,
-                meta['channels'][0]
+                meta['channels'][0],
+                ""
             ]
 
             if len(values) != len(STANDARDISED_METADATA_DICT_KEYS):
