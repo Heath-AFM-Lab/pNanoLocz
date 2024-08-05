@@ -141,10 +141,8 @@ def open_gwy(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
                 meta.pop('data')
             meta['channels'] = [channels[channel_indices[0]][1].split('/')[1]]  # Update the channel name
 
-            print(np.shape(images))
             # Flip the image vertically and convert to nm
             images = [np.flipud(image) for image in images]
-            print(np.shape(images))
             images = np.array(images) * 1e9
 
             # Calculate additional values

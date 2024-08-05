@@ -79,7 +79,6 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
                 s['channel'] = channel
 
             dim_scaling = file[f'/DataSetInfo/Global/Channels/{channel}/ImageDims'].attrs['DimScaling']
-            print(file)
             # logger.info(f"DimScaling: {dim_scaling}")
             if isinstance(dim_scaling, np.ndarray):
                 scale0 = np.max(dim_scaling)

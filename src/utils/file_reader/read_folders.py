@@ -71,7 +71,6 @@ class ImageLoader:
             elif self._dominant_format == '.gwy':
                 im, meta, channels = open_gwy(file_path, 1)
             meta["Frames"] = len(self._file_paths)
-            print(len(self._file_paths))
 
             data_dict[file_path] = {'image': im, 'metadata': meta, 'channels': channels}
 
