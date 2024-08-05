@@ -30,5 +30,7 @@ IMAGE_METADATA_DICT_KEYS = [
 # TODO: This needs to be edited later to include additional metadata that is not ready yet
 STANDARDISED_METADATA_DICT_KEYS = [
     "Frames", "X Range (nm)", "Speed (FPS)", "Line/s (Hz)", "Y Pixel Dimensions", 
-    "X Pixel Dimensions", "Pixel/nm Scaling Factor", "Current channel",
+    "X Pixel Dimensions", "Pixel/nm Scaling Factor", "Current channel"
 ]
+
+NANOMETRES_IN_METRE = 1e9

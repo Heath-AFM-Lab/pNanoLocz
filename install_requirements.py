@@ -31,7 +31,7 @@ def main(requirements_file):
         for line in f:
             package = line.strip()
             if package and not package.startswith('#'):
-                if is_macos and 'cuda' in package.lower():
+                if is_macos and ('cuda' or "cupy") in package.lower():
                     print(f'Skipping {package} installation on macOS.')
                     continue
                 

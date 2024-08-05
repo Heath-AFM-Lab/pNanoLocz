@@ -39,7 +39,7 @@ def spm_pixel_to_nm_scaling(filename: str, channel_data: pySPM.SPM.SPM_image) ->
         pixel_to_nm_scaling = 1
         # logger.info(f"[{filename}] : Pixel size not found in metadata, defaulting to 1nm")
     # logger.info(f"[{filename}] : Pixel to nm scaling : {pixel_to_nm_scaling}")
-    return pixel_to_nm_scaling
+    return 1/pixel_to_nm_scaling
 
 def open_spm(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, list]:
     """
@@ -101,12 +101,10 @@ def open_spm(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
         'channels': labels
     }
 
-    print(labels)
-
     # Extract required values
     num_frames = 1  # Assuming single frame for SPM
     y_pixels, x_pixels = image.shape
-    x_range_nm = x_pixels * scaling_factor
+    x_range_nm = x_pixels / scaling_factor
 
     # Attempt to extract the scan rate from available metadata
     scan_rate = 0

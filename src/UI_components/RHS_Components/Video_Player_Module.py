@@ -42,6 +42,7 @@ class VideoPlayerWidget(QWidget):
 
         self.colorbarWidget = MatplotlibColourBarWidget()
         self.videoPlayerLayout.addWidget(self.colorbarWidget)
+        self.colorbarWidget.setMinimumWidth(100)
         self.colorbarWidget.hide()
 
         # Initialize the rest of the widgets
@@ -110,6 +111,9 @@ class VideoPlayerWidget(QWidget):
         # Update FPS box with base FPS
         self.videoControlWidget.fpsTextBox.setText(str(self.videoPlayerWidget.get_fps()))
 
+        # Update widgets
+        self.update_widgets()
+
         # Enable widgets
         self.enableWidgets()
 
@@ -133,22 +137,29 @@ class VideoPlayerWidget(QWidget):
         self.videoControlWidget.playIcon.setToolTip("Play")
         self.videoControlWidget.fpsTextBox.setText(str(self.videoPlayerWidget.get_fps()))
         self.visualRepresentationWidget.scaleBarCheckbox.setChecked(False)
-        self.visualRepresentationWidget.zScaleCheckbox.setChecked(False)
+        # self.visualRepresentationWidget.zScaleCheckbox.setChecked(False)
         self.visualRepresentationWidget.timescaleCheckbox.setChecked(False)
-        self.colorbarWidget.hide()
+        # self.colorbarWidget.hide()
         self.blockSignals(False)
 
     ### VIDEO CONTROL FUNCTIONALITY ###
     def update_widgets(self):
+        frame_no = self.videoPlayerWidget.get_frame_number()
+        frame_metadata = self.media_data_manager.get_frames_metadata_per_frame(frame_no)
         # Update the slider position
         self.videoControlWidget.videoSeekSlider.blockSignals(True)
-        self.videoControlWidget.videoSeekSlider.setValue(self.videoPlayerWidget.get_frame_number())
+        self.videoControlWidget.videoSeekSlider.setValue(frame_no)
         self.videoControlWidget.videoSeekSlider.blockSignals(False)
 
         # Update frame number
         self.videoControlWidget.frameSpinBox.blockSignals(True)
-        self.videoControlWidget.frameSpinBox.setValue(self.videoPlayerWidget.get_frame_number() + 1)
+        self.videoControlWidget.frameSpinBox.setValue(frame_no + 1)
         self.videoControlWidget.frameSpinBox.blockSignals(False)
+
+        # Update colourbar with frame cmap
+        # print(frame_metadata["Max pixel value"], frame_metadata["Min pixel value"])
+        self.colorbarWidget.set_min_max_limits(frame_metadata["Min pixel value"], frame_metadata["Max pixel value"])
+        # print(frame_metadata["Max pixel value"], frame_metadata["Min pixel value"])
 
     def playPauseVideo(self):
         if self.videoPlayerWidget.timer_is_running():
@@ -199,7 +210,7 @@ class VideoPlayerWidget(QWidget):
         else:
             self.videoPlayerWidget.hide_timescale()
 
-    ### COLOR BAR FUNCTIONALITY
+    ### COLOR BAR FUNCTIONALITY ###
     def change_colour_bar(self, cmap_name):
         self.videoPlayerWidget.set_cmap(cmap_name)
         self.colorbarWidget.set_cmap(cmap_name)

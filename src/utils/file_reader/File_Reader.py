@@ -16,8 +16,9 @@ def loadFileData(file_path, channel = None):
     # Instantiate core media manager class
     media_data_manager = MediaDataManager()
     if os.path.isdir(file_path):
-        image_loader = ImageLoader(file_path)
-        if image_loader._dominant_format is not None:  # Only display data if criteria met
+        image_loader = ImageLoader(file_path)#
+        dominant_format = image_loader.get_dominant_format()
+        if dominant_format is not None:  # Only display data if criteria met
             frames = [data['image'] for data in image_loader._data_dict.values()]
             metadata = [data['metadata'] for data in image_loader._data_dict.values()]
             channels = [data['channels'] for data in image_loader._data_dict.values()]
@@ -42,9 +43,11 @@ def loadFileData(file_path, channel = None):
                 # Convert the common elements counter to a list
                 repeating_channels = list(common_counter.elements())
 
-            print(f"New set of data from folder: {image_loader._dominant_format}")
-            print(metadata)
-            print(repeating_channels)
+            if '' in repeating_channels:
+                repeating_channels.remove('')
+
+            media_data_manager.load_new_folder_data(folder_path=file_path, dominant_file_ext=dominant_format, frames=frames,
+                                            folder_metadata=metadata, channels=repeating_channels)
 
             # self.displayDataFolders(frames, metadata, file_path)
         else:
@@ -69,6 +72,9 @@ def loadFileData(file_path, channel = None):
     else:
         print(f"Unsupported file type: {ext}")
         return
+    
+    if '' in channels:
+        channels.remove('')
     
     media_data_manager.load_new_file_data(file_path=file_path, file_ext=ext, frames=frames,
                                             file_metadata=metadata, channels=channels)

@@ -222,8 +222,8 @@ def load_asd(file_path: Path, channel: str):
             )
         # logger.debug(f"header dict: \n{header_dict}")
 
-        pixel_to_nanometre_scaling_factor_x = header_dict["x_nm"] / header_dict["x_pixels"]
-        pixel_to_nanometre_scaling_factor_y = header_dict["y_nm"] / header_dict["y_pixels"]
+        pixel_to_nanometre_scaling_factor_x = header_dict["x_pixels"] / header_dict["x_nm"]
+        pixel_to_nanometre_scaling_factor_y = header_dict["y_pixels"] / header_dict["y_nm"]
         if pixel_to_nanometre_scaling_factor_x != pixel_to_nanometre_scaling_factor_y:
             logger.warning(
                 f"Resolution of image is different in x and y directions:"

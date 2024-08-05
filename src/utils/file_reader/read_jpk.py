@@ -57,7 +57,7 @@ def open_jpk(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
         channels = list(channel_list.keys())
 
         # Rotate the image 90 degrees clockwise
-        image_flipped = np.flipud(image)
+        image_flipped = np.flipud(image) * 1e9
 
         # Extract required values
         num_frames = int(len(tif.pages[1:]) / len(channels))

@@ -78,7 +78,8 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
             else:
                 s['channel'] = channel
 
-            dim_scaling = file['/DataSetInfo/Global/Channels/HeightTrace/ImageDims'].attrs['DimScaling']
+            dim_scaling = file[f'/DataSetInfo/Global/Channels/{channel}/ImageDims'].attrs['DimScaling']
+            print(file)
             # logger.info(f"DimScaling: {dim_scaling}")
             if isinstance(dim_scaling, np.ndarray):
                 scale0 = np.max(dim_scaling)
@@ -96,7 +97,7 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
                     if isinstance(frame, h5py.Group):
                         temp = frame.name.split('Frame ')[-1]
                         scan_size_frame.append(int(temp))
-                        temp_attrs = frame['Channels/HeightTrace/ImageDims'].attrs
+                        temp_attrs = frame[f'Channels/[{channel}]/ImageDims'].attrs
                         ScanSize.append(temp_attrs['ScanSize'])
                 except Exception as e:
                     logger.error(f"Error processing frame {frame}: {e}")
@@ -164,6 +165,8 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
 
             im[np.isnan(im)] = 0
 
+            im *= 1e9
+
             # Calculate additional parameters
             fps = 1 / s['frameAcqTime'] if s['frameAcqTime'] != 0 else 0
             line_rate = s['yPixel'] * fps if s['yPixel'] else 0
@@ -187,7 +190,7 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
             file_metadata = dict(zip(STANDARDISED_METADATA_DICT_KEYS, values))
 
             # Reshape array
-            im = np.transpose(im, (2, 0, 1))
+            im = np.transpose(im, (2, 0, 1)) 
 
             channels = s['channels']
 

@@ -70,11 +70,15 @@ class ImageLoader:
                 im, meta, channels = open_spm(file_path, "Height")
             elif self._dominant_format == '.gwy':
                 im, meta, channels = open_gwy(file_path, 1)
-            meta[0] = len(self._file_paths)
+            meta["Frames"] = len(self._file_paths)
+            print(len(self._file_paths))
 
             data_dict[file_path] = {'image': im, 'metadata': meta, 'channels': channels}
 
         return data_dict
+    
+    def get_dominant_format(self) -> str:
+        return self._dominant_format
 
     def play_images(self):
         if not self._data_dict:

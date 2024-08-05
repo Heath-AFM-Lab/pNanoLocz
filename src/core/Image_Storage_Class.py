@@ -1,4 +1,5 @@
 import numpy as np
+from PyQt6.QtWidgets import QMessageBox
 from PyQt6.QtCore import QObject, pyqtSignal
 from utils.constants import FILE_METADATA_DICT_KEYS, IMAGE_METADATA_DICT_KEYS, STANDARDISED_METADATA_DICT_KEYS
 
@@ -30,7 +31,7 @@ class MediaDataManager(QObject):
         pass
 
     def load_new_file_data(self, file_path: str, file_ext: str, frames: np.ndarray | list | tuple, 
-                           file_metadata: list, channels: list, contained_in_folder: bool = False):
+                           file_metadata: list, channels: list):
         """Load new file data into the manager, resetting previous data."""
         # Reset all variables
         self.reset()
@@ -61,8 +62,6 @@ class MediaDataManager(QObject):
         ]    
 
         frame_metadata_dictionary = {}
-        print(frames.ndim, frames.shape, len(frames), file_metadata["Frames"])
-
         # Store frames metadata
         for frame_no in range(file_metadata["Frames"]):
             frame_metadata_values = [
@@ -79,10 +78,103 @@ class MediaDataManager(QObject):
         self.file_metadata = dict(zip(FILE_METADATA_DICT_KEYS, file_metadata_values))
         self.image_data = frames
         self.image_metadata = frame_metadata_dictionary
-        self.contained_in_folder = contained_in_folder
+        self.contained_in_folder = False
 
         self.new_file_loaded.emit()
         self.output_file_data()
+
+
+
+    def load_new_folder_data(self, folder_path: str, dominant_file_ext: str, frames: np.ndarray | list | tuple, 
+                           folder_metadata: list, channels: list):
+        # Reset all variables
+        self.reset()
+
+        # Convert frames to np.array if not already
+        if isinstance(frames, (list, tuple)):
+            frames = np.array(frames, dtype=np.float16)
+
+        if frames.ndim not in [2, 3]:
+            raise ValueError("Frames must be a 2D or 3D array.")
+        
+        # Add a new axis to handle images as if they are frames
+        if frames.ndim == 2:
+            frames = np.expand_dims(frames, axis=0)
+
+        if len(folder_metadata[0]) != len(STANDARDISED_METADATA_DICT_KEYS):
+            raise ValueError("The length of folder_metadata does not match the required metadata keys.")
+        
+        # Run checks across all metadata from each file. TODO
+        # Store file metadata
+        file_metadata_values = [
+            folder_metadata[0]["Frames"],
+            folder_metadata[0]["Speed (FPS)"],
+            folder_metadata[0]["Line/s (Hz)"],
+            folder_metadata[0]["Y Pixel Dimensions"],
+            folder_metadata[0]["X Pixel Dimensions"],
+            folder_metadata[0]["Current channel"],
+            channels
+        ]
+
+        for metadata_value in folder_metadata:
+            if (file_metadata_values[0] != metadata_value["Frames"] or
+                file_metadata_values[1] != metadata_value["Speed (FPS)"] or
+                file_metadata_values[2] != metadata_value["Line/s (Hz)"] or
+                file_metadata_values[3] != metadata_value["Y Pixel Dimensions"] or
+                file_metadata_values[4] != metadata_value["X Pixel Dimensions"] or
+                file_metadata_values[5] != metadata_value["Current channel"]
+                ):
+                # Create a message box instance
+                msg_box = QMessageBox()
+
+                # Set the icon, title, and text for the message box
+                msg_box.setIcon(QMessageBox.Icon.Warning)
+                msg_box.setWindowTitle("File metadata inconsistency")
+                msg_box.setText("File metadata does not match across all files inside selected folder. This may be because a file with the same file extension exists inside this folder that does not belong in there")
+
+                # Set detailed text if needed
+                msg_box.setInformativeText("Click OK to proceed unloading the images. Doing so may result in undefined behaviour")
+
+                # Add standard buttons to the message box
+                msg_box.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
+
+                # Show the message box
+                response = msg_box.exec()
+
+                # Handle the response
+                if response == QMessageBox.StandardButton.Ok:
+                    break
+                else:
+                    self.reset()
+                    return
+
+                # raise ValueError("File metadata does not match across all files inside selected folder. This may be because a file exists inside this folder that does not belong in there")
+
+        frame_metadata_dictionary = {}
+        # Store frames metadata
+        for frame_no in range(folder_metadata[0]["Frames"]):
+            frame_metadata_values = [
+                folder_metadata[frame_no]["X Range (nm)"],
+                folder_metadata[frame_no]["Pixel/nm Scaling Factor"],
+                np.max(frames[frame_no]),
+                np.min(frames[frame_no])
+            ]
+            frame_metadata_dictionary[frame_no] = dict(zip(IMAGE_METADATA_DICT_KEYS, frame_metadata_values))
+
+
+        # Store the rest of the variables to the class
+        self.file_path = folder_path
+        self.file_ext = dominant_file_ext
+        self.file_metadata = dict(zip(FILE_METADATA_DICT_KEYS, file_metadata_values))
+        self.image_data = frames
+        self.image_metadata = frame_metadata_dictionary
+        self.contained_in_folder = True
+
+        self.new_file_loaded.emit()
+        self.output_file_data()
+
+
+
 
     # Getter functions, direct from dict
     def get_file_path(self) -> str:
