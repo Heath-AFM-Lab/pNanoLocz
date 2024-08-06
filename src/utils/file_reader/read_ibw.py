@@ -107,7 +107,8 @@ def open_ibw(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
         y_pixels,
         x_pixels,
         pixel_to_nanometre_scaling_factor,
-        channel
+        channel,
+        ""
     ]
 
     if len(values) != len(STANDARDISED_METADATA_DICT_KEYS):

@@ -43,9 +43,9 @@ class ImageLoader:
         for ext, count in file_format_count.items():
             if count >= 10 and all(other_count < 6 for other_ext, other_count in file_format_count.items() if other_ext != ext):
                 dominant_format = ext
-                dominant_format_files = [str(file_path) for file_path in file_list if file_path.suffix == dominant_format]
+                # Sort the files by name in ascending order
+                dominant_format_files = sorted([str(file_path) for file_path in file_list if file_path.suffix == dominant_format])
                 break
-
 
         return dominant_format, dominant_format_files
     
@@ -54,21 +54,60 @@ class ImageLoader:
 
     def _load_images(self):
         data_dict = {}
+        time_stamps = []
+        elapsed_time = 0
 
         for file_path in self._file_paths:
             if self._dominant_format == '.nhf':
                 im, meta, channels = open_nhf(file_path, 'Topography')
+                # Calculate elapsed time for NHF files
+                fps = meta.get('Speed (FPS)', 0)
+                if fps > 0:
+                    meta['Timestamp'] = elapsed_time
+                    elapsed_time += 1 / fps
+                else:
+                    meta['Timestamp'] = elapsed_time
+                time_stamps.append(meta['Timestamp'])
             elif self._dominant_format == '.jpk':
                 im, meta, channels = open_jpk(file_path, "height_trace")
+                # Calculate elapsed time for JPK files
+                fps = meta.get('Speed (FPS)', 0)
+                if fps > 0:
+                    meta['Timestamp'] = elapsed_time
+                    elapsed_time += 1 / fps
+                else:
+                    meta['Timestamp'] = elapsed_time
+                time_stamps.append(meta['Timestamp'])
             elif self._dominant_format == '.ibw':
                 im, meta, channels = open_ibw(file_path, 1)
+                # Calculate elapsed time for IBW files
+                fps = meta.get('Speed (FPS)', 0)
+                if fps > 0:
+                    meta['Timestamp'] = elapsed_time
+                    elapsed_time += 1 / fps
+                else:
+                    meta['Timestamp'] = elapsed_time
+                time_stamps.append(meta['Timestamp'])
             elif self._dominant_format == '.spm':
                 im, meta, channels = open_spm(file_path, "Height")
+                time_stamps.append(meta['Timestamp'])  # Extract timestamp from metadata
             elif self._dominant_format == '.gwy':
                 im, meta, channels = open_gwy(file_path, 1)
-            meta["Frames"] = len(self._file_paths)
-
+                # Calculate elapsed time for GWY files
+                fps = meta.get('Speed (FPS)', 0)
+                if fps > 0:
+                    meta['Timestamp'] = elapsed_time
+                    elapsed_time += 1 / fps
+                else:
+                    meta['Timestamp'] = elapsed_time
+                time_stamps.append(meta['Timestamp'])
+            meta['Frames'] = len(self._file_paths)
             data_dict[file_path] = {'image': im, 'metadata': meta, 'channels': channels}
+
+        if self._dominant_format == '.spm':
+            elapsed_times = self._convert_to_elapsed_time(time_stamps)
+            for i, file_path in enumerate(self._file_paths):
+                data_dict[file_path]['metadata']['elapsed_time'] = elapsed_times[i]
 
         return data_dict
     

@@ -100,11 +100,12 @@ def open_nhf(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
             y_pixels,
             x_pixels,
             pixel_to_nanometre_scaling_factor,
-            channel
+            channel,
+            ""
         ]
 
         if len(values) != len(STANDARDISED_METADATA_DICT_KEYS):
-            raise ValueError(f"The length of the values in .spm does not match the required metadata keys.")
+            raise ValueError(f"The length of the values in .nhf does not match the required metadata keys.")
 
         # Create the metadata dictionary
         file_metadata = dict(zip(STANDARDISED_METADATA_DICT_KEYS, values))
