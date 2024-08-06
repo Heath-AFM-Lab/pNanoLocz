@@ -77,34 +77,3 @@ class ImageLoader:
     
     def get_dominant_format(self) -> str:
         return self._dominant_format
-
-    def play_images(self):
-        if not self._data_dict:
-            return
-
-        fig, ax = plt.subplots()
-        file_paths = list(self._data_dict.keys())
-        initial_file_path = file_paths[0]
-        im = ax.imshow(self._data_dict[initial_file_path]['image'], animated=True, cmap=AFM)
-        metadata_text = ax.text(0.02, 0.95, '', transform=ax.transAxes, color='white', fontsize=8, verticalalignment='top', bbox=dict(facecolor='black', alpha=0.5))
-
-        previous_meta = self._data_dict[initial_file_path]['metadata']
-
-        def updatefig(i):
-            nonlocal previous_meta
-            current_file_path = file_paths[i]
-            current_image = self._data_dict[current_file_path]['image']
-            current_meta = self._data_dict[current_file_path]['metadata']
-            im.set_array(current_image)
-            if self._check_metadata_change(current_meta, previous_meta):
-                metadata_text.set_text(current_meta)
-                print("Metadata updated:", current_meta)
-                previous_meta = current_meta
-            return im, metadata_text
-
-        ani = animation.FuncAnimation(fig, updatefig, frames=len(file_paths), interval=100, blit=True)
-        plt.show()
-
-    def _check_metadata_change(self, current_meta, previous_meta):
-        return current_meta != previous_meta
-

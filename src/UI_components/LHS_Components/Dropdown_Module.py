@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QComboBox
-from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt6.QtCore import pyqtSignal
 from core.Image_Storage_Class import MediaDataManager
 from utils.file_reader.File_Reader import loadFileData
 

@@ -1,7 +1,5 @@
 PyQt6
 vispy
-# cmake         # Accidentally installed on windows machine. unquote if something is broken/missing
-# opencv        # Same here
 cudatoolkit
 cupy
 imageio
@@ -13,7 +11,5 @@ matplotlib
 AFMReader
 h5py
 numpy
-# EXPERIMENTAL 
-# pyopengl
-# pyopengl-accelerate
+
 

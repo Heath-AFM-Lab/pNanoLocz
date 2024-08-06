@@ -6,19 +6,8 @@ from PyQt6.QtCore import Qt, QSortFilterProxyModel
 from utils.Folder_Opener_Module.Folder_Opener import FolderOpener
 from utils.file_reader.File_Reader import loadFileData
 import os
-# from PyQt6.QtCore import QTimer
-# import matplotlib.pyplot as plt
-# from matplotlib import animation
-# import numpy as np
-# import matplotlib.colors as colors
 from utils.constants import FILE_EXTS
 from core.Image_Storage_Class import MediaDataManager
-# from core.Image_Storage_Class import MediaDataManager
-
-# # AFM = np.load('utils/file_reader/AFM_cmap.npy')
-# # AFM = colors.ListedColormap(AFM)
-
-
 
 class CustomFileFilterProxyModel(QSortFilterProxyModel):
     def __init__(self, extensions, parent=None):
@@ -136,14 +125,6 @@ class FileDetailingSystemWidget(QWidget):
         self.fileDetailsWidget.setSizeAdjustPolicy(QTableWidget.SizeAdjustPolicy.AdjustToContents)
         self.adjustTableSize()
 
-        # column_width = self.fileDetailsWidget.verticalHeader().width()
-        # for column in range(self.fileDetailsWidget.columnCount()):
-        #     column_width += self.fileDetailsWidget.columnWidth(column)
-
-        # self.fileDetailsWidget.setFixedWidth(column_width)
-        # total_height = sum(self.fileDetailsWidget.rowHeight(1) for i in range(self.fileDetailsWidget.rowCount() + 1))
-        # self.fileDetailsWidget.setFixedHeight(total_height + 2 * self.fileDetailsWidget.frameWidth())
-
         fileDetailslayout = QVBoxLayout()
         fileDetailslayout.addWidget(self.fileDetailsWidget)
         fileDetailslayout.addStretch(1)
@@ -202,102 +183,6 @@ class FileDetailingSystemWidget(QWidget):
         # Repeated calls of this function will wipe any currently saved data
         loadFileData(file_path)
 
-
-
-       
-    # def displayDataASD(self, frames):
-    #     fig, axis = plt.subplots()
-    #     def update(frame):
-    #         axis.imshow(frames[frame], cmap=AFM)
-    #         return axis
-        
-    #     self.animation = animation.FuncAnimation(fig, update, frames=len(frames), interval=200)
-
-    #     # Integrate the animation into the Qt event loop
-    #     timer = QTimer(self)
-    #     timer.timeout.connect(lambda: None)
-    #     timer.start(50)
-
-    #     plt.show()
-
-    
-    # def displayDataGWY(self, images):
-    #     if len(images) == 1:
-    #         plt.imshow(images[0], cmap=AFM)
-    #         plt.colorbar(label='Height (nm)')
-    #         plt.show()
-    #     elif len(images) > 1:
-    #         fig, ax = plt.subplots()
-    #         frame_image = ax.imshow(images[0], cmap=AFM)
-
-    #         def update_frame(frame_number):
-    #             frame_image.set_data(images[frame_number])
-    #             return frame_image,
-
-    #         ani = animation.FuncAnimation(fig, update_frame, frames=len(images), interval=50, blit=True)
-    #         plt.show()
-    #     else:
-    #         print("No images found.")
-
-    # def displayDataFolders(self, frames, metadata, file_path):
-    #     fig, axis = plt.subplots()
-    #     im = axis.imshow(frames[0], cmap=AFM)
-    #     metadata_text = axis.text(0.02, 0.95, '', transform=axis.transAxes, color='white', fontsize=8, verticalalignment='top', bbox=dict(facecolor='black', alpha=0.5))
-
-    #     previous_meta = metadata[0]  # Initialize previous metadata
-
-    #     def update(frame):
-    #         nonlocal previous_meta  # Use nonlocal to modify previous_meta inside update
-    #         current_image = frames[frame]
-    #         im.set_array(current_image)
-    #         current_meta = metadata[frame]
-    #         if self._check_metadata_change(current_meta, previous_meta):
-    #             metadata_text.set_text(str(current_meta))
-    #             self.updateMetadataTable(current_meta)
-    #             previous_meta = current_meta  # Update previous_meta
-    #         return im, metadata_text
-
-    #     self.animation = animation.FuncAnimation(fig, update, frames=len(frames), interval=200, blit=True)
-
-    #     # Integrate the animation into the Qt event loop
-    #     timer = QTimer(self)
-    #     timer.timeout.connect(lambda: None)
-    #     timer.start(50)
-
-    #     plt.show()
-
-    # def _check_metadata_change(self, current_meta, previous_meta):
-    #     return current_meta != previous_meta
-
-    # def updateMetadataTable(self, metadata):
-    #     for i, value in enumerate(metadata):
-    #         self.fileDetailsWidget.setItem(i, 1, QTableWidgetItem(str(value)))
-
-    # def displayData(self, frames):
-    #     fig, axis = plt.subplots()
-
-    #     if frames.ndim == 2:
-    #         axis.imshow(frames, cmap=AFM)
-    #         plt.show()
-    #     elif frames.ndim == 3:
-    #         def update(frame):
-    #             axis.clear()  # Clear the previous frame
-    #             axis.imshow(frames[:, :, frame], cmap=AFM)
-    #             return axis
-
-    #         self.animation = animation.FuncAnimation(fig, update, frames=frames.shape[2], interval=200, blit=False)
-
-    #         # Integrate the animation into the Qt event loop
-    #         timer = QTimer(self)
-    #         timer.timeout.connect(lambda: None)
-    #         timer.start(50)
-
-    #         plt.show()
-
-    # def onChannelChanged(self, channel):
-    #     self.currentChannel = channel
-    #     if self.currentFilePath:
-    #         self.loadFileData(self.currentFilePath, channel)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
