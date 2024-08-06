@@ -150,6 +150,7 @@ def load_asd(file_path: Path, channel: str):
             num_frames=header_dict["num_frames"],
             x_pixels=header_dict["x_pixels"],
             y_pixels=header_dict["y_pixels"],
+            frame_time=header_dict["frame_time"]
         )
 
         frames = np.array(frames)
@@ -438,6 +439,7 @@ def read_channel_data(
     num_frames: int,
     x_pixels: int,
     y_pixels: int,
+    frame_time: float
 ) -> tuple[npt.NDArray, list]:
     """
     Read frame data from an open .asd file, starting at the current position.
@@ -452,6 +454,8 @@ def read_channel_data(
         The width of each frame in pixels.
     y_pixels : int
         The height of each frame in pixels.
+    frame_time : float
+        The time per frame in milliseconds.
 
     Returns
     -------
@@ -494,7 +498,8 @@ def read_channel_data(
             'y_offset': frame_header_dict["y_offset"],
             'x_tilt': frame_header_dict["x_tilt"],
             'y_tilt': frame_header_dict["y_tilt"],
-            'is_stimulated': frame_header_dict["is_stimulated"]
+            'is_stimulated': frame_header_dict["is_stimulated"],
+            'timestamp': i * frame_time / 1000.0  # Calculate timestamp in seconds
         })
 
     return frames, frame_metadata_list
