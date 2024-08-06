@@ -1,8 +1,5 @@
-import os
 from pathlib import Path
 import logging
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 from utils.file_reader.read_ibw import open_ibw
 from utils.file_reader.read_jpk import open_jpk
 from utils.file_reader.read_nhf import open_nhf
