@@ -3,10 +3,9 @@ from pathlib import Path
 import pySPM
 import numpy as np
 import logging
+import time as time_module
 import matplotlib.colors as colors
-
-AFM = np.load('utils/file_reader/AFM_cmap.npy')
-AFM = colors.ListedColormap(AFM)
+from utils.constants import STANDARDISED_METADATA_DICT_KEYS
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -39,9 +38,36 @@ def spm_pixel_to_nm_scaling(filename: str, channel_data: pySPM.SPM.SPM_image) ->
     )[0]
     if px_to_real[0][0] == 0 and px_to_real[1][0] == 0:
         pixel_to_nm_scaling = 1
-        # logger.info(f"[{filename}] : Pixel size not found in metadata, defaulting to 1nm")
-    # logger.info(f"[{filename}] : Pixel to nm scaling : {pixel_to_nm_scaling}")
     return pixel_to_nm_scaling
+
+def extract_timestamp_from_file(file_path: Path) -> str:
+    """
+    Extract timestamp from the SPM file by reading the first few lines.
+
+    Parameters
+    ----------
+    file_path : Path
+        Path to the .spm file.
+
+    Returns
+    -------
+    str
+        Timestamp as a string.
+    """
+    try:
+        with open(file_path, 'r') as file:
+            lines = [next(file) for _ in range(3)]
+        if len(lines) >= 3:
+            timestamp_line = lines[2]
+            timestamp = timestamp_line[8:].strip()
+            time_struct = time_module.strptime(timestamp, "%I:%M:%S %p %a %b %d %Y")
+            formatted_timestamp = time_module.strftime("%I:%M:%S %p %A", time_struct)
+            return formatted_timestamp
+        else:
+            raise ValueError("File does not contain enough lines to extract timestamp.")
+    except Exception as e:
+        logger.error(f"Error extracting timestamp: {e}")
+        return "Unknown"
 
 def open_spm(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, list]:
     """
@@ -66,13 +92,10 @@ def open_spm(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
     ValueError
         If the channel is not found in the .spm file.
     """
-    # logger.info(f"Loading image from : {file_path}")
     file_path = Path(file_path)
     filename = file_path.stem
     try:
         scan = pySPM.Bruker(file_path)
-        # logger.info(f"[{filename}] : Loaded image from : {file_path}")
-
         labels = []
         for layer in scan.layers:
             for data in layer.get(b"@2:Image Data", []):
@@ -81,11 +104,9 @@ def open_spm(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
                 labels.append(channel_name)
 
         if channel not in labels:
-            # logger.warning(f"[{filename}] : Channel '{channel}' not found. Using first available channel: {labels[0]}")
             channel = labels[0]
 
         channel_data = scan.get_channel(channel)
-        # logger.info(f"[{filename}] : Extracted channel {channel}")
         image = np.flipud(np.array(channel_data.pixels))
     except FileNotFoundError:
         logger.error(f"[{filename}] File not found : {file_path}")
@@ -97,10 +118,12 @@ def open_spm(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
         raise e
 
     scaling_factor = spm_pixel_to_nm_scaling(filename, channel_data)
+    timestamp = extract_timestamp_from_file(file_path)
     metadata = {
         'scaling_factor': scaling_factor,
         'channel': channel,
-        'channels': labels
+        'channels': labels,
+        'timestamp': timestamp
     }
 
     # Extract required values
@@ -109,30 +132,38 @@ def open_spm(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
     x_range_nm = x_pixels * scaling_factor
 
     # Attempt to extract the scan rate from available metadata
-    scan_rate = 0
+    relative_frame_time = 0.0
     for layer in scan.layers:
         for key, value in layer.items():
             key_str = key.decode("latin1", errors="ignore") if isinstance(key, bytes) else key
-            if 'Scan Rate' in key_str:
-                scan_rate = float(value)
+            if 'Relative frame time' in key_str:
+                relative_frame_time = float(value[0])
                 break
 
-    fps = 1 / scan_rate if scan_rate != 0 else 0
+    relative_frame_time_sec = relative_frame_time / 1000.0  # Convert milliseconds to seconds
+    fps = 1 / relative_frame_time_sec if relative_frame_time_sec != 0 else 0
     line_rate = y_pixels * fps if y_pixels else 0
     pixel_to_nanometre_scaling_factor = scaling_factor
 
     values = [
-        str(num_frames),
-        str(x_range_nm),
-        f"{int(fps)}",
-        f"{int(line_rate)}",
-        str(y_pixels),
-        str(x_pixels),
-        f"{pixel_to_nanometre_scaling_factor:.2f}",
-        channel
+        num_frames,
+        x_range_nm,
+        fps,
+        line_rate,
+        y_pixels,
+        x_pixels,
+        pixel_to_nanometre_scaling_factor,
+        channel,
+        timestamp
     ]
 
-    return image, values, labels
+    if len(values) != len(STANDARDISED_METADATA_DICT_KEYS):
+        raise ValueError(f"The length of the values in .spm does not match the required metadata keys.")
+
+    # Create the metadata dictionary
+    file_metadata = dict(zip(STANDARDISED_METADATA_DICT_KEYS, values))
+
+    return image, file_metadata, labels
 
 if __name__ == "__main__":
     file_path = 'data/0.0_00014.spm'
@@ -144,7 +175,7 @@ if __name__ == "__main__":
 
         # Display the image using matplotlib
         import matplotlib.pyplot as plt
-        plt.imshow(image, cmap=AFM)
+        plt.imshow(image, cmap='gray')
         plt.colorbar(label='Height (nm)')
         plt.show()
     except Exception as e:

@@ -4,9 +4,6 @@ import matplotlib.colors as mcolors
 from vispy.color import Colormap
 from utils.constants import PATH_TO_CMAPS_DIRECTORY
 
-
-
-
 def load_npy_array(filename: str) -> np.ndarray:
     """Load a NumPy array from a .npy file.
 

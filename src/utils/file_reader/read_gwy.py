@@ -6,9 +6,7 @@ import logging
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-
-AFM = np.load('utils/file_reader/AFM_cmap.npy')
-AFM = colors.ListedColormap(AFM)
+from utils.constants import STANDARDISED_METADATA_DICT_KEYS
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -157,17 +155,25 @@ def open_gwy(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
             pixel_to_nanometre_scaling_factor = x_range_nm / x_pixels
 
             values = [
-                str(num_frames),
-                str(x_range_nm),
-                f"{int(fps)}",
-                f"{int(line_rate)}",
-                str(y_pixels),
-                str(x_pixels),
-                f"{pixel_to_nanometre_scaling_factor:.2f}",
-                meta['channels'][0]
+                num_frames,
+                x_range_nm,
+                fps,
+                line_rate,
+                y_pixels,
+                x_pixels,
+                pixel_to_nanometre_scaling_factor,
+                meta['channels'][0],
+                ""
             ]
 
-            return images, values, meta['channels']
+            if len(values) != len(STANDARDISED_METADATA_DICT_KEYS):
+                raise ValueError(f"The length of the values in .gwy does not match the required metadata keys.")
+
+            # Create the metadata dictionary
+            file_metadata = dict(zip(STANDARDISED_METADATA_DICT_KEYS, values))
+            
+
+            return images, file_metadata, meta['channels']
 
     except FileNotFoundError:
         logger.error(f"[{file_path}] File not found: {file_path}")
