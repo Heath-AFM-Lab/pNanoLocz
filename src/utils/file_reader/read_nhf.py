@@ -81,7 +81,7 @@ def open_nhf(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
         s['channels'] = [attrs.get('name')]
 
         im = np.rot90(im, k=1, axes=(0, 1))
-        im = np.fliplr(im)
+        im = np.fliplr(im) * 1e9
 
         # Extract required values
         num_frames = 1  # Assuming single frame for NHF
@@ -90,7 +90,7 @@ def open_nhf(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
         x_pixels = x_pixel
         fps = 1 / frame_acq_time if frame_acq_time != 0 else 0
         line_rate = y_pixel * fps if y_pixel else 0
-        pixel_to_nanometre_scaling_factor = 1e9 / x_pixel  # Assuming equal scaling in x and y
+        pixel_to_nanometre_scaling_factor = x_pixels/x_range_nm  # Assuming equal scaling in x and y
 
         values = [
             num_frames,
@@ -101,7 +101,7 @@ def open_nhf(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
             x_pixels,
             pixel_to_nanometre_scaling_factor,
             channel,
-            ""
+            None
         ]
 
         if len(values) != len(STANDARDISED_METADATA_DICT_KEYS):

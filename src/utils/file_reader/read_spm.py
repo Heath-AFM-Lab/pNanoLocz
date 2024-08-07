@@ -38,7 +38,9 @@ def spm_pixel_to_nm_scaling(filename: str, channel_data: pySPM.SPM.SPM_image) ->
     )[0]
     if px_to_real[0][0] == 0 and px_to_real[1][0] == 0:
         pixel_to_nm_scaling = 1
-    return pixel_to_nm_scaling
+        # logger.info(f"[{filename}] : Pixel size not found in metadata, defaulting to 1nm")
+    # logger.info(f"[{filename}] : Pixel to nm scaling : {pixel_to_nm_scaling}")
+    return 1/pixel_to_nm_scaling
 
 def extract_timestamp_from_file(file_path: Path) -> str:
     """
@@ -61,8 +63,7 @@ def extract_timestamp_from_file(file_path: Path) -> str:
             timestamp_line = lines[2]
             timestamp = timestamp_line[8:].strip()
             time_struct = time_module.strptime(timestamp, "%I:%M:%S %p %a %b %d %Y")
-            formatted_timestamp = time_module.strftime("%I:%M:%S %p %A", time_struct)
-            return formatted_timestamp
+            return time_struct
         else:
             raise ValueError("File does not contain enough lines to extract timestamp.")
     except Exception as e:
@@ -129,7 +130,7 @@ def open_spm(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
     # Extract required values
     num_frames = 1  # Assuming single frame for SPM
     y_pixels, x_pixels = image.shape
-    x_range_nm = x_pixels * scaling_factor
+    x_range_nm = x_pixels / scaling_factor
 
     # Attempt to extract the scan rate from available metadata
     relative_frame_time = 0.0
@@ -155,7 +156,7 @@ def open_spm(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
         pixel_to_nanometre_scaling_factor,
         channel,
         timestamp
-    ]
+    ] 
 
     if len(values) != len(STANDARDISED_METADATA_DICT_KEYS):
         raise ValueError(f"The length of the values in .spm does not match the required metadata keys.")

@@ -5,16 +5,15 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSiz
 from PyQt6.QtGui import QIcon
 from UI_components.RHS_Components.Video_Player_Components import VideoControlWidget, VideoDepthControlWidget, VisualRepresentationWidget, ExportAndVideoScaleWidget, MatplotlibVideoPlayerWidget, MatplotlibColourBarWidget
 from utils.constants import PATH_TO_ICON_DIRECTORY
+from core.Image_Storage_Class import MediaDataManager
 
 class VideoPlayerWidget(QWidget):
     def __init__(self):
         super().__init__()
         self.buildVideoPlayerWidgets()
-        self.framesLoaded = False
-        # TODO: reconfigure to actually load a file
-        self.loadFrames()
 
     def buildVideoPlayerWidgets(self):
+        self.media_data_manager = MediaDataManager()
         # Set up video player layout 
         self.mediaLayout = QVBoxLayout()
         self.mediaLayout.setContentsMargins(0, 0, 0, 0)
@@ -35,6 +34,16 @@ class VideoPlayerWidget(QWidget):
         # Set and add a layout to store video player and colour bar
         self.videoPlayerLayout = QHBoxLayout()
         self.mediaLayout.addLayout(self.videoPlayerLayout)
+        
+        self.videoPlayerWidget = MatplotlibVideoPlayerWidget()
+        self.videoPlayerWidget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.videoPlayerLayout.addWidget(self.videoPlayerWidget, stretch=1)
+        self.videoPlayerWidget.setMinimumSize(10, 10)
+
+        self.colorbarWidget = MatplotlibColourBarWidget()
+        self.videoPlayerLayout.addWidget(self.colorbarWidget)
+        self.colorbarWidget.setMinimumWidth(100)
+        self.colorbarWidget.hide()
 
         # Initialize the rest of the widgets
         self.videoControlWidget = VideoControlWidget()
@@ -52,10 +61,19 @@ class VideoPlayerWidget(QWidget):
         self.videoControlWidget.videoSeekSlider.valueChanged.connect(self.setVideoPosition)
         self.videoControlWidget.videoSeekSlider.sliderReleased.connect(self.sliderReleased)
 
+        self.videoPlayerWidget.update_widgets.connect(self.update_widgets)
+        self.videoPlayerWidget.reset_widgets.connect(self.reset_widgets)
+
         # Visual representation widgets
         self.visualRepresentationWidget.zScaleCheckboxChecked.connect(self.toggle_colorbar)
         self.visualRepresentationWidget.scaleBarCheckboxChecked.connect(self.toggle_scale_bar)
         self.visualRepresentationWidget.timescaleCheckboxChecked.connect(self.toggle_timescale)
+
+
+
+
+        # Media manager class to load data
+        self.media_data_manager.new_file_loaded.connect(self.load_frames_data)
 
 
         # Fix all sizes
@@ -80,51 +98,80 @@ class VideoPlayerWidget(QWidget):
         self.setLayout(self.mediaLayout)
 
     # TODO: create proper load frames func that triggers after user selects a file to open
-    def loadFrames(self):
-        width, height = 100, 100
-        # Example: Generate random frames
-        self.frames = [np.random.randint(0, 256, (height, width), dtype=np.uint8) for _ in range(100)]
-
-        self.videoPlayerWidget = MatplotlibVideoPlayerWidget(self.frames)
-        self.videoPlayerWidget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.videoPlayerLayout.addWidget(self.videoPlayerWidget, stretch=1)
-        self.videoPlayerWidget.update_widgets.connect(self.update_widgets)
-        self.videoPlayerWidget.setMinimumSize(10, 10)
-
-        self.colorbarWidget = MatplotlibColourBarWidget()
-        self.videoPlayerLayout.addWidget(self.colorbarWidget)
-        self.colorbarWidget.hide()
+    def load_frames_data(self):
+        self.frames = self.media_data_manager.get_frames()
+        self.number_of_frames = len(self.frames)
+        self.videoPlayerWidget.load_video_frames(self.frames, self.media_data_manager.get_frames_metadata())
 
         # Update slider with max frames
-        self.videoControlWidget.videoSeekSlider.setRange(0, len(self.frames) - 1)
+        self.videoControlWidget.videoSeekSlider.setRange(0, self.number_of_frames - 1)
 
         # Update frame selector with max frames
-        self.videoControlWidget.frameSpinBox.setRange(1, len(self.frames))
+        self.videoControlWidget.frameSpinBox.setRange(1, self.number_of_frames)
 
         # Update FPS box with base FPS
         self.videoControlWidget.fpsTextBox.setText(str(self.videoPlayerWidget.get_fps()))
 
+        # Update widgets
+        self.update_widgets()
+
+        # set either image viewer mode or video player mode
+        if self.number_of_frames == 1:
+            self.hide_video_player_widgets()
+        else:
+            self.show_video_player_widgets()
+
         # Enable widgets
         self.enableWidgets()
-        self.framesLoaded = True
 
     def disableWidgets(self):
         self.videoControlWidget.setDisabled(True)
+        self.visualRepresentationWidget.setDisabled(True)
+        self.videoDepthControlWidget.setDisabled(True)
+        self.exportAndVideoScaleWidget.setDisabled(True)
 
     def enableWidgets(self):
         self.videoControlWidget.setEnabled(True)
+        self.visualRepresentationWidget.setEnabled(True)
+        self.videoDepthControlWidget.setEnabled(True)
+        self.exportAndVideoScaleWidget.setEnabled(True)
+
+    def hide_video_player_widgets(self):
+        self.videoControlWidget.setVisible(False)
+        self.visualRepresentationWidget.timescaleCheckbox.setVisible(False)
+        self.toggle_timescale(False)
+        
+    def show_video_player_widgets(self):
+        self.videoControlWidget.setVisible(True)
+        self.visualRepresentationWidget.timescaleCheckbox.setVisible(True)
+        self.toggle_timescale(self.visualRepresentationWidget.timescaleCheckbox.isChecked())
+        
+
+    def reset_widgets(self):
+        self.blockSignals(True)
+        self.videoControlWidget.videoSeekSlider.setValue(0)
+        self.videoControlWidget.frameSpinBox.setValue(1)
+        self.videoControlWidget.playIcon.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "play.png")))
+        self.videoControlWidget.playIcon.setToolTip("Play")
+        self.videoControlWidget.fpsTextBox.setText(str(self.videoPlayerWidget.get_fps()))
+        self.blockSignals(False)
 
     ### VIDEO CONTROL FUNCTIONALITY ###
     def update_widgets(self):
+        frame_no = self.videoPlayerWidget.get_frame_number()
+        frame_metadata = self.media_data_manager.get_frames_metadata_per_frame(frame_no)
         # Update the slider position
         self.videoControlWidget.videoSeekSlider.blockSignals(True)
-        self.videoControlWidget.videoSeekSlider.setValue(self.videoPlayerWidget.get_frame_number())
+        self.videoControlWidget.videoSeekSlider.setValue(frame_no)
         self.videoControlWidget.videoSeekSlider.blockSignals(False)
 
         # Update frame number
         self.videoControlWidget.frameSpinBox.blockSignals(True)
-        self.videoControlWidget.frameSpinBox.setValue(self.videoPlayerWidget.get_frame_number() + 1)
+        self.videoControlWidget.frameSpinBox.setValue(frame_no + 1)
         self.videoControlWidget.frameSpinBox.blockSignals(False)
+
+        # Update colourbar with frame cmap
+        self.colorbarWidget.set_min_max_limits(frame_metadata["Min pixel value"], frame_metadata["Max pixel value"])
 
     def playPauseVideo(self):
         if self.videoPlayerWidget.timer_is_running():
@@ -174,6 +221,11 @@ class VideoPlayerWidget(QWidget):
             self.videoPlayerWidget.show_timescale()
         else:
             self.videoPlayerWidget.hide_timescale()
+
+    ### COLOR BAR FUNCTIONALITY ###
+    def change_colour_bar(self, cmap_name):
+        self.videoPlayerWidget.set_cmap(cmap_name)
+        self.colorbarWidget.set_cmap(cmap_name)
             
 
 # TODO: remove later

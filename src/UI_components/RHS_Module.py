@@ -33,6 +33,9 @@ class RHSWidgets(QWidget):
         self.layout.addWidget(self.videoDropdownWidgets)
         self.layout.addLayout(self.mediaLayout)
 
+        # Connect widgets
+        self.videoDropdownWidgets.colourScaleDropdown.currentTextChanged.connect(self.videoPlayerWidgets.change_colour_bar)
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     rhs_widgets = RHSWidgets()

@@ -3,7 +3,6 @@ from pathlib import Path
 import struct
 import numpy as np
 import logging
-import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from utils.constants import STANDARDISED_METADATA_DICT_KEYS
@@ -142,8 +141,9 @@ def open_gwy(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
                 meta.pop('data')
             meta['channels'] = [channels[channel_indices[0]][1].split('/')[1]]  # Update the channel name
 
-            # Flip the image vertically
+            # Flip the image vertically and convert to nm
             images = [np.flipud(image) for image in images]
+            images = np.array(images) * 1e9
 
             # Calculate additional values
             num_frames = len(images)
@@ -152,7 +152,7 @@ def open_gwy(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
             scan_rate = meta.get('scan_rate', 0)
             fps = 1 / scan_rate if scan_rate != 0 else 0
             line_rate = y_pixels * fps if y_pixels else 0
-            pixel_to_nanometre_scaling_factor = x_range_nm / x_pixels
+            pixel_to_nanometre_scaling_factor = x_pixels / x_range_nm 
 
             values = [
                 num_frames,
@@ -163,7 +163,7 @@ def open_gwy(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
                 x_pixels,
                 pixel_to_nanometre_scaling_factor,
                 meta['channels'][0],
-                ""
+                None
             ]
 
             if len(values) != len(STANDARDISED_METADATA_DICT_KEYS):

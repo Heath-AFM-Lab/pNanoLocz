@@ -2,6 +2,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QTabWidget, QLabel
 )
 from PyQt6.QtGui import QColor
+from core.Image_Storage_Class import MediaDataManager
 
 class TabWidget(QWidget):
     def __init__(self):
@@ -9,6 +10,8 @@ class TabWidget(QWidget):
         self.buildTabWidget()
 
     def buildTabWidget(self):
+        media_data_manager = MediaDataManager()
+
         # Create the tab widget
         self.tabs = QTabWidget()
         

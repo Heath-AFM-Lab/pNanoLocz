@@ -56,10 +56,10 @@ def open_jpk(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
         channels = list(channel_list.keys())
 
         # Rotate the image 90 degrees clockwise
-        image_flipped = np.flipud(image)
+        image_flipped = np.flipud(image) * 1e9
 
         # Extract required values
-        num_frames = len(tif.pages[1:])
+        num_frames = int(len(tif.pages[1:]) / len(channels))
         x_range_nm = float(metadata.get('x_scan_length', '0')) * 1e9
         y_pixels = int(metadata.get('y_scan_pixels', '0'))
         x_pixels = int(metadata.get('x_scan_pixels', '0'))
@@ -80,7 +80,7 @@ def open_jpk(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
             x_pixels,
             pixel_to_nanometre_scaling_factor,
             channel,
-            ""
+            None
         ]
 
         if len(values) != len(STANDARDISED_METADATA_DICT_KEYS):
