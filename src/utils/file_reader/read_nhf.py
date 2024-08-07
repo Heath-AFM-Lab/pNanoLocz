@@ -101,7 +101,7 @@ def open_nhf(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
             x_pixels,
             pixel_to_nanometre_scaling_factor,
             channel,
-            ""
+            None
         ]
 
         if len(values) != len(STANDARDISED_METADATA_DICT_KEYS):

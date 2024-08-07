@@ -153,15 +153,6 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
 
                 im[:, :, i] = image_data
 
-                # Create metadata entry for each frame
-                frame_metadata = {
-                    'frame_index': i,
-                    'timestamp': time_stamps[i],
-                    'scaling': s['scale'][i],
-                    'channel': channel
-                }
-                metadata_list.append(frame_metadata)
-
             im[np.isnan(im)] = 0
 
             im *= 1e9
@@ -179,7 +170,7 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
                 s.get('xPixel', 'N/A'),
                 pixel_to_nanometre_scaling_factor,
                 channel,
-                ""
+                time_stamps
             ]
 
             if len(values) != len(STANDARDISED_METADATA_DICT_KEYS):
@@ -187,7 +178,6 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
 
             # Create the metadata dictionary
             file_metadata = dict(zip(STANDARDISED_METADATA_DICT_KEYS, values))
-            file_metadata['frames'] = metadata_list  # Store all frame metadata in the dictionary
 
             # Reshape array
             im = np.transpose(im, (2, 0, 1)) 

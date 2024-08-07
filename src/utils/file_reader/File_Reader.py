@@ -16,7 +16,7 @@ def loadFileData(file_path, channel = None):
     # Instantiate core media manager class
     media_data_manager = MediaDataManager()
     if os.path.isdir(file_path):
-        image_loader = ImageLoader(file_path)#
+        image_loader = ImageLoader(file_path)
         dominant_format = image_loader.get_dominant_format()
         if dominant_format is not None:  # Only display data if criteria met
             frames = [data['image'] for data in image_loader._data_dict.values()]

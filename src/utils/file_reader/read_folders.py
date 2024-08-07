@@ -107,9 +107,30 @@ class ImageLoader:
         if self._dominant_format == '.spm':
             elapsed_times = self._convert_to_elapsed_time(time_stamps)
             for i, file_path in enumerate(self._file_paths):
-                data_dict[file_path]['metadata']['elapsed_time'] = elapsed_times[i]
+                data_dict[file_path]['metadata']['Timestamp'] = elapsed_times[i]
 
         return data_dict
+    
+    def _convert_to_elapsed_time(self, time_stamps):
+        timestamps = []
+
+        # Convert each time.struct_time object to a timestamp
+        for time_struct in time_stamps:
+            if isinstance(time_struct, time.struct_time):
+                timestamp = time.mktime(time_struct)
+                timestamps.append(timestamp)
+            else:
+                print(f"Unsupported type in time_stamps: {type(time_struct)}. Expected time.struct_time.")
+                continue
+
+        if not timestamps:
+            print("No valid timestamps found.")
+            return []
+
+        # Calculate the elapsed times relative to the first timestamp
+        elapsed_times = [t - timestamps[0] for t in timestamps]
+        
+        return elapsed_times
     
     def get_dominant_format(self) -> str:
         return self._dominant_format

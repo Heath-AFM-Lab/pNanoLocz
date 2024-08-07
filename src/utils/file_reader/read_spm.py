@@ -63,8 +63,7 @@ def extract_timestamp_from_file(file_path: Path) -> str:
             timestamp_line = lines[2]
             timestamp = timestamp_line[8:].strip()
             time_struct = time_module.strptime(timestamp, "%I:%M:%S %p %a %b %d %Y")
-            formatted_timestamp = time_module.strftime("%I:%M:%S %p %A", time_struct)
-            return formatted_timestamp
+            return time_struct
         else:
             raise ValueError("File does not contain enough lines to extract timestamp.")
     except Exception as e:
@@ -157,12 +156,10 @@ def open_spm(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
         pixel_to_nanometre_scaling_factor,
         channel,
         timestamp
-    ]
+    ] 
 
     if len(values) != len(STANDARDISED_METADATA_DICT_KEYS):
         raise ValueError(f"The length of the values in .spm does not match the required metadata keys.")
-    
-    print(image.shape)
 
     # Create the metadata dictionary
     file_metadata = dict(zip(STANDARDISED_METADATA_DICT_KEYS, values))

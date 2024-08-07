@@ -69,7 +69,8 @@ class MediaDataManager(QObject):
                 file_metadata["X Range (nm)"],
                 file_metadata["Pixel/nm Scaling Factor"],
                 np.max(frames[frame_no]),
-                np.min(frames[frame_no])
+                np.min(frames[frame_no]),
+                file_metadata["Timestamp"][frame_no] if file_metadata["Frames"] != 1 else 0
             ]
             frame_metadata_dictionary[frame_no] = dict(zip(IMAGE_METADATA_DICT_KEYS, frame_metadata_values))
 
@@ -95,8 +96,8 @@ class MediaDataManager(QObject):
             try:
                 frames = np.array(frames, dtype=np.float16)
             except ValueError:
-                frames, folder_metadata, removed_indices = self._filter_arrays_by_common_shape(frames, folder_metadata)
-                print(len(frames), removed_indices, folder_metadata)
+                frames, folder_metadata = self._filter_arrays_by_common_shape(frames, folder_metadata)
+                # print(len(frames), folder_metadata)
 
         if frames.ndim not in [2, 3]:
             raise ValueError("Frames must be a 2D or 3D array.")
@@ -106,6 +107,7 @@ class MediaDataManager(QObject):
             frames = np.expand_dims(frames, axis=0)
 
         if len(folder_metadata[0]) != len(STANDARDISED_METADATA_DICT_KEYS):
+            print(len(folder_metadata[0]), len(STANDARDISED_METADATA_DICT_KEYS))
             raise ValueError("The length of folder_metadata does not match the required metadata keys.")
         
         # Run checks across all metadata from each file. TODO
@@ -136,7 +138,7 @@ class MediaDataManager(QObject):
                 msg_box.setText("File metadata does not match across all files inside selected folder. This may be because a file with the same file extension exists inside this folder that does not belong in there")
 
                 # Set detailed text if needed
-                msg_box.setInformativeText("Click OK to proceed unloading the images. Doing so may result in undefined behaviour.")
+                msg_box.setInformativeText("Click OK to proceed unloading the images. Doing so may result in undefined behaviour e.g. Crashing the program.")
 
                 # Add standard buttons to the message box
                 msg_box.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
@@ -145,7 +147,7 @@ class MediaDataManager(QObject):
                 response = msg_box.exec()
 
                 print(metadata_value, index)
-                print(folder_metadata[index])
+                print(file_metadata_values)
 
                 # Handle the response
                 if response == QMessageBox.StandardButton.Ok:
@@ -163,7 +165,8 @@ class MediaDataManager(QObject):
                 folder_metadata[frame_no]["X Range (nm)"],
                 folder_metadata[frame_no]["Pixel/nm Scaling Factor"],
                 np.max(frames[frame_no]),
-                np.min(frames[frame_no])
+                np.min(frames[frame_no]),
+                folder_metadata[frame_no]["Timestamp"]
             ]
             frame_metadata_dictionary[frame_no] = dict(zip(IMAGE_METADATA_DICT_KEYS, frame_metadata_values))
 
@@ -200,15 +203,12 @@ class MediaDataManager(QObject):
         # Filter the arrays and metadata to keep only those with the most common shape
         filtered_arrays = []
         filtered_metadata = []
-        removed_indices = []
         for i, (arr, md) in enumerate(zip(arrays, metadata)):
             if arr.shape == most_common_shape:
                 filtered_arrays.append(arr)
                 filtered_metadata.append(md)
-            else:
-                removed_indices.append(i)
         
-        return np.array(filtered_arrays), filtered_metadata, removed_indices
+        return np.array(filtered_arrays), filtered_metadata
     
     # Getter functions, direct from dict
     def get_file_path(self) -> str:

@@ -24,7 +24,7 @@ FILE_METADATA_DICT_KEYS = [
 ]
 
 IMAGE_METADATA_DICT_KEYS = [
-    "X Range (nm)", "Pixel/nm Scaling Factor", "Max pixel value", "Min pixel value"
+    "X Range (nm)", "Pixel/nm Scaling Factor", "Max pixel value", "Min pixel value", "Timestamp"
 ]
 
 # TODO: This needs to be edited later to include additional metadata that is not ready yet
