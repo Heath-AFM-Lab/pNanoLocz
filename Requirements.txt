@@ -12,6 +12,8 @@ matplotlib
 AFMReader
 h5py
 numpy
+PyQt6-Charts
+
 
 # EXPERIMENTAL 
 # pyopengl

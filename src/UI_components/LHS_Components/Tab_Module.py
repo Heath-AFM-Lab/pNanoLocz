@@ -2,6 +2,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QTabWidget, QLabel
 )
 from PyQt6.QtGui import QColor
+from UI_components.LHS_Components.Tab_Modules import LevelingWidget
 
 class TabWidget(QWidget):
     def __init__(self):
@@ -14,7 +15,7 @@ class TabWidget(QWidget):
         
         # Create tabs
         self.home_tab = QWidget()
-        self.level_tab = QWidget()
+        self.level_tab = LevelingWidget()
         self.detect_tab = QWidget()
         self.finealign_tab = QWidget()
         self.localize_tab = QWidget()
@@ -28,11 +29,13 @@ class TabWidget(QWidget):
         
         # Set up the tab contents
         self.setupTab(self.home_tab, "Home Content", QColor('black'))
-        self.setupTab(self.level_tab, "Level Content", QColor('red'))
         self.setupTab(self.detect_tab, "Detect Content", QColor('blue'))
         self.setupTab(self.finealign_tab, "FineAlign Content", QColor('orange'))
         self.setupTab(self.localize_tab, "Localize Content", QColor('magenta'))
         
+        # self.levelling_widget = LevelingWidget()
+        # self.level_tab.addWidget(self.levelling_widget)
+
         # Set layout to the current widget
         self.layout = QVBoxLayout()
         self.layout.addWidget(self.tabs)
