@@ -83,12 +83,12 @@ class AspectRatioLayout(QLayout):
     
 
 class FrameProcessor(QThread):
-    frame_ready = pyqtSignal(object, float, float)
+    frame_ready = pyqtSignal(object, float, float, float)  # Add timestamp to the signal
 
     def __init__(self, video_frames, video_frames_metadata):
         super().__init__()
         if HAS_GPU:
-            self.video_frames = cp.asarray(video_frames)  # Move data to GPU
+            self.video_frames = cp.asarray(video_frames)
         else:
             self.video_frames = video_frames
         self.video_frames_metadata = video_frames_metadata
@@ -100,32 +100,34 @@ class FrameProcessor(QThread):
         while self.running:
             frame = self.video_frames[self.current_frame_index]
             if HAS_GPU:
-                processed_frame = cp.asnumpy(frame)  # Move back to CPU for display
+                processed_frame = cp.asnumpy(frame)
             else:
                 processed_frame = frame
             vmin = self.video_frames_metadata[self.current_frame_index]["Min pixel value"]
             vmax = self.video_frames_metadata[self.current_frame_index]["Max pixel value"]
-            self.frame_ready.emit(processed_frame, vmin, vmax, )
+            timestamp = self.video_frames_metadata[self.current_frame_index].get("Timestamp", 0.0)  # Get timestamp from metadata
+            self.frame_ready.emit(processed_frame, vmin, vmax, timestamp)
             self.current_frame_index = (self.current_frame_index + 1) % len(self.video_frames)
             QThread.msleep(int(1000 / self.fps))
-
-    def stop(self):
-        self.running = False
-
-    def set_fps(self, fps: int):
-        self.fps = fps
 
     def seek_to_frame(self, frame_no):
         if 0 <= frame_no < len(self.video_frames):
             self.current_frame_index = frame_no
             frame = self.video_frames[self.current_frame_index]
             if HAS_GPU:
-                processed_frame = cp.asnumpy(frame)  # Move back to CPU for display
+                processed_frame = cp.asnumpy(frame)
             else:
                 processed_frame = frame
             vmin = self.video_frames_metadata[self.current_frame_index]["Min pixel value"]
             vmax = self.video_frames_metadata[self.current_frame_index]["Max pixel value"]
-            self.frame_ready.emit(processed_frame, vmin, vmax)
+            timestamp = self.video_frames_metadata[self.current_frame_index].get("Timestamp", 0.0)  # Get timestamp from metadata
+            self.frame_ready.emit(processed_frame, vmin, vmax, timestamp)
+
+    def stop(self):
+        self.running = False
+
+    def set_fps(self, fps: int):
+        self.fps = fps
 
 
 class MatplotlibVideoPlayerWidget(QWidget):
@@ -152,6 +154,7 @@ class MatplotlibVideoPlayerWidget(QWidget):
         self.has_content = False
         self.frame_processor = None
         self.is_playing = False
+        self.timestamp_format = "{:.1f}s"  # Format for timestamp display
 
     def load_video_frames(self, video_frames: np.ndarray, video_frames_metadata: dict):
         self.setContentsMargins(0, 0, 0, 0)
@@ -244,12 +247,17 @@ class MatplotlibVideoPlayerWidget(QWidget):
         return int(height * self.aspect_ratio)
 
     ### Matplotlib video player functions ###
-    def _update_frame(self, frame, vmin, vmax):
+    def _update_frame(self, frame, vmin, vmax, timestamp):
         self.image.set_data(frame)
         self.image.set_clim(vmin, vmax)
-        self.canvas.draw()
-        # TODO: Update timestamp and scale bar if active
 
+        # Update timestamp
+        if self.timestamp_shown:
+            self._update_timestamp(timestamp)
+
+        # TODO: Update scale bar if active
+        
+        self.canvas.draw()
         self.update_widgets.emit()
 
     def _go_to_next_frame(self):
@@ -318,13 +326,16 @@ class MatplotlibVideoPlayerWidget(QWidget):
             self.hide_scale_bar()
 
     def _add_timestamp(self):
-        fontprops = fm.FontProperties(size=10, weight='bold')
-        self.timestamp = AnchoredText("100.0s", loc='upper left', prop={'size': 10, 'weight': 'bold'}, frameon=False)
+        self.timestamp = AnchoredText(self.timestamp_format.format(0.0), loc='upper left', prop={'size': 10, 'weight': 'bold'}, frameon=False)
         self.ax.add_artist(self.timestamp)
         if self.scale_bar_shown:
             self.show_timescale()
         else:
             self.hide_timescale()
+
+    def _update_timestamp(self, timestamp):
+        if self.timestamp:
+            self.timestamp.txt.set_text(self.timestamp_format.format(timestamp))
     
     def set_cmap(self, cmap_name: str):
         if self.image:
