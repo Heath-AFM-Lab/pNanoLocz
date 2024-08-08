@@ -5,7 +5,8 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSiz
 from PyQt6.QtGui import QIcon
 from UI_components.RHS_Components.Video_Player_Components import VideoControlWidget, VideoDepthControlWidget, VisualRepresentationWidget, ExportAndVideoScaleWidget, MatplotlibVideoPlayerWidget, MatplotlibColourBarWidget
 from utils.constants import PATH_TO_ICON_DIRECTORY
-from core.Image_Storage_Class import MediaDataManager
+from core.Image_Storage_Module.Image_Storage_Class import MediaDataManager
+from core.Image_Storage_Module.Depth_Control_Manager import DepthControlManager
 
 class VideoPlayerWidget(QWidget):
     def __init__(self):
@@ -14,6 +15,7 @@ class VideoPlayerWidget(QWidget):
 
     def buildVideoPlayerWidgets(self):
         self.media_data_manager = MediaDataManager()
+        self.depth_control_manager = DepthControlManager()
         # Set up video player layout 
         self.mediaLayout = QVBoxLayout()
         self.mediaLayout.setContentsMargins(0, 0, 0, 0)
@@ -69,6 +71,9 @@ class VideoPlayerWidget(QWidget):
         self.visualRepresentationWidget.scaleBarCheckboxChecked.connect(self.toggle_scale_bar)
         self.visualRepresentationWidget.timescaleCheckboxChecked.connect(self.toggle_timescale)
 
+        # Depth control widgets
+        self.videoDepthControlWidget.new_depth_values.connect(self.depth_control_manager.get_min_max_manual_values)
+        self.videoDepthControlWidget.depthTypeDropdown.currentTextChanged.connect(self.depth_control_manager.get_depth_control_type)
 
 
 
@@ -101,6 +106,9 @@ class VideoPlayerWidget(QWidget):
     def load_frames_data(self):
         self.frames = self.media_data_manager.get_frames()
         self.number_of_frames = len(self.frames)
+
+        self.depth_control_manager.load_depth_control_data(self.frames, self.media_data_manager.get_frames_metadata())
+
         self.videoPlayerWidget.load_video_frames(self.frames, self.media_data_manager.get_frames_metadata())
 
         # Update slider with max frames
@@ -170,8 +178,11 @@ class VideoPlayerWidget(QWidget):
         self.videoControlWidget.frameSpinBox.setValue(frame_no + 1)
         self.videoControlWidget.frameSpinBox.blockSignals(False)
 
-        # Update colourbar with frame cmap
-        self.colorbarWidget.set_min_max_limits(frame_metadata["Min pixel value"], frame_metadata["Max pixel value"])
+        # Update colourbar with frame cmap limits
+        min_frame_limit, max_frame_limit = self.depth_control_manager.get_min_max_depths_per_frame(frame_no)
+        self.colorbarWidget.set_min_max_limits(min_frame_limit, max_frame_limit)
+        self.videoDepthControlWidget.minSpinBox.setValue(min_frame_limit)
+        self.videoDepthControlWidget.maxSpinBox.setValue(max_frame_limit)
 
     def playPauseVideo(self):
         if self.videoPlayerWidget.timer_is_running():

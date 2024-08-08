@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
-from core.Colormaps import CMAPS, DEFAULT_CMAP_NAME
+from core.Colormaps_Module.Colormaps import CMAPS, DEFAULT_CMAP_NAME
 import matplotlib.ticker as ticker
 
 class MatplotlibColourBarWidget(QWidget):
