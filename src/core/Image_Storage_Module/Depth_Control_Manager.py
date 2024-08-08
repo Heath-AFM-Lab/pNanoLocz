@@ -67,12 +67,19 @@ class DepthControlManager(QObject):
 
 
     def _calculate_outlier_bounds(self, frame: np.ndarray) -> Tuple[float, float]:
+
+        if np.isnan(frame).any():
+            print("Warning: NaN values detected in the frame.")
+        if np.isinf(frame).any():
+            print("Warning: Infinite values detected in the frame.")
+
         mean = np.mean(frame)
         std_dev = np.std(frame)
         print(frame)
         lower_bound = mean - 3 * std_dev
         upper_bound = mean + 3 * std_dev
         print(mean, std_dev)
+        print(frame.shape)
         return lower_bound, upper_bound
     
     # TODO: complete function for the Histogram min max values (requires histogram to use)
