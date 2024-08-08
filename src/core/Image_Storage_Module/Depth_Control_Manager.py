@@ -5,6 +5,7 @@ from utils.constants import DEPTH_CONTROL_OPTIONS
 
 class DepthControlManager(QObject):
     update_widgets = pyqtSignal()
+    request_current_min_max_values = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -13,8 +14,10 @@ class DepthControlManager(QObject):
         self.manual_min = 0.0
         self.manual_max = 0.0
 
-    def get_depth_control_type(self, name: str):
+    def set_depth_control_type(self, name: str):
         self.depth_control_type = name
+        if self.depth_control_type == DEPTH_CONTROL_OPTIONS[3]:
+            self.request_current_min_max_values.emit()
         self.update_widgets.emit()
 
     def load_depth_control_data(self, frames: np.ndarray, frame_metadata: dict):
@@ -60,7 +63,7 @@ class DepthControlManager(QObject):
         else:
             raise ValueError(f"Unknown depth control type: {self.depth_control_type}")
 
-    def get_min_max_manual_values(self, min_value: float, max_value: float):
+    def set_min_max_manual_values(self, min_value: float, max_value: float):
         self.manual_min = min_value
         self.manual_max = max_value
         self.update_widgets.emit()

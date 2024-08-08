@@ -93,4 +93,7 @@ class VideoDepthControlWidget(QWidget):
 
         self.new_depth_values.emit(min_value, max_value)
 
+    def get_min_max_values(self):
+        self.new_depth_values.emit(self.minSpinBox.value(), self.maxSpinBox.value())
+
         

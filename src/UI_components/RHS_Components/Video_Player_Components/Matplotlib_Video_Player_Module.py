@@ -84,7 +84,7 @@ class AspectRatioLayout(QLayout):
     
 
 class FrameProcessor(QThread):
-    frame_ready = pyqtSignal(object, float, float, float)  # Add timestamp to the signal
+    frame_ready = pyqtSignal(object, int, float, float, float)  # Add timestamp to the signal
 
     def __init__(self, video_frames, video_frames_metadata, depth_control_manager: DepthControlManager):
         super().__init__()
@@ -107,7 +107,7 @@ class FrameProcessor(QThread):
                 processed_frame = frame
             vmin, vmax = self.depth_control_manager.get_min_max_depths_per_frame(self.current_frame_index)
             timestamp = self.video_frames_metadata[self.current_frame_index].get("Timestamp", 0.0)  # Get timestamp from metadata
-            self.frame_ready.emit(processed_frame, vmin, vmax, timestamp)
+            self.frame_ready.emit(processed_frame, self.current_frame_index, vmin, vmax, timestamp)
             self.current_frame_index = (self.current_frame_index + 1) % len(self.video_frames)
             QThread.msleep(int(1000 / self.fps))
 
@@ -121,7 +121,7 @@ class FrameProcessor(QThread):
                 processed_frame = frame
             vmin, vmax = self.depth_control_manager.get_min_max_depths_per_frame(self.current_frame_index)
             timestamp = self.video_frames_metadata[self.current_frame_index].get("Timestamp", 0.0)  # Get timestamp from metadata
-            self.frame_ready.emit(processed_frame, vmin, vmax, timestamp)
+            self.frame_ready.emit(processed_frame, self.current_frame_index, vmin, vmax, timestamp)
 
     def stop(self):
         self.running = False
@@ -212,7 +212,7 @@ class MatplotlibVideoPlayerWidget(QWidget):
         self.go_to_frame_no(0)
 
         # Connect the depth control manager to update image if needed.
-        self.depth_control_manager.update_widgets.connect(lambda: self.go_to_frame_no(frame_no=self.frame_processor.current_frame_index))
+        self.depth_control_manager.update_widgets.connect(lambda: self.go_to_frame_no(frame_no=self.current_frame_index))
         self.reset_widgets.connect(self.depth_control_manager.reset)
 
         self.updateGeometry()
@@ -257,7 +257,8 @@ class MatplotlibVideoPlayerWidget(QWidget):
         return int(height * self.aspect_ratio)
 
     ### Matplotlib video player functions ###
-    def _update_frame(self, frame, vmin, vmax, timestamp):
+    def _update_frame(self, frame, current_frame_index, vmin, vmax, timestamp):
+        self.current_frame_index = current_frame_index
         self.image.set_data(frame)
         self.image.set_clim(vmin, vmax)
 
@@ -281,6 +282,7 @@ class MatplotlibVideoPlayerWidget(QWidget):
 
     def stop_timer(self):
         if self.frame_processor and self.is_playing:
+            self.frame_processor.running = False
             self.frame_processor.stop()
             self.is_playing = False
 

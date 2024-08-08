@@ -72,9 +72,9 @@ class VideoPlayerWidget(QWidget):
         self.visualRepresentationWidget.timescaleCheckboxChecked.connect(self.toggle_timescale)
 
         # Depth control widgets
-        self.videoDepthControlWidget.new_depth_values.connect(self.depth_control_manager.get_min_max_manual_values)
-        self.videoDepthControlWidget.depthTypeDropdown.currentTextChanged.connect(self.depth_control_manager.get_depth_control_type)
-
+        self.videoDepthControlWidget.new_depth_values.connect(self.depth_control_manager.set_min_max_manual_values)
+        self.videoDepthControlWidget.depthTypeDropdown.currentTextChanged.connect(self.depth_control_manager.set_depth_control_type)
+        self.depth_control_manager.request_current_min_max_values.connect(self.videoDepthControlWidget.get_min_max_values)
 
 
         # Media manager class to load data
