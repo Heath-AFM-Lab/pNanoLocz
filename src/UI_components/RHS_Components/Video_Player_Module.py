@@ -37,7 +37,7 @@ class VideoPlayerWidget(QWidget):
         self.videoPlayerLayout = QHBoxLayout()
         self.mediaLayout.addLayout(self.videoPlayerLayout)
         
-        self.videoPlayerWidget = MatplotlibVideoPlayerWidget()
+        self.videoPlayerWidget = MatplotlibVideoPlayerWidget(self.depth_control_manager)
         self.videoPlayerWidget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.videoPlayerLayout.addWidget(self.videoPlayerWidget, stretch=1)
         self.videoPlayerWidget.setMinimumSize(10, 10)
@@ -80,6 +80,9 @@ class VideoPlayerWidget(QWidget):
         # Media manager class to load data
         self.media_data_manager.new_file_loaded.connect(self.load_frames_data)
 
+        # Depth control widget to update widgets if changes are detected
+        self.depth_control_manager.update_widgets.connect(self.update_widgets)
+
 
         # Fix all sizes
         self.videoControlWidget.setFixedSize(self.videoControlWidget.sizeHint())
@@ -106,8 +109,6 @@ class VideoPlayerWidget(QWidget):
     def load_frames_data(self):
         self.frames = self.media_data_manager.get_frames()
         self.number_of_frames = len(self.frames)
-
-        self.depth_control_manager.load_depth_control_data(self.frames, self.media_data_manager.get_frames_metadata())
 
         self.videoPlayerWidget.load_video_frames(self.frames, self.media_data_manager.get_frames_metadata())
 
@@ -161,6 +162,7 @@ class VideoPlayerWidget(QWidget):
         self.videoControlWidget.frameSpinBox.setValue(1)
         self.videoControlWidget.playIcon.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "play.png")))
         self.videoControlWidget.playIcon.setToolTip("Play")
+        self.videoPlayerWidget.stop_timer()
         self.videoControlWidget.fpsTextBox.setText(str(self.videoPlayerWidget.get_fps()))
         self.blockSignals(False)
 
@@ -181,8 +183,13 @@ class VideoPlayerWidget(QWidget):
         # Update colourbar with frame cmap limits
         min_frame_limit, max_frame_limit = self.depth_control_manager.get_min_max_depths_per_frame(frame_no)
         self.colorbarWidget.set_min_max_limits(min_frame_limit, max_frame_limit)
+
+        self.videoDepthControlWidget.minSpinBox.blockSignals(True)
+        self.videoDepthControlWidget.maxSpinBox.blockSignals(True)
         self.videoDepthControlWidget.minSpinBox.setValue(min_frame_limit)
         self.videoDepthControlWidget.maxSpinBox.setValue(max_frame_limit)
+        self.videoDepthControlWidget.minSpinBox.blockSignals(False)
+        self.videoDepthControlWidget.maxSpinBox.blockSignals(False)
 
     def playPauseVideo(self):
         if self.videoPlayerWidget.timer_is_running():

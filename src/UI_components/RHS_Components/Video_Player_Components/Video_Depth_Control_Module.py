@@ -35,7 +35,7 @@ class VideoDepthControlWidget(QWidget):
         self.maxSpinBox.setMaximum(1000000)
         self.maxSpinBox.setSingleStep(0.01)
         self.maxSpinBox.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.maxSpinLabel = QLabel("Max height:")
+        self.maxSpinLabel = QLabel("Max:")
         self.maxSpinLayout.addWidget(self.maxSpinLabel)
         self.maxSpinLayout.addWidget(self.maxSpinBox)
 
@@ -46,7 +46,7 @@ class VideoDepthControlWidget(QWidget):
         self.minSpinBox.setMaximum(1000000)
         self.minSpinBox.setSingleStep(0.01)
         self.minSpinBox.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.minSpinLabel = QLabel("Min height:")
+        self.minSpinLabel = QLabel("Min:")
         self.minSpinLayout.addWidget(self.minSpinLabel)
         self.minSpinLayout.addWidget(self.minSpinBox)
 
@@ -60,6 +60,8 @@ class VideoDepthControlWidget(QWidget):
         self.autoButton.clicked.connect(self.go_to_min_max_depth_control)
         self.minSpinBox.valueChanged.connect(self.validate_min_max_spin_boxes)
         self.maxSpinBox.valueChanged.connect(self.validate_min_max_spin_boxes)
+        self.minSpinBox.valueChanged.connect(self.go_to_manual_depth_control)
+        self.maxSpinBox.valueChanged.connect(self.go_to_manual_depth_control)
 
         self.setLayout(self.layout)
 
