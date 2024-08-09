@@ -1,5 +1,3 @@
-# Levelling_Module.py
-
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QHBoxLayout, QComboBox, QSpinBox, QCheckBox, QPushButton, QSlider, QGridLayout, QRadioButton, QButtonGroup
 )
@@ -22,6 +20,7 @@ class LevelingWidget(QWidget):
         self.graph_widget = self.build_graph_widget()
         
         self.layout = QGridLayout()
+        self.layout.setSpacing(5)  # Reduce spacing
         self.layout.addWidget(self.leveling_widget, 0, 0)
         self.layout.addWidget(self.filtering_widget, 1, 0)
         self.layout.addWidget(self.graph_widget, 0, 1, 2, 1)
@@ -30,14 +29,11 @@ class LevelingWidget(QWidget):
     
     def build_leveling_widget(self):
         leveling_layout = QVBoxLayout()
-        
-        # Leveling Label
-        self.leveling_label = QLabel("Leveling")
-        leveling_layout.addWidget(self.leveling_label)
+        leveling_layout.setSpacing(5)  # Compact spacing
         
         # Auto Dropdown
         auto_dropdown_layout = QHBoxLayout()
-        self.auto_label = QLabel("Auto: ")
+        self.auto_label = QLabel("Auto:")
         self.auto_dropdown = QComboBox()
         self.auto_dropdown.addItems(AUTO_LIST)
         auto_dropdown_layout.addWidget(self.auto_label)
@@ -46,6 +42,7 @@ class LevelingWidget(QWidget):
 
         # Plane and Line Layouts
         plane_line_layout = QGridLayout()
+        plane_line_layout.setHorizontalSpacing(5)  # Tighten up the spacing
 
         # Plane Layout
         self.plane_label = QLabel("Plane")
@@ -69,15 +66,17 @@ class LevelingWidget(QWidget):
 
     def add_spinboxes(self, layout, label, row, column):
         layout_item = QHBoxLayout()
+        layout_item.setSpacing(2)  # Compact spacing for spinboxes
         spinbox_label = QLabel(label)
         spinbox = QSpinBox()
-        spinbox.setFixedWidth(60)
+        spinbox.setFixedWidth(40)  # Smaller spinbox width
         layout_item.addWidget(spinbox_label)
         layout_item.addWidget(spinbox)
         layout.addLayout(layout_item, row, column)
 
     def add_checkbox(self, layout, label, row, column):
         checkbox_layout = QHBoxLayout()
+        checkbox_layout.setSpacing(2)  # Compact spacing for checkboxes
         checkbox_label = QLabel(label)
         checkbox = QCheckBox()
         checkbox_layout.addWidget(checkbox_label)
@@ -86,14 +85,11 @@ class LevelingWidget(QWidget):
 
     def build_filtering_widget(self):
         filtering_layout = QVBoxLayout()
-        
-        # Filtering Label
-        self.filtering_label = QLabel("Filtering")
-        filtering_layout.addWidget(self.filtering_label)
+        filtering_layout.setSpacing(5)  # Compact spacing
         
         # Filter Dropdown
         filter_dropdown_layout = QHBoxLayout()
-        self.filter_label = QLabel("Filter: ")
+        self.filter_label = QLabel("Filter:")
         self.filter_dropdown = QComboBox()
         self.filter_dropdown.addItems(FILTER_LIST)
         filter_dropdown_layout.addWidget(self.filter_label)
@@ -102,9 +98,9 @@ class LevelingWidget(QWidget):
         
         # Filter Spinbox
         filter_spinbox_layout = QHBoxLayout()
-        filter_spinbox_label = QLabel("Spinbox: ")
+        filter_spinbox_label = QLabel("Spinbox:")
         filter_spinbox = QSpinBox()
-        filter_spinbox.setFixedWidth(60)
+        filter_spinbox.setFixedWidth(40)  # Smaller spinbox width
         filter_spinbox_layout.addWidget(filter_spinbox_label)
         filter_spinbox_layout.addWidget(filter_spinbox)
         filtering_layout.addLayout(filter_spinbox_layout)
@@ -117,6 +113,8 @@ class LevelingWidget(QWidget):
         button_layout = QHBoxLayout()
         zero_all_button = QPushButton("Zero all")
         restore_button = QPushButton("Restore")
+        zero_all_button.setFixedWidth(80)  # Smaller button width
+        restore_button.setFixedWidth(80)  # Smaller button width
         button_layout.addWidget(zero_all_button)
         button_layout.addWidget(restore_button)
         filtering_layout.addLayout(button_layout)
@@ -127,6 +125,7 @@ class LevelingWidget(QWidget):
 
     def build_graph_widget(self):
         graph_layout = QVBoxLayout()
+        graph_layout.setSpacing(5)  # Compact spacing
         
         # Mask and Z-scale Radio Buttons
         mask_radio = QRadioButton("Mask")
@@ -139,23 +138,34 @@ class LevelingWidget(QWidget):
         mask_toggle_layout.addWidget(zscale_radio)
         graph_layout.addLayout(mask_toggle_layout)
 
-        # Method Dropdown
-        method_dropdown_layout = QHBoxLayout()
-        self.method_label = QLabel("Method: ")
+        # Method Dropdown with Clear Button
+        method_clear_layout = QHBoxLayout()
+        self.method_label = QLabel("Method:")
         self.method_dropdown = QComboBox()
         self.method_dropdown.addItems(MASK_METHOD_LIST)
-        method_dropdown_layout.addWidget(self.method_label)
-        method_dropdown_layout.addWidget(self.method_dropdown)
-        graph_layout.addLayout(method_dropdown_layout)
+        clear_button = QPushButton("Clear")
+        method_clear_layout.addWidget(self.method_label)
+        method_clear_layout.addWidget(self.method_dropdown)
+        method_clear_layout.addWidget(clear_button)
+        graph_layout.addLayout(method_clear_layout)
 
-        # Mask Controls
-        mask_controls_layout = QHBoxLayout()
-        buttons = ["Log y", "Zoom", "Fit", "Clear", "Draw Mask", "View Mask", "Invert"]
-        for button_text in buttons:
+        # Mask Controls - First Row
+        mask_controls_layout1 = QHBoxLayout()
+        buttons_row1 = ["Log y", "Zoom", "Fit", "Draw Mask"]
+        for button_text in buttons_row1:
             button = QPushButton(button_text)
-            button.setFixedWidth(50)
-            mask_controls_layout.addWidget(button)
-        graph_layout.addLayout(mask_controls_layout)
+            button.setFixedWidth(50)  # Smaller button width
+            mask_controls_layout1.addWidget(button)
+        graph_layout.addLayout(mask_controls_layout1)
+
+        # Mask Controls - Second Row
+        mask_controls_layout2 = QHBoxLayout()
+        buttons_row2 = ["Invert", "View Mask"]
+        for button_text in buttons_row2:
+            button = QPushButton(button_text)
+            button.setFixedWidth(50)  # Smaller button width
+            mask_controls_layout2.addWidget(button)
+        graph_layout.addLayout(mask_controls_layout2)
 
         # Add an empty graph using Matplotlib
         self.figure, self.ax = plt.subplots(figsize=(3, 1.5))
@@ -171,8 +181,13 @@ class LevelingWidget(QWidget):
         graph_layout.addWidget(QLabel("upper limit"))
         graph_layout.addWidget(upper_limit_slider)
 
+        # Mask with Z-scale Checkbox
+        mask_with_zscale_checkbox = QCheckBox("Mask with z-scale")
+        graph_layout.addWidget(mask_with_zscale_checkbox)
+
         # Analyze Mask Button
         analyze_mask_button = QPushButton("Analyze Mask")
+        analyze_mask_button.setFixedWidth(100)  # Smaller button width
         graph_layout.addWidget(analyze_mask_button)
         
         graph_widget = QWidget()
@@ -182,7 +197,7 @@ class LevelingWidget(QWidget):
 from PyQt6.QtWidgets import QApplication
 import sys
 import os
- 
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = QWidget()
