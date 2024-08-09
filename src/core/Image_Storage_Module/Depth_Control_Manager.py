@@ -44,8 +44,6 @@ class DepthControlManager(QObject):
                     "Max": max_histogram_frame_value
                 }
             }
-            print(min_outlier_frame_value, max_outlier_frame_value)
-        print(frames.shape)
 
     def get_min_max_depths_per_frame(self, frame_no: int) -> Tuple[float, float]:
         if self.depth_control_type == DEPTH_CONTROL_OPTIONS[0]:
@@ -78,11 +76,8 @@ class DepthControlManager(QObject):
 
         mean = np.mean(frame)
         std_dev = np.std(frame)
-        print(frame)
         lower_bound = mean - 3 * std_dev
         upper_bound = mean + 3 * std_dev
-        print(mean, std_dev)
-        print(frame.shape)
         return lower_bound, upper_bound
     
     # TODO: complete function for the Histogram min max values (requires histogram to use)
