@@ -27,9 +27,6 @@ class MediaDataManager(QObject):
         self.contained_in_folder = None
         self._initialized = True
 
-        # Control classes to handle frame data
-        # self.depth_control_manager = DepthControlManager()
-
     def __init__(self):
         # This method is now empty to avoid re-initialization
         pass
@@ -161,8 +158,6 @@ class MediaDataManager(QObject):
                     self.reset()
                     return
                 
-                
-
         frame_metadata_dictionary = {}
         # Store frames metadata
         for frame_no in range(len(frames)):
@@ -215,10 +210,6 @@ class MediaDataManager(QObject):
         
         return np.array(filtered_arrays), filtered_metadata
     
-
-    # def get_frame_min_max(self) -> Tuple[float, float]:
-        
-        
     
     # Getter functions, direct from dict
     def get_file_path(self) -> str:
