@@ -1,4 +1,5 @@
 import sys
+import math
 import numpy as np
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QSizePolicy, QLayout
 from PyQt6.QtCore import QTimer, pyqtSignal, QSize, QRect, QPoint, QThread
@@ -84,7 +85,8 @@ class AspectRatioLayout(QLayout):
     
 
 class FrameProcessor(QThread):
-    frame_ready = pyqtSignal(object, int, float, float, float)  # Add timestamp to the signal
+    frame_ready = pyqtSignal(object, int, float, float, float)
+    update_scale_bar = pyqtSignal(int, int)
 
     def __init__(self, video_frames, video_frames_metadata, depth_control_manager: DepthControlManager):
         super().__init__()
@@ -97,6 +99,8 @@ class FrameProcessor(QThread):
         self.current_frame_index = 0
         self.running = False
         self.fps = DEFAULT_FPS
+        self.nm_value = 0
+        self.pix_length = 0
 
     def run(self):
         while self.running:
@@ -108,6 +112,8 @@ class FrameProcessor(QThread):
             vmin, vmax = self.depth_control_manager.get_min_max_depths_per_frame(self.current_frame_index)
             timestamp = self.video_frames_metadata[self.current_frame_index].get("Timestamp", 0.0)  # Get timestamp from metadata
             self.frame_ready.emit(processed_frame, self.current_frame_index, vmin, vmax, timestamp)
+            self._check_for_scale_bar_change(self.video_frames_metadata[self.current_frame_index]["Scale Bar nm Value"], self.video_frames_metadata[self.current_frame_index]["Scale Bar Pixel Length"])
+
             self.current_frame_index = (self.current_frame_index + 1) % len(self.video_frames)
             QThread.msleep(int(1000 / self.fps))
 
@@ -121,7 +127,16 @@ class FrameProcessor(QThread):
                 processed_frame = frame
             vmin, vmax = self.depth_control_manager.get_min_max_depths_per_frame(self.current_frame_index)
             timestamp = self.video_frames_metadata[self.current_frame_index].get("Timestamp", 0.0)  # Get timestamp from metadata
+            
             self.frame_ready.emit(processed_frame, self.current_frame_index, vmin, vmax, timestamp)
+            self._check_for_scale_bar_change(self.video_frames_metadata[self.current_frame_index]["Scale Bar nm Value"], self.video_frames_metadata[self.current_frame_index]["Scale Bar Pixel Length"])
+
+
+    def _check_for_scale_bar_change(self, nm_value: int, pix_length: int):
+        if nm_value != self.nm_value or pix_length != self.pix_length:
+            self.nm_value = nm_value
+            self.pix_length = pix_length
+            self.update_scale_bar.emit(nm_value, pix_length)
 
     def stop(self):
         self.running = False
@@ -168,6 +183,7 @@ class MatplotlibVideoPlayerWidget(QWidget):
         # Create and start the frame processor
         self.frame_processor = FrameProcessor(video_frames, video_frames_metadata, self.depth_control_manager)
         self.frame_processor.frame_ready.connect(self._update_frame)
+        self.frame_processor.update_scale_bar.connect(self._update_scale_bar)
 
         # Create a layout for the widget
         if self.layout is None:
@@ -267,6 +283,8 @@ class MatplotlibVideoPlayerWidget(QWidget):
             self._update_timestamp(timestamp)
 
         # TODO: Update scale bar if active
+        # if self.scale_bar_shown:
+        #     self._update_scale_bar(nm_value, pixel_length)
         
         self.canvas.draw()
         self.update_widgets.emit()
@@ -336,6 +354,37 @@ class MatplotlibVideoPlayerWidget(QWidget):
             self.show_scale_bar()
         else:
             self.hide_scale_bar()
+
+    def _update_scale_bar(self, nm_value: int, pixel_length: int):
+        if self.scale_bar:
+            # Remove the old scale bar
+            self.scale_bar.remove()
+
+            if nm_value < 1000:
+                scale_bar_text =  f'{nm_value} nm'
+            elif nm_value < 1000000:
+                scale_bar_text =  f'{nm_value/1000:.1f} µm'
+            else:
+                scale_bar_text = f'{nm_value/1000000:.2f} mm'
+            
+            # Create a new scale bar with updated values
+            fontprops = fm.FontProperties(size=10, weight='bold')
+            self.scale_bar = AnchoredSizeBar(self.ax.transData,
+                                            pixel_length, scale_bar_text, 'lower right', 
+                                            pad=0.1,
+                                            color='black',
+                                            frameon=False,
+                                            size_vertical=1,
+                                            fontproperties=fontprops)
+            
+            # Add the new scale bar to the axes
+            self.ax.add_artist(self.scale_bar)
+            
+            # Set visibility based on current state
+            self.scale_bar.set_visible(self.scale_bar_shown)
+            
+            # Redraw the canvas to show the updated scale bar
+            self.canvas.draw()
 
     def _add_timestamp(self):
         self.timestamp = AnchoredText(self.timestamp_format.format(0.0), loc='upper left', prop={'size': 10, 'weight': 'bold'}, frameon=False)
