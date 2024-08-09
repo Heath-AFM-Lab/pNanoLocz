@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QHBoxLayout, QComboBox, QSpinBox, QCheckBox, QPushButton, QSlider, QGridLayout, QRadioButton, QButtonGroup, QScrollArea
+    QWidget, QVBoxLayout, QLabel, QHBoxLayout, QComboBox, QSpinBox, QCheckBox, QPushButton, QSlider, QGridLayout, QRadioButton, QButtonGroup, QScrollArea, QSizePolicy
 )
 from PyQt6.QtCore import Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -77,10 +77,9 @@ class LevelingWidget(QWidget):
 
     def add_spinboxes(self, layout, label, row, column):
         layout_item = QHBoxLayout()
-        layout_item.setSpacing(2)  # Compact spacing for spinboxes
         spinbox_label = QLabel(label)
         spinbox = QSpinBox()
-        spinbox.setFixedWidth(40)  # Smaller spinbox width
+        spinbox.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         layout_item.addWidget(spinbox_label)
         layout_item.addWidget(spinbox)
         layout.addLayout(layout_item, row, column)
