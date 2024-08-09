@@ -25,7 +25,7 @@ class DepthControlManager(QObject):
         for frame_no in range(len(frames)):
             max_frame_value = frame_metadata[frame_no]["Max pixel value"]
             min_frame_value = frame_metadata[frame_no]["Min pixel value"]
-            min_outlier_frame_value, max_outlier_frame_value = self._calculate_outlier_bounds(frames[frame_no])
+            min_outlier_frame_value, max_outlier_frame_value = self._calculate_outlier_bounds(frames[frame_no], min=min_frame_value, max=max_frame_value)
             # TODO: complete function for the Histogram min max values (requires histogram to use)
             min_histogram_frame_value, max_histogram_frame_value = self._calculate_histogram_bounds(frames[frame_no])
 
@@ -67,7 +67,7 @@ class DepthControlManager(QObject):
         self.update_widgets.emit()
 
 
-    def _calculate_outlier_bounds(self, frame: np.ndarray) -> Tuple[float, float]:
+    def _calculate_outlier_bounds(self, frame: np.ndarray, min, max) -> Tuple[float, float]:
 
         if np.isnan(frame).any():
             print("Warning: NaN values detected in the frame.")
@@ -76,8 +76,16 @@ class DepthControlManager(QObject):
 
         mean = np.mean(frame)
         std_dev = np.std(frame)
-        lower_bound = mean - 3 * std_dev
-        upper_bound = mean + 3 * std_dev
+        lower_bound = mean - 2 * std_dev
+        upper_bound = mean + 2 * std_dev
+
+        # Verify bound limits
+        if lower_bound < min:
+            lower_bound = min
+
+        if upper_bound > max:
+            upper_bound = max
+
         return lower_bound, upper_bound
     
     # TODO: complete function for the Histogram min max values (requires histogram to use)

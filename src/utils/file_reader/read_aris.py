@@ -125,7 +125,7 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
             s['numberofFrames'] = len(M)
 
             # Load Images and attach timestamps
-            im = np.zeros((s['yPixel'], s['xPixel'], s['numberofFrames']))
+            im = np.zeros((s['numberofFrames'], s['yPixel'], s['xPixel']))
             metadata_list = []  # List to store metadata including timestamps for each frame
 
             # Calculate timestamps for each frame
@@ -147,11 +147,10 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
                 image_data = file[f'{img_loc}/{channel}/Image'][()]
                 
                 # Check the shape of the image data before transposing
-                if image_data.shape != (s['xPixel'], s['yPixel']):
-                    image_data.shape = (s['xPixel'], s['yPixel'])
-                    image_data = image_data.T
+                if image_data.shape == (s['xPixel'], s['yPixel']):
+                    image_data.shape = (s['yPixel'], s['xPixel'])
 
-                im[:, :, i] = image_data
+                im[i] = image_data
 
             im[np.isnan(im)] = 0
 
@@ -178,9 +177,6 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
 
             # Create the metadata dictionary
             file_metadata = dict(zip(STANDARDISED_METADATA_DICT_KEYS, values))
-
-            # Reshape array
-            im = np.transpose(im, (2, 0, 1)) 
 
             channels = s['channels']
 
