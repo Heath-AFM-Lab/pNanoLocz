@@ -39,7 +39,7 @@ class MediaDataManager(QObject):
 
         # Convert frames to np.array if not already
         if isinstance(frames, (list, tuple)):
-            frames = np.array(frames, dtype=np.float16)
+            frames = np.array(frames, dtype=np.float32)
         
         if frames.ndim not in [2, 3]:
             raise ValueError("Frames must be a 2D or 3D array.")
@@ -94,7 +94,9 @@ class MediaDataManager(QObject):
         # Convert frames to np.array if not already
         if isinstance(frames, (list, tuple)):
             try:
-                frames = np.array(frames, dtype=np.float16)
+                # Dont change the dtype to float 16 in an effort to save memory, 
+                # It causes errors with calculating std dev
+                frames = np.array(frames, dtype=np.float32)
             except ValueError:
                 frames, folder_metadata = self._filter_arrays_by_common_shape(frames, folder_metadata)
                 # print(len(frames), folder_metadata)
@@ -156,8 +158,6 @@ class MediaDataManager(QObject):
                     self.reset()
                     return
                 
-                
-
         frame_metadata_dictionary = {}
         # Store frames metadata
         for frame_no in range(len(frames)):
@@ -209,6 +209,7 @@ class MediaDataManager(QObject):
                 filtered_metadata.append(md)
         
         return np.array(filtered_arrays), filtered_metadata
+    
     
     # Getter functions, direct from dict
     def get_file_path(self) -> str:

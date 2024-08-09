@@ -9,7 +9,7 @@ from .read_jpk import open_jpk
 from .read_nhf import open_nhf
 from .read_spm import open_spm
 from .read_gwy import open_gwy
-from core.Image_Storage_Class import MediaDataManager
+from core.Image_Storage_Module.Image_Storage_Class import MediaDataManager
 
 
 def loadFileData(file_path, channel = None):

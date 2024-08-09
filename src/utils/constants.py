@@ -33,4 +33,6 @@ STANDARDISED_METADATA_DICT_KEYS = [
     "X Pixel Dimensions", "Pixel/nm Scaling Factor", "Current channel", "Timestamp",
 ]
 
+DEPTH_CONTROL_OPTIONS = ["Min Max", "Histogram", "Excl. outliers", "Manual"]
+
 NANOMETRES_IN_METRE = 1e9
