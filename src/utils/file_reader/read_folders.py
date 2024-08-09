@@ -1,16 +1,10 @@
-# Import necessary modules
-import os
 from pathlib import Path
 import logging
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 from utils.file_reader.read_ibw import open_ibw
 from utils.file_reader.read_jpk import open_jpk
 from utils.file_reader.read_nhf import open_nhf
 from utils.file_reader.read_spm import open_spm
 from utils.file_reader.read_gwy import open_gwy
-import matplotlib.colors as colors
 import time
 from utils.constants import IMG_EXTS
 
@@ -113,50 +107,30 @@ class ImageLoader:
         if self._dominant_format == '.spm':
             elapsed_times = self._convert_to_elapsed_time(time_stamps)
             for i, file_path in enumerate(self._file_paths):
-                data_dict[file_path]['metadata']['elapsed_time'] = elapsed_times[i]
+                data_dict[file_path]['metadata']['Timestamp'] = elapsed_times[i]
 
         return data_dict
-
+    
     def _convert_to_elapsed_time(self, time_stamps):
-        pattern = '%I:%M:%S %p %A'
-        time_in_seconds = []
+        timestamps = []
 
-        for time_str in time_stamps:
-            time_struct = time.strptime(time_str, pattern)
-            time_in_seconds.append(time.mktime(time_struct))
+        # Convert each time.struct_time object to a timestamp
+        for time_struct in time_stamps:
+            if isinstance(time_struct, time.struct_time):
+                timestamp = time.mktime(time_struct)
+                timestamps.append(timestamp)
+            else:
+                print(f"Unsupported type in time_stamps: {type(time_struct)}. Expected time.struct_time.")
+                continue
 
-        elapsed_times = [t - time_in_seconds[0] for t in time_in_seconds]
+        if not timestamps:
+            print("No valid timestamps found.")
+            return []
+
+        # Calculate the elapsed times relative to the first timestamp
+        elapsed_times = [t - timestamps[0] for t in timestamps]
+        
         return elapsed_times
-
-    def play_images(self):
-        if not self._data_dict:
-            return
-
-        fig, ax = plt.subplots()
-        file_paths = list(self._data_dict.keys())
-        initial_file_path = file_paths[0]
-        im = ax.imshow(self._data_dict[initial_file_path]['image'], animated=True, cmap='gray')
-        metadata_text = ax.text(0.02, 0.95, '', transform=ax.transAxes, color='white', fontsize=8, verticalalignment='top', bbox=dict(facecolor='black', alpha=0.5))
-
-        previous_meta = self._data_dict[initial_file_path]['metadata']
-
-        def updatefig(i):
-            nonlocal previous_meta
-            current_file_path = file_paths[i]
-            current_image = self._data_dict[current_file_path]['image']
-            current_meta = self._data_dict[current_file_path]['metadata']
-            im.set_array(current_image)
-            if self._check_metadata_change(current_meta, previous_meta):
-                elapsed_time = current_meta.get('Timestamp', 'N/A')
-                metadata_text.set_text(f"Elapsed Time: {elapsed_time:.2f} s")
-                print("Metadata updated:", current_meta)
-                previous_meta = current_meta
-            return im, metadata_text
-
-        # Use FPS from the first file to set the interval for the animation
-        initial_fps = self._data_dict[file_paths[0]]['metadata'].get('Speed (FPS)', 1)
-        ani = animation.FuncAnimation(fig, updatefig, frames=len(file_paths), interval=1000 / initial_fps, blit=True)
-        plt.show()
-
-    def _check_metadata_change(self, current_meta, previous_meta):
-        return current_meta != previous_meta
+    
+    def get_dominant_format(self) -> str:
+        return self._dominant_format

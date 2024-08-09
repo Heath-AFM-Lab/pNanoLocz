@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QCheckBox, QComboBox, 
     QSpinBox
 )
+from core.Image_Storage_Module.Image_Storage_Class import MediaDataManager
 
 class ToggleableWidget(QWidget):
     def __init__(self):
@@ -10,6 +11,8 @@ class ToggleableWidget(QWidget):
         self.buildToggleableWidgets()
 
     def buildToggleableWidgets(self):
+        media_data_manager = MediaDataManager()
+        
         # Building 2 QHBoxLayouts to construct 1 QVBoxLayout, and saving that as a widget
         topHorizontalLayout = QHBoxLayout()
         bottomHorizontalLayout = QHBoxLayout()

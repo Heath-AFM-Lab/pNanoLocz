@@ -20,10 +20,11 @@ PATH_TO_CMAPS_DIRECTORY = get_path_to(CMAPS_DIRECTORY)
 
 FILE_METADATA_DICT_KEYS = [
     "Frames", "Speed (FPS)", "Line/s (Hz)", "Y Pixel Dimensions", 
-    "X Pixel Dimensions", "Current channel", "Available Channels"
+    "X Pixel Dimensions", "Current channel", "Available channels"
 ]
+
 IMAGE_METADATA_DICT_KEYS = [
-    "X Range (nm)", "Pixel/nm Scaling Factor",
+    "X Range (nm)", "Pixel/nm Scaling Factor", "Max pixel value", "Min pixel value", "Timestamp"
 ]
 
 # TODO: This needs to be edited later to include additional metadata that is not ready yet
@@ -31,3 +32,7 @@ STANDARDISED_METADATA_DICT_KEYS = [
     "Frames", "X Range (nm)", "Speed (FPS)", "Line/s (Hz)", "Y Pixel Dimensions", 
     "X Pixel Dimensions", "Pixel/nm Scaling Factor", "Current channel", "Timestamp",
 ]
+
+DEPTH_CONTROL_OPTIONS = ["Min Max", "Histogram", "Excl. outliers", "Manual"]
+
+NANOMETRES_IN_METRE = 1e9

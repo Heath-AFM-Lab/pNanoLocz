@@ -172,7 +172,7 @@ def load_asd(file_path: Path, channel: str):
             header_dict.get('x_pixels', 'N/A'),
             pixel_to_nanometre_scaling_factor,
             channel,
-            ""
+            [frame_metadata_list[i]["timestamp"] for i in range(int(header_dict.get('num_frames', 'N/A')))]
         ]
 
         if len(values) != len(STANDARDISED_METADATA_DICT_KEYS):
@@ -180,9 +180,6 @@ def load_asd(file_path: Path, channel: str):
 
         # Create the metadata dictionary
         file_metadata = dict(zip(STANDARDISED_METADATA_DICT_KEYS, values))
-
-        # Add frame-specific metadata to the overall metadata dictionary
-        file_metadata['frames'] = frame_metadata_list
 
         return frames, file_metadata, channels
 
@@ -491,14 +488,14 @@ def read_channel_data(
 
         # Add the frame-specific metadata to the list
         frame_metadata_list.append({
-            'frame_index': i,
-            'max_data': frame_header_dict["max_data"],
-            'min_data': frame_header_dict["min_data"],
-            'x_offset': frame_header_dict["x_offset"],
-            'y_offset': frame_header_dict["y_offset"],
-            'x_tilt': frame_header_dict["x_tilt"],
-            'y_tilt': frame_header_dict["y_tilt"],
-            'is_stimulated': frame_header_dict["is_stimulated"],
+            # 'frame_index': i,
+            # 'max_data': frame_header_dict["max_data"],
+            # 'min_data': frame_header_dict["min_data"],
+            # 'x_offset': frame_header_dict["x_offset"],
+            # 'y_offset': frame_header_dict["y_offset"],
+            # 'x_tilt': frame_header_dict["x_tilt"],
+            # 'y_tilt': frame_header_dict["y_tilt"],
+            # 'is_stimulated': frame_header_dict["is_stimulated"],
             'timestamp': i * frame_time / 1000.0  # Calculate timestamp in seconds
         })
 

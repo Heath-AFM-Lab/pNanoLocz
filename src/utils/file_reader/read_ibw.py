@@ -3,7 +3,6 @@ from pathlib import Path
 import numpy as np
 from igor2 import binarywave
 import matplotlib.pyplot as plt
-import matplotlib.colors as colors
 from utils.constants import STANDARDISED_METADATA_DICT_KEYS
 
 def _ibw_pixel_to_nm_scaling(scan: dict) -> float:
@@ -26,8 +25,8 @@ def _ibw_pixel_to_nm_scaling(scan: dict) -> float:
             key, val = line.split(":", 1)
             notes[key.strip()] = val.strip()
     return (
-        float(notes["SlowScanSize"]) / scan["wave"]["wData"].shape[0] * 1e9,  # Convert to nm
-        float(notes["FastScanSize"]) / scan["wave"]["wData"].shape[1] * 1e9,  # Convert to nm
+        1/(float(notes["SlowScanSize"]) / scan["wave"]["wData"].shape[0] * 1e9),  # Convert to nm
+        1/(float(notes["FastScanSize"]) / scan["wave"]["wData"].shape[1] * 1e9),  # Convert to nm
     )[0]
 
 def extract_metadata(notes: str) -> dict:
@@ -109,7 +108,7 @@ def open_ibw(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
         x_pixels,
         pixel_to_nanometre_scaling_factor,
         channel,
-        ""
+        None
     ]
 
     if len(values) != len(STANDARDISED_METADATA_DICT_KEYS):

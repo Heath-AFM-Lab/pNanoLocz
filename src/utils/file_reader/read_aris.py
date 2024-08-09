@@ -62,7 +62,8 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
             else:
                 s['channel'] = channel
 
-            dim_scaling = file['/DataSetInfo/Global/Channels/HeightTrace/ImageDims'].attrs['DimScaling']
+            dim_scaling = file[f'/DataSetInfo/Global/Channels/{channel}/ImageDims'].attrs['DimScaling']
+
             if isinstance(dim_scaling, np.ndarray):
                 scale0 = np.max(dim_scaling)
             else:
@@ -77,7 +78,7 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
                     if isinstance(frame, h5py.Group):
                         temp = frame.name.split('Frame ')[-1]
                         scan_size_frame.append(int(temp))
-                        temp_attrs = frame['Channels/HeightTrace/ImageDims'].attrs
+                        temp_attrs = frame[f'Channels/[{channel}]/ImageDims'].attrs
                         ScanSize.append(temp_attrs['ScanSize'])
                 except Exception as e:
                     logger.error(f"Error processing frame {frame}: {e}")
@@ -124,7 +125,7 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
             s['numberofFrames'] = len(M)
 
             # Load Images and attach timestamps
-            im = np.zeros((s['yPixel'], s['xPixel'], s['numberofFrames']))
+            im = np.zeros((s['numberofFrames'], s['yPixel'], s['xPixel']))
             metadata_list = []  # List to store metadata including timestamps for each frame
 
             # Calculate timestamps for each frame
@@ -146,22 +147,14 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
                 image_data = file[f'{img_loc}/{channel}/Image'][()]
                 
                 # Check the shape of the image data before transposing
-                if image_data.shape != (s['xPixel'], s['yPixel']):
-                    image_data.shape = (s['xPixel'], s['yPixel'])
-                    image_data = image_data.T
+                if image_data.shape == (s['xPixel'], s['yPixel']):
+                    image_data.shape = (s['yPixel'], s['xPixel'])
 
-                im[:, :, i] = image_data
-
-                # Create metadata entry for each frame
-                frame_metadata = {
-                    'frame_index': i,
-                    'timestamp': time_stamps[i],
-                    'scaling': s['scale'][i],
-                    'channel': channel
-                }
-                metadata_list.append(frame_metadata)
+                im[i] = image_data
 
             im[np.isnan(im)] = 0
+
+            im *= 1e9
 
             # Calculate additional parameters
             line_rate = s['yPixel'] * fps if s['yPixel'] else 0
@@ -176,7 +169,7 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
                 s.get('xPixel', 'N/A'),
                 pixel_to_nanometre_scaling_factor,
                 channel,
-                ""
+                time_stamps
             ]
 
             if len(values) != len(STANDARDISED_METADATA_DICT_KEYS):
@@ -184,7 +177,6 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
 
             # Create the metadata dictionary
             file_metadata = dict(zip(STANDARDISED_METADATA_DICT_KEYS, values))
-            file_metadata['frames'] = metadata_list  # Store all frame metadata in the dictionary
 
             channels = s['channels']
 
