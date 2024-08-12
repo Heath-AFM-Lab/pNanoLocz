@@ -111,7 +111,6 @@ class MediaDataManager(QObject):
                 frames = np.array(frames, dtype=np.float32)
             except ValueError:
                 frames, folder_metadata = self._filter_arrays_by_common_shape(frames, folder_metadata)
-                # print(len(frames), folder_metadata)
 
         if frames.ndim not in [2, 3]:
             raise ValueError("Frames must be a 2D or 3D array.")
@@ -121,7 +120,7 @@ class MediaDataManager(QObject):
             frames = np.expand_dims(frames, axis=0)
 
         if len(folder_metadata[0]) != len(STANDARDISED_METADATA_DICT_KEYS):
-            print(len(folder_metadata[0]), len(STANDARDISED_METADATA_DICT_KEYS))
+            # print(len(folder_metadata[0]), len(STANDARDISED_METADATA_DICT_KEYS))
             raise ValueError("The length of folder_metadata does not match the required metadata keys.")
         
         # Run checks across all metadata from each file. TODO
@@ -160,8 +159,8 @@ class MediaDataManager(QObject):
                 # Show the message box
                 response = msg_box.exec()
 
-                print(metadata_value, index)
-                print(file_metadata_values)
+                # print(metadata_value, index)
+                # print(file_metadata_values)
 
                 # Handle the response
                 if response == QMessageBox.StandardButton.Ok:
@@ -240,8 +239,6 @@ class MediaDataManager(QObject):
 
         # Recalculate pix length based on scaling factor and round to nearest pixel
         pix_length = round(nice_value * pix_to_nm_scaling_factor)
-
-        print(x_dim, x_dim_lower_target, approximate_nm_value, nice_value, pix_length)
         
         return nice_value, pix_length
 

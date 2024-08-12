@@ -1,8 +1,7 @@
 import sys
-import math
 import numpy as np
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QSizePolicy, QLayout
-from PyQt6.QtCore import QTimer, pyqtSignal, QSize, QRect, QPoint, QThread
+from PyQt6.QtCore import pyqtSignal, QSize, QRect, QPoint, QThread
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
@@ -283,10 +282,6 @@ class MatplotlibVideoPlayerWidget(QWidget):
         # Update timestamp
         if self.timestamp_shown:
             self._update_timestamp(timestamp)
-
-        # TODO: Update scale bar if active
-        # if self.scale_bar_shown:
-        #     self._update_scale_bar(nm_value, pixel_length)
         
         self.canvas.draw()
         self.update_widgets.emit()
@@ -431,12 +426,6 @@ class MatplotlibVideoPlayerWidget(QWidget):
         self.timestamp.set_visible(False)
         self.timestamp_shown = True
         self.canvas.draw()
-
-    ### Autoscale color bar controls ###
-    def enable_cbar_autoscale(self, enable_autoscale: bool):
-        # TODO: refresh by accessing frame metadata for vmin and vmax values
-        pass
-
 
 if __name__ == '__main__':
     # Generate a random video using NumPy (100 frames of 100x100 RGB images)
