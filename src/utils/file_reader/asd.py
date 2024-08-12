@@ -113,8 +113,8 @@ def load_asd(file_path: Path, channel: str):
                 "know how to decode this file version."
             )
 
-        pixel_to_nanometre_scaling_factor_x = header_dict["x_nm"] / header_dict["x_pixels"]
-        pixel_to_nanometre_scaling_factor_y = header_dict["y_nm"] / header_dict["y_pixels"]
+        pixel_to_nanometre_scaling_factor_x = header_dict["x_pixels"] / header_dict["x_nm"]
+        pixel_to_nanometre_scaling_factor_y = header_dict["y_pixels"] / header_dict["y_nm"]
         if pixel_to_nanometre_scaling_factor_x != pixel_to_nanometre_scaling_factor_y:
             logger.warning(
                 f"Resolution of image is different in x and y directions:"
@@ -165,12 +165,12 @@ def load_asd(file_path: Path, channel: str):
         line_rate = header_dict.get('y_pixels', 1) / (header_dict.get('frame_time', 1000.0) / 1000.0)
         values = [
             header_dict.get('num_frames', 'N/A'),
-            header_dict.get('x_nm', 'N/A'),
+            [header_dict.get('x_nm', 'N/A') for i in range(header_dict.get('num_frames', 0))],
             fps,
             line_rate,
             header_dict.get('y_pixels', 'N/A'),
             header_dict.get('x_pixels', 'N/A'),
-            pixel_to_nanometre_scaling_factor,
+            [pixel_to_nanometre_scaling_factor for i in range(header_dict.get('num_frames', 'N/A'))],
             channel,
             [frame_metadata_list[i]["timestamp"] for i in range(int(header_dict.get('num_frames', 'N/A')))]
         ]
