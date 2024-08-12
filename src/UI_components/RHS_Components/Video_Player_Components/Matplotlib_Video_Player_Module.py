@@ -20,7 +20,7 @@ except ImportError:
     HAS_GPU = False
     warnings.warn("CuPy not available. GPU acceleration will not be used.")
 
-DEFAULT_FPS = 30
+DEFAULT_FPS = 20
 
 class AspectRatioLayout(QLayout):
     def __init__(self, parent=None):
@@ -171,6 +171,8 @@ class MatplotlibVideoPlayerWidget(QWidget):
         self.frame_processor = None
         self.is_playing = False
         self.timestamp_format = "{:.1f}s"  # Format for timestamp display
+        self.scale_bar_color = "white"
+        self.timestamp_color = "white"
 
     def load_video_frames(self, video_frames: np.ndarray, video_frames_metadata: dict):
         self.setContentsMargins(0, 0, 0, 0)
@@ -345,7 +347,7 @@ class MatplotlibVideoPlayerWidget(QWidget):
         self.scale_bar = AnchoredSizeBar(self.ax.transData,
                                     50, '50 nm', 'lower right', 
                                     pad=0.1,
-                                    color='black',
+                                    color=self.scale_bar_color,
                                     frameon=False,
                                     size_vertical=1,
                                     fontproperties=fontprops)
@@ -372,7 +374,7 @@ class MatplotlibVideoPlayerWidget(QWidget):
             self.scale_bar = AnchoredSizeBar(self.ax.transData,
                                             pixel_length, scale_bar_text, 'lower right', 
                                             pad=0.1,
-                                            color='black',
+                                            color=self.scale_bar_color,
                                             frameon=False,
                                             size_vertical=1,
                                             fontproperties=fontprops)
@@ -387,7 +389,12 @@ class MatplotlibVideoPlayerWidget(QWidget):
             self.canvas.draw()
 
     def _add_timestamp(self):
-        self.timestamp = AnchoredText(self.timestamp_format.format(0.0), loc='upper left', prop={'size': 10, 'weight': 'bold'}, frameon=False)
+        self.timestamp = AnchoredText(
+            self.timestamp_format.format(0.0),
+            loc='upper left',
+            prop={'size': 10, 'weight': 'bold', 'color': 'white'},  # Set color to white
+            frameon=False
+        )
         self.ax.add_artist(self.timestamp)
         if self.scale_bar_shown:
             self.show_timescale()
