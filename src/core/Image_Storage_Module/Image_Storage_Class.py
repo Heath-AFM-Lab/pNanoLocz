@@ -50,7 +50,14 @@ class MediaDataManager(QObject):
             frames = np.expand_dims(frames, axis=0)
 
         if len(file_metadata) != len(STANDARDISED_METADATA_DICT_KEYS):
-            raise ValueError("The length of file_metadata does not match the required metadata keys.")  
+            raise ValueError("The length of file_metadata does not match the required metadata keys.")
+        
+        if not isinstance(file_metadata["X Range (nm)"], list):
+            file_metadata["X Range (nm)"] = [file_metadata["X Range (nm)"]]
+
+        if not isinstance(file_metadata["Pixel/nm Scaling Factor"], list):
+            file_metadata["Pixel/nm Scaling Factor"] = [file_metadata["Pixel/nm Scaling Factor"]]
+
 
         # Store file metadata
         file_metadata_values = [
@@ -66,11 +73,11 @@ class MediaDataManager(QObject):
         frame_metadata_dictionary = {}
         # Store frames metadata
         for frame_no in range(file_metadata["Frames"]):
-            nm_value, pix_length = self._calculate_scale_bar(frame=frames[frame_no], pix_to_nm_scaling_factor=file_metadata["Pixel/nm Scaling Factor"])
+            nm_value, pix_length = self._calculate_scale_bar(frame=frames[frame_no], pix_to_nm_scaling_factor=file_metadata["Pixel/nm Scaling Factor"][frame_no])
 
             frame_metadata_values = [
-                file_metadata["X Range (nm)"],
-                file_metadata["Pixel/nm Scaling Factor"],
+                file_metadata["X Range (nm)"][frame_no],
+                file_metadata["Pixel/nm Scaling Factor"][frame_no],
                 np.max(frames[frame_no]),
                 np.min(frames[frame_no]),
                 file_metadata["Timestamp"][frame_no] if file_metadata["Frames"] != 1 else 0,

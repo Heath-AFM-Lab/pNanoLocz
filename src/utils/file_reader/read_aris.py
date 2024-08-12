@@ -62,12 +62,12 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
             else:
                 s['channel'] = channel
 
-            dim_scaling = file[f'/DataSetInfo/Global/Channels/{channel}/ImageDims'].attrs['DimScaling']
+            start_dim_scaling = file[f'/DataSetInfo/Global/Channels/{channel}/ImageDims'].attrs['DimScaling']
 
-            if isinstance(dim_scaling, np.ndarray):
-                scale0 = np.max(dim_scaling)
+            if isinstance(start_dim_scaling, np.ndarray):
+                scale0 = start_dim_scaling[0][1]
             else:
-                scale0 = dim_scaling
+                scale0 = start_dim_scaling
 
             scan_size_list = datainfo['Frames']
             scan_size_frame = []
@@ -76,38 +76,55 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
             for frame in scan_size_list:
                 try:
                     if isinstance(frame, h5py.Group):
+                        print(frame)
                         temp = frame.name.split('Frame ')[-1]
                         scan_size_frame.append(int(temp))
                         temp_attrs = frame[f'Channels/[{channel}]/ImageDims'].attrs
+                        print("frame", temp_attrs)
                         ScanSize.append(temp_attrs['ScanSize'])
                 except Exception as e:
                     logger.error(f"Error processing frame {frame}: {e}")
 
-            scan_size_frame = [x for x in scan_size_frame if x != 0]
-            ScanSize = [x for x in ScanSize if x != 0]
+            for frame_no in range(len(scan_size_list)):
+                # Formulate the lines needed to access frame metadata
+                frame_name = f"Frame {frame_no}"
+                path_to_metadata = "/DataSetInfo/Frames/{frame_name}"
 
-            if len(scan_size_frame) > 0:
-                Scale_sortV, Scale_sortID = zip(*sorted(zip(scan_size_frame, range(len(scan_size_frame)))))
-            else:
-                Scale_sortV, Scale_sortID = [], []
+                # print(f'/DataSetInfo/Frames/{frame_name}/Parameters/Scan'.attrs.get)
+                try:
+                    x_range = file[f'/DataSetInfo/Frames/{frame_name}/Parameters/Scan'].attrs.get("ScanSize", scale0)
+                except KeyError:
+                    x_range = scale0
 
-            s['scale'] = []
-            for i in range(len(X)):
-                if i == 0:
-                    s['scale'].append(scale0)
-                else:
-                    if len(Scale_sortV) > 0:
-                        if i < Scale_sortV[0]:
-                            s['scale'].append(s['scale'][-1])
-                        else:
-                            s['scale'].append(ScanSize[Scale_sortID[0]])
-                            Scale_sortV = Scale_sortV[1:]
-                            Scale_sortID = Scale_sortID[1:]
-                    else:
-                        s['scale'].append(s['scale'][-1])
+                ScanSize.append(x_range * 1e9)
+
+            # scan_size_frame = [x for x in scan_size_frame if x != 0]
+            # ScanSize = [x for x in ScanSize if x != 0]
+
+            # if len(scan_size_frame) > 0:
+            #     Scale_sortV, Scale_sortID = zip(*sorted(zip(scan_size_frame, range(len(scan_size_frame)))))
+            # else:
+            #     Scale_sortV, Scale_sortID = [], []
+
+            # print(scan_size_list, scale0, Scale_sortV, ScanSize, Scale_sortID)
+
+            # s['scale'] = []
+            # for i in range(len(X)):
+            #     if i == 0:
+            #         s['scale'].append(scale0)
+            #     else:
+            #         if len(Scale_sortV) > 0:
+            #             if i < Scale_sortV[0]:
+            #                 s['scale'].append(s['scale'][-1])
+            #             else:
+            #                 s['scale'].append(ScanSize[Scale_sortID[0]])
+            #                 Scale_sortV = Scale_sortV[1:]
+            #                 Scale_sortID = Scale_sortID[1:]
+            #         else:
+            #             s['scale'].append(s['scale'][-1])
 
             # Check frame-specific parameters for timing
-            first_frame_path = f'/DataSetInfo/Frames/Frame {X[M[0]]}/Parameters/Scan'
+            # first_frame_path = f'/DataSetInfo/Frames/Frame {X[M[0]]}/Parameters/Scan'
 
             # Attempt to read frame acquisition time from specific parameters
             s['yPixel'] = datainfo.attrs.get('ScanLines', None)
@@ -158,11 +175,12 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
 
             # Calculate additional parameters
             line_rate = s['yPixel'] * fps if s['yPixel'] else 0
-            pixel_to_nanometre_scaling_factor = 1 / np.max(dim_scaling) if np.any(dim_scaling) else 0
+            pixel_to_nanometre_scaling_factor = [s['xPixel'] / ScanSize[frame_no] for frame_no in range(s.get("numberofFrames"))] 
+            print(pixel_to_nanometre_scaling_factor, )
 
             values = [
                 s.get('numberofFrames', 'N/A'),
-                (np.max(dim_scaling) if np.any(dim_scaling) else 'N/A'),
+                ScanSize,
                 fps,
                 line_rate,
                 s.get('yPixel', 'N/A'),
@@ -179,6 +197,8 @@ def open_aris(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, li
             file_metadata = dict(zip(STANDARDISED_METADATA_DICT_KEYS, values))
 
             channels = s['channels']
+
+            print(s)
 
     except FileNotFoundError:
         logger.error(f"[{file_path}] File not found: {file_path}")
