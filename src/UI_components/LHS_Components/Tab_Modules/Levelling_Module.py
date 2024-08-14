@@ -50,15 +50,6 @@ class LevelingWidget(QWidget):
         container_widget.setLayout(container_layout)
         container_widget.setFixedSize(container_widget.sizeHint())
 
-        # # Create a container widget and scroll area
-        # container_widget = QWidget()
-        # container_layout = QGridLayout(container_widget)
-        # container_layout.setSpacing(5)
-        # container_layout.addWidget(self.leveling_layout, 0, 0)
-        # container_layout.addWidget(self.filtering_layout, 1, 0)
-        # container_layout.addWidget(self.graph_widget, 0, 1, 2, 1)
-        # container_widget.setLayout(container_layout)
-        
         scroll_area = QScrollArea()
         scroll_area.setWidget(container_widget)
         scroll_area.setWidgetResizable(True)
@@ -87,8 +78,6 @@ class LevelingWidget(QWidget):
         leveling_layout.addLayout(auto_dropdown_layout)
 
         # Plane and Line Layouts
-        # plane_line_layout = QGridLayout()
-        # plane_line_layout.setHorizontalSpacing(5)  # Tighten up the spacing
         plane_line_layout = QHBoxLayout()
         plane_layout = QVBoxLayout()
         line_layout = QVBoxLayout()
@@ -157,48 +146,6 @@ class LevelingWidget(QWidget):
 
         return leveling_layout
 
-        
-
-
-        # plane_line_layout.addWidget(self.plane_label, 0, 0)
-        # self.add_spinboxes(plane_line_layout, "X", 1, 0)
-        # self.add_spinboxes(plane_line_layout, "Y", 2, 0)
-        # self.add_checkbox(plane_line_layout, "-Mean", 3, 0)
-
-        # Labels, spinboxes and widgets
-
-        # Line Layout
-        self.line_label = QLabel("Line")
-        plane_line_layout.addWidget(self.line_label, 0, 1)
-        # self.add_spinboxes(plane_line_layout, "X", 1, 1)
-        # self.add_spinboxes(plane_line_layout, "Y", 2, 1)
-        # self.add_checkbox(plane_line_layout, "-Median", 3, 1)
-
-        # leveling_layout.addLayout(plane_line_layout)
-
-        leveling_layout = QWidget()
-        leveling_layout.setLayout(leveling_layout)
-        return leveling_layout
-
-    # def add_spinboxes(self, layout, label, row, column):
-    #     layout_item = QHBoxLayout()
-    #     layout_item.setSpacing(2)  # Compact spacing for spinboxes
-    #     spinbox_label = QLabel(label)
-    #     spinbox = QSpinBox()
-    #     spinbox.setFixedWidth(40)  # Smaller spinbox width
-    #     layout_item.addWidget(spinbox_label)
-    #     layout_item.addWidget(spinbox)
-    #     layout.addLayout(layout_item, row, column)
-
-    # def add_checkbox(self, layout, label, row, column):
-    #     checkbox_layout = QHBoxLayout()
-    #     checkbox_layout.setSpacing(2)  # Compact spacing for checkboxes
-    #     checkbox_label = QLabel(label)
-    #     checkbox = QCheckBox()
-    #     checkbox_layout.addWidget(checkbox_label)
-    #     checkbox_layout.addWidget(checkbox)
-    #     layout.addLayout(checkbox_layout, row, column)
-
     def build_filtering_layout(self):
         filtering_layout = QVBoxLayout()
         # filtering_layout.setSpacing(5)  # Compact spacing
@@ -230,8 +177,6 @@ class LevelingWidget(QWidget):
         self.subtract_mode_checkbox = QCheckBox("Subtract mode")
         filtering_layout.addWidget(self.subtract_mode_checkbox)
 
-        # filtering_layout = QWidget()
-        # filtering_layout.setLayout(filtering_layout)
         return filtering_layout
 
     def build_graph_widget(self):
