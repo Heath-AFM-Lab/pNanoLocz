@@ -37,9 +37,6 @@ class TabWidget(QWidget):
         self.setupTab(self.finealign_tab, "FineAlign Content", QColor('orange'))
         self.setupTab(self.localize_tab, "Localize Content", QColor('magenta'))
         
-        # self.levelling_widget = LevelingWidget()
-        # self.level_tab.addWidget(self.levelling_widget)
-
         # Set layout to the current widget
         self.layout = QVBoxLayout()
         self.layout.addWidget(self.tabs)
