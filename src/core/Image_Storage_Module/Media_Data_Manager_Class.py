@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import QMessageBox
 from PyQt6.QtCore import QObject, pyqtSignal
 from collections import Counter
 from utils.constants import FILE_METADATA_DICT_KEYS, IMAGE_METADATA_DICT_KEYS, STANDARDISED_METADATA_DICT_KEYS
-from .new_Image_Storage_Class import MediaStorage
+from .Media_Storage_Class import MediaStorage
 
 class MediaDataManager(QObject):
     _instance = None
