@@ -6,6 +6,8 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
+import numpy as np
+from numpy.polynomial import Polynomial
 
 AUTO_LIST = ["Off", "Iterative 1nm High", "Iterative -1nm Low", "Iterative High Low", "High-Low x2 (Fit)", "Iterative Fit Holes", "Iterative Fit Peaks"]
 FILTER_LIST = ["Off", "Gaussian", "Median", "Mean", "Non-local mean", "High-pass", "Top Hat", "Sliding Mean Frames", "Sphere Deconvolution", "Mean All", "Median all", "Fill Mask", "Scar Fill"]
@@ -19,6 +21,13 @@ class LevelingWidget(QWidget):
     def __init__(self):
         super().__init__()
         self.build_leveling_module()
+        self.current_image = np.random.rand(100, 100)  # Placeholder image with random data
+        self.imgt = None
+
+    class CustomSpinBox(QSpinBox):
+        def wheelEvent(self, event):
+            # Override to disable scroll wheel changes
+            event.ignore()
 
     def build_leveling_module(self):
         self.leveling_layout = self.build_leveling_layout()
@@ -87,14 +96,16 @@ class LevelingWidget(QWidget):
 
         x_plane_layout = QHBoxLayout()
         self.x_plane_label = QLabel("X")
-        self.x_plane_spinbox = QSpinBox()
+        self.x_plane_spinbox = self.CustomSpinBox()
+        self.x_plane_spinbox.valueChanged.connect(self.update_image)  # Connect to update_image
         self.x_plane_spinbox.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         x_plane_layout.addWidget(self.x_plane_label)
         x_plane_layout.addWidget(self.x_plane_spinbox)
 
         y_plane_layout = QHBoxLayout()
         self.y_plane_label = QLabel("Y")
-        self.y_plane_spinbox = QSpinBox()
+        self.y_plane_spinbox = self.CustomSpinBox()
+        self.y_plane_spinbox.valueChanged.connect(self.update_image)  # Connect to update_image
         self.y_plane_spinbox.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         y_plane_layout.addWidget(self.y_plane_label)
         y_plane_layout.addWidget(self.y_plane_spinbox)
@@ -116,14 +127,16 @@ class LevelingWidget(QWidget):
 
         x_line_layout = QHBoxLayout()
         self.x_line_label = QLabel("X")
-        self.x_line_spinbox = QSpinBox()
+        self.x_line_spinbox = self.CustomSpinBox()
+        self.x_line_spinbox.valueChanged.connect(self.update_image)  # Connect to update_image
         self.x_line_spinbox.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         x_line_layout.addWidget(self.x_line_label)
         x_line_layout.addWidget(self.x_line_spinbox)
 
         y_line_layout = QHBoxLayout()
         self.y_line_label = QLabel("Y")
-        self.y_line_spinbox = QSpinBox()
+        self.y_line_spinbox = self.CustomSpinBox()
+        self.y_line_spinbox.valueChanged.connect(self.update_image)  # Connect to update_image
         self.y_line_spinbox.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         y_line_layout.addWidget(self.y_line_label)
         y_line_layout.addWidget(self.y_line_spinbox)
@@ -146,6 +159,20 @@ class LevelingWidget(QWidget):
 
         return leveling_layout
 
+    def update_image(self):
+        polyx = self.x_plane_spinbox.value()
+        polyy = self.y_plane_spinbox.value()
+        line_plane = "plane" if self.plane_label.text() == "Plane" else "line"  # Change as per your requirement
+
+        # Apply leveling to the image
+        leveled_image = apply_levelling(self.current_image, polyx, polyy, line_plane, self.imgt)
+
+        # Display the updated image in a new Matplotlib window
+        plt.close('all')  # Close any existing windows
+        plt.imshow(leveled_image, cmap='gray')
+        plt.title(f"Updated Image: {line_plane.capitalize()} X: {polyx}, Y: {polyy}")
+        plt.show()
+
     def build_filtering_layout(self):
         filtering_layout = QVBoxLayout()
         # filtering_layout.setSpacing(5)  # Compact spacing
@@ -167,7 +194,7 @@ class LevelingWidget(QWidget):
         # Filter Spinbox
         filter_spinbox_layout = QHBoxLayout()
         self.filter_spinbox_label = QLabel("Spinbox:")
-        self.filter_spinbox = QSpinBox()
+        self.filter_spinbox = self.CustomSpinBox()
         self.filter_spinbox.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         filter_spinbox_layout.addWidget(self.filter_spinbox_label)
         filter_spinbox_layout.addWidget(self.filter_spinbox)
@@ -275,6 +302,42 @@ class LevelingWidget(QWidget):
         graph_widget = QWidget()
         graph_widget.setLayout(graph_layout)
         return graph_widget
+    
+
+def apply_levelling(img, polyx, polyy, line_plane, imgt):
+    r = img.copy()
+
+    if imgt is None:
+        imgt = img > -np.inf
+
+    if line_plane == 'plane':
+        row_avg = np.mean(img, axis=1)
+        col_avg = np.mean(img, axis=0)
+
+        row_poly = np.polyfit(np.arange(len(row_avg)), row_avg, polyx)
+        col_poly = np.polyfit(np.arange(len(col_avg)), col_avg, polyy)
+
+        row_poly_values = np.polyval(row_poly, np.arange(len(img)))
+        col_poly_values = np.polyval(col_poly, np.arange(len(img[0])))
+
+        row_poly_mesh, col_poly_mesh = np.meshgrid(row_poly_values, col_poly_values)
+
+        r = img - row_poly_mesh.T - col_poly_mesh.T
+
+    elif line_plane == 'line':
+        if polyx > 0:
+            xl = np.arange(img.shape[1])
+            for i in range(img.shape[0]):
+                pos = imgt[i, :] > 0
+                if np.sum(pos) > polyx + 5:
+                    y1 = img[i, pos]
+                    x1 = xl[pos]
+                    p = Polynomial.fit(x1, y1, polyx)
+                    r[i, :] -= p(np.arange(img.shape[1]))
+                else:
+                    r[i, pos] = img[i, pos]
+
+    return r
 
 from PyQt6.QtWidgets import QApplication
 import sys
