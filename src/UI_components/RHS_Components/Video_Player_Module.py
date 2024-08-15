@@ -5,7 +5,7 @@ from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import pyqtSignal
 from UI_components.RHS_Components.Video_Player_Components import VideoControlWidget, VideoDepthControlWidget, VisualRepresentationWidget, ExportAndVideoScaleWidget, MatplotlibVideoPlayerWidget, MatplotlibColourBarWidget
 from utils.constants import PATH_TO_ICON_DIRECTORY
-from core.Image_Storage_Module.Image_Storage_Class import MediaDataManager
+from core.Image_Storage_Module.Media_Data_Manager_Class import MediaDataManager
 from core.Image_Storage_Module.Depth_Control_Manager import DepthControlManager
 
 class VideoPlayerWidget(QWidget):
