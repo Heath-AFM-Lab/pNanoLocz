@@ -95,8 +95,10 @@ def open_ibw(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
     y_pixels = int(metadata.get("ScanLines", "0"))
     x_pixels = int(metadata.get("ScanPoints", "0"))
     scan_rate = float(metadata.get("ScanRate", "0"))
-    fps = 1 / scan_rate if scan_rate != 0 else 0
-    line_rate = y_pixels * fps if y_pixels else 0
+
+    
+    line_rate = 1 / scan_rate if y_pixels else 0
+    fps = 1/(y_pixels * scan_rate) if scan_rate != 0 else 0
     pixel_to_nanometre_scaling_factor = scaling
 
     values = [
