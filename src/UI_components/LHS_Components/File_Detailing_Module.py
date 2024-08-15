@@ -152,6 +152,7 @@ class FileDetailingSystemWidget(QWidget):
         frame_metadata = self.media_data_manager.get_frames_metadata_per_frame(frame_no=frame_no)
         self.fileDetailsWidget.setItem(1, 1, QTableWidgetItem(str(round(frame_metadata["X Range (nm)"], 4))))
         self.fileDetailsWidget.setItem(6, 1, QTableWidgetItem(str(round(frame_metadata["Pixel/nm Scaling Factor"], 4))))
+        self.adjustTableSize()
 
     def adjustTableSize(self):
         # Resize columns to content
