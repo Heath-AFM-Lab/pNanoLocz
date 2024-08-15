@@ -1,7 +1,7 @@
 import sys
 import numpy as np
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QSizePolicy, QLayout
-from PyQt6.QtCore import QTimer, pyqtSignal, QSize, QRect, QPoint, QThread
+from PyQt6.QtCore import pyqtSignal, QSize, QRect, QPoint, QThread
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
@@ -19,7 +19,7 @@ except ImportError:
     HAS_GPU = False
     warnings.warn("CuPy not available. GPU acceleration will not be used.")
 
-DEFAULT_FPS = 30
+DEFAULT_FPS = 20
 
 class AspectRatioLayout(QLayout):
     def __init__(self, parent=None):
@@ -84,7 +84,8 @@ class AspectRatioLayout(QLayout):
     
 
 class FrameProcessor(QThread):
-    frame_ready = pyqtSignal(object, int, float, float, float)  # Add timestamp to the signal
+    frame_ready = pyqtSignal(object, int, float, float, float)
+    update_scale_bar = pyqtSignal(int, int)
 
     def __init__(self, video_frames, video_frames_metadata, depth_control_manager: DepthControlManager):
         super().__init__()
@@ -97,6 +98,8 @@ class FrameProcessor(QThread):
         self.current_frame_index = 0
         self.running = False
         self.fps = DEFAULT_FPS
+        self.nm_value = 0
+        self.pix_length = 0
 
     def run(self):
         while self.running:
@@ -108,6 +111,8 @@ class FrameProcessor(QThread):
             vmin, vmax = self.depth_control_manager.get_min_max_depths_per_frame(self.current_frame_index)
             timestamp = self.video_frames_metadata[self.current_frame_index].get("Timestamp", 0.0)  # Get timestamp from metadata
             self.frame_ready.emit(processed_frame, self.current_frame_index, vmin, vmax, timestamp)
+            self._check_for_scale_bar_change(self.video_frames_metadata[self.current_frame_index]["Scale Bar nm Value"], self.video_frames_metadata[self.current_frame_index]["Scale Bar Pixel Length"])
+
             self.current_frame_index = (self.current_frame_index + 1) % len(self.video_frames)
             QThread.msleep(int(1000 / self.fps))
 
@@ -121,7 +126,16 @@ class FrameProcessor(QThread):
                 processed_frame = frame
             vmin, vmax = self.depth_control_manager.get_min_max_depths_per_frame(self.current_frame_index)
             timestamp = self.video_frames_metadata[self.current_frame_index].get("Timestamp", 0.0)  # Get timestamp from metadata
+            
             self.frame_ready.emit(processed_frame, self.current_frame_index, vmin, vmax, timestamp)
+            self._check_for_scale_bar_change(self.video_frames_metadata[self.current_frame_index]["Scale Bar nm Value"], self.video_frames_metadata[self.current_frame_index]["Scale Bar Pixel Length"])
+
+
+    def _check_for_scale_bar_change(self, nm_value: int, pix_length: int):
+        if nm_value != self.nm_value or pix_length != self.pix_length:
+            self.nm_value = nm_value
+            self.pix_length = pix_length
+            self.update_scale_bar.emit(nm_value, pix_length)
 
     def stop(self):
         self.running = False
@@ -156,6 +170,8 @@ class MatplotlibVideoPlayerWidget(QWidget):
         self.frame_processor = None
         self.is_playing = False
         self.timestamp_format = "{:.1f}s"  # Format for timestamp display
+        self.scale_bar_color = "white"
+        self.timestamp_color = "white"
 
     def load_video_frames(self, video_frames: np.ndarray, video_frames_metadata: dict):
         self.setContentsMargins(0, 0, 0, 0)
@@ -168,6 +184,7 @@ class MatplotlibVideoPlayerWidget(QWidget):
         # Create and start the frame processor
         self.frame_processor = FrameProcessor(video_frames, video_frames_metadata, self.depth_control_manager)
         self.frame_processor.frame_ready.connect(self._update_frame)
+        self.frame_processor.update_scale_bar.connect(self._update_scale_bar)
 
         # Create a layout for the widget
         if self.layout is None:
@@ -265,8 +282,6 @@ class MatplotlibVideoPlayerWidget(QWidget):
         # Update timestamp
         if self.timestamp_shown:
             self._update_timestamp(timestamp)
-
-        # TODO: Update scale bar if active
         
         self.canvas.draw()
         self.update_widgets.emit()
@@ -327,7 +342,7 @@ class MatplotlibVideoPlayerWidget(QWidget):
         self.scale_bar = AnchoredSizeBar(self.ax.transData,
                                     50, '50 nm', 'lower right', 
                                     pad=0.1,
-                                    color='black',
+                                    color=self.scale_bar_color,
                                     frameon=False,
                                     size_vertical=1,
                                     fontproperties=fontprops)
@@ -337,8 +352,44 @@ class MatplotlibVideoPlayerWidget(QWidget):
         else:
             self.hide_scale_bar()
 
+    def _update_scale_bar(self, nm_value: int, pixel_length: int):
+        if self.scale_bar:
+            # Remove the old scale bar
+            self.scale_bar.remove()
+
+            if nm_value < 1000:
+                scale_bar_text =  f'{nm_value} nm'
+            elif nm_value < 1000000:
+                scale_bar_text =  f'{nm_value/1000:.1f} µm'
+            else:
+                scale_bar_text = f'{nm_value/1000000:.2f} mm'
+            
+            # Create a new scale bar with updated values
+            fontprops = fm.FontProperties(size=10, weight='bold')
+            self.scale_bar = AnchoredSizeBar(self.ax.transData,
+                                            pixel_length, scale_bar_text, 'lower right', 
+                                            pad=0.1,
+                                            color=self.scale_bar_color,
+                                            frameon=False,
+                                            size_vertical=1,
+                                            fontproperties=fontprops)
+            
+            # Add the new scale bar to the axes
+            self.ax.add_artist(self.scale_bar)
+            
+            # Set visibility based on current state
+            self.scale_bar.set_visible(self.scale_bar_shown)
+            
+            # Redraw the canvas to show the updated scale bar
+            self.canvas.draw()
+
     def _add_timestamp(self):
-        self.timestamp = AnchoredText(self.timestamp_format.format(0.0), loc='upper left', prop={'size': 10, 'weight': 'bold'}, frameon=False)
+        self.timestamp = AnchoredText(
+            self.timestamp_format.format(0.0),
+            loc='upper left',
+            prop={'size': 10, 'weight': 'bold', 'color': 'white'},  # Set color to white
+            frameon=False
+        )
         self.ax.add_artist(self.timestamp)
         if self.scale_bar_shown:
             self.show_timescale()
@@ -375,12 +426,6 @@ class MatplotlibVideoPlayerWidget(QWidget):
         self.timestamp.set_visible(False)
         self.timestamp_shown = True
         self.canvas.draw()
-
-    ### Autoscale color bar controls ###
-    def enable_cbar_autoscale(self, enable_autoscale: bool):
-        # TODO: refresh by accessing frame metadata for vmin and vmax values
-        pass
-
 
 if __name__ == '__main__':
     # Generate a random video using NumPy (100 frames of 100x100 RGB images)

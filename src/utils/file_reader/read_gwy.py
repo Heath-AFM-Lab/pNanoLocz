@@ -143,7 +143,9 @@ def open_gwy(file_path: Path | str, channel: str) -> tuple[np.ndarray, dict, lis
 
             # Flip the image vertically and convert to nm
             images = [np.flipud(image) for image in images]
+            images = [np.rot90(image, k=3) for image in images]
             images = np.array(images) * 1e9
+            
 
             # Calculate additional values
             num_frames = len(images)

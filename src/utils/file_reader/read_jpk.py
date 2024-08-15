@@ -8,8 +8,8 @@ def _jpk_pixel_to_nm_scaling(tiff_page: tifffile.tifffile.TiffPage) -> float:
     width = tiff_page.tags["32835"].value  # Grid-vLength (slow)
     length_px = tiff_page.tags["32838"].value  # Grid-iLength (fast)
     width_px = tiff_page.tags["32839"].value  # Grid-jLength (slow)
-    px_to_nm = (length / length_px, width / width_px)[0]
-    return px_to_nm * 1e9
+    px_to_nm = (length_px / length, width_px / width)[0]
+    return px_to_nm / 1e9
 
 def extract_metadata(tiff_page: tifffile.tifffile.TiffPage) -> dict:
     metadata = {
