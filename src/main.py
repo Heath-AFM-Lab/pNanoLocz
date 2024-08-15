@@ -26,24 +26,19 @@ class MyApp(QMainWindow):
         appLayout.setSpacing(0)
 
         # Create and add LHS and RHS components
-        lhsComponent = LHSWidgets(FolderOpener())
-        rhsComponent = RHSWidgets()
-        appLayout.addWidget(lhsComponent)
-        appLayout.addWidget(rhsComponent)
+        self.lhs_component = LHSWidgets(FolderOpener())
+        self.rhs_component = RHSWidgets()
+        appLayout.addWidget(self.lhs_component)
+        appLayout.addWidget(self.rhs_component)
 
         # Set size policy with stretch factors on the RHS widgets
-        # lhsComponent.setFixedWidth(lhsComponent.sizeHint().width())
-        # lhsPolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        # lhsPolicy.setHorizontalStretch(5)
-        # lhsComponent.setSizePolicy(lhsPolicy)
-
         rhsPolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         rhsPolicy.setHorizontalStretch(16)
-        rhsComponent.setSizePolicy(rhsPolicy)
+        self.rhs_component.setSizePolicy(rhsPolicy)
 
         # Set LHS, RHS component names
-        lhsComponent.setObjectName("lhs_component")
-        rhsComponent.setObjectName("rhs_component")
+        self.lhs_component.setObjectName("lhs_component")
+        self.rhs_component.setObjectName("rhs_component")
 
         # Create a container widget and set the layout
         container = QWidget()
@@ -59,6 +54,9 @@ class MyApp(QMainWindow):
         # Add icon and title to main window
         self.setWindowIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "pNanoLocz.png")))
         self.setWindowTitle("pNanoLocz")
+
+        # Connect widgets
+        self.rhs_component.videoPlayerWidgets.update_external_widgets.connect(self.lhs_component.fileDetailingWidgets.update_table_data)
 
     def createMenu(self):
         menubar = self.menuBar()

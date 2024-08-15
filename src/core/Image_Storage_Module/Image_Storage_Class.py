@@ -1,4 +1,5 @@
 import numpy as np
+import math
 from PyQt6.QtWidgets import QMessageBox
 from PyQt6.QtCore import QObject, pyqtSignal
 from collections import Counter
@@ -23,7 +24,6 @@ class MediaDataManager(QObject):
         self.file_metadata = None
         self.image_data = None
         self.image_metadata = None
-        self.channels = None
         self.contained_in_folder = None
         self._initialized = True
 
@@ -35,7 +35,7 @@ class MediaDataManager(QObject):
                            file_metadata: list, channels: list):
         """Load new file data into the manager, resetting previous data."""
         # Reset all variables
-        self.reset()
+        # self.reset()
 
         # Convert frames to np.array if not already
         if isinstance(frames, (list, tuple)):
@@ -49,7 +49,14 @@ class MediaDataManager(QObject):
             frames = np.expand_dims(frames, axis=0)
 
         if len(file_metadata) != len(STANDARDISED_METADATA_DICT_KEYS):
-            raise ValueError("The length of file_metadata does not match the required metadata keys.")  
+            raise ValueError("The length of file_metadata does not match the required metadata keys.")
+        
+        if not isinstance(file_metadata["X Range (nm)"], list):
+            file_metadata["X Range (nm)"] = [file_metadata["X Range (nm)"]]
+
+        if not isinstance(file_metadata["Pixel/nm Scaling Factor"], list):
+            file_metadata["Pixel/nm Scaling Factor"] = [file_metadata["Pixel/nm Scaling Factor"]]
+
 
         # Store file metadata
         file_metadata_values = [
@@ -65,12 +72,16 @@ class MediaDataManager(QObject):
         frame_metadata_dictionary = {}
         # Store frames metadata
         for frame_no in range(file_metadata["Frames"]):
+            nm_value, pix_length = self._calculate_scale_bar(frame=frames[frame_no], pix_to_nm_scaling_factor=file_metadata["Pixel/nm Scaling Factor"][frame_no])
+
             frame_metadata_values = [
-                file_metadata["X Range (nm)"],
-                file_metadata["Pixel/nm Scaling Factor"],
+                file_metadata["X Range (nm)"][frame_no],
+                file_metadata["Pixel/nm Scaling Factor"][frame_no],
                 np.max(frames[frame_no]),
                 np.min(frames[frame_no]),
-                file_metadata["Timestamp"][frame_no] if file_metadata["Frames"] != 1 else 0
+                file_metadata["Timestamp"][frame_no] if file_metadata["Frames"] != 1 else 0,
+                nm_value,
+                pix_length
             ]
             frame_metadata_dictionary[frame_no] = dict(zip(IMAGE_METADATA_DICT_KEYS, frame_metadata_values))
 
@@ -89,7 +100,7 @@ class MediaDataManager(QObject):
                              folder_metadata: list, channels: list):
         """Load new folder data into the manager, resetting previous data."""
         # Reset all variables
-        self.reset()
+        # self.reset()
 
         # Convert frames to np.array if not already
         if isinstance(frames, (list, tuple)):
@@ -99,7 +110,6 @@ class MediaDataManager(QObject):
                 frames = np.array(frames, dtype=np.float32)
             except ValueError:
                 frames, folder_metadata = self._filter_arrays_by_common_shape(frames, folder_metadata)
-                # print(len(frames), folder_metadata)
 
         if frames.ndim not in [2, 3]:
             raise ValueError("Frames must be a 2D or 3D array.")
@@ -109,7 +119,7 @@ class MediaDataManager(QObject):
             frames = np.expand_dims(frames, axis=0)
 
         if len(folder_metadata[0]) != len(STANDARDISED_METADATA_DICT_KEYS):
-            print(len(folder_metadata[0]), len(STANDARDISED_METADATA_DICT_KEYS))
+            # print(len(folder_metadata[0]), len(STANDARDISED_METADATA_DICT_KEYS))
             raise ValueError("The length of folder_metadata does not match the required metadata keys.")
         
         # Run checks across all metadata from each file. TODO
@@ -148,25 +158,28 @@ class MediaDataManager(QObject):
                 # Show the message box
                 response = msg_box.exec()
 
-                print(metadata_value, index)
-                print(file_metadata_values)
+                # print(metadata_value, index)
+                # print(file_metadata_values)
 
                 # Handle the response
                 if response == QMessageBox.StandardButton.Ok:
                     break
                 else:
-                    self.reset()
                     return
                 
         frame_metadata_dictionary = {}
         # Store frames metadata
         for frame_no in range(len(frames)):
+            nm_value, pix_length = self._calculate_scale_bar(frame=frames[frame_no], pix_to_nm_scaling_factor=folder_metadata[frame_no]["Pixel/nm Scaling Factor"])
+
             frame_metadata_values = [
                 folder_metadata[frame_no]["X Range (nm)"],
                 folder_metadata[frame_no]["Pixel/nm Scaling Factor"],
                 np.max(frames[frame_no]),
                 np.min(frames[frame_no]),
-                folder_metadata[frame_no]["Timestamp"]
+                folder_metadata[frame_no]["Timestamp"],
+                nm_value,
+                pix_length
             ]
             frame_metadata_dictionary[frame_no] = dict(zip(IMAGE_METADATA_DICT_KEYS, frame_metadata_values))
 
@@ -209,6 +222,37 @@ class MediaDataManager(QObject):
                 filtered_metadata.append(md)
         
         return np.array(filtered_arrays), filtered_metadata
+    
+    def _calculate_scale_bar(self, frame: np.ndarray, pix_to_nm_scaling_factor: float) -> tuple[int, int]:
+        x_dim = frame.shape[1]
+        
+        # Define limits to contain the bar to
+        x_dim_lower_target = x_dim / 5
+
+        # Reverse calculate the dimensions to establish an approximate value for nm amount
+        approximate_nm_value = x_dim_lower_target / pix_to_nm_scaling_factor
+
+        # Calculate the nice number based on the criteria
+        nice_value = self._round_to_nice_number(approximate_nm_value)
+
+        # Recalculate pix length based on scaling factor and round to nearest pixel
+        pix_length = round(nice_value * pix_to_nm_scaling_factor)
+        
+        return nice_value, pix_length
+
+    def _round_to_nice_number(self, value: float) -> int:
+        if value <= 10:
+            return math.ceil(value)
+        elif value <= 100:
+            # Round to the nearest multiple of 5
+            return int(math.ceil(value / 5.0) * 5)
+        elif value <= 1000:
+            # Round to the nearest multiple of 50
+            return int(math.ceil(value / 50.0) * 50)
+        else:
+            # Beyond 1000, using recursion, recalcualte the number again but preserve unit change
+            # This is in case micrometre measurements are detected
+            return self._round_to_nice_number(value=value/1000) * 1000
     
     
     # Getter functions, direct from dict

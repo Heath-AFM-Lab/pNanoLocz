@@ -1,14 +1,16 @@
 import sys
 import os
-import numpy as np
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSizePolicy, QApplication
 from PyQt6.QtGui import QIcon
+from PyQt6.QtCore import pyqtSignal
 from UI_components.RHS_Components.Video_Player_Components import VideoControlWidget, VideoDepthControlWidget, VisualRepresentationWidget, ExportAndVideoScaleWidget, MatplotlibVideoPlayerWidget, MatplotlibColourBarWidget
 from utils.constants import PATH_TO_ICON_DIRECTORY
 from core.Image_Storage_Module.Image_Storage_Class import MediaDataManager
 from core.Image_Storage_Module.Depth_Control_Manager import DepthControlManager
 
 class VideoPlayerWidget(QWidget):
+    update_external_widgets = pyqtSignal(int)
+
     def __init__(self):
         super().__init__()
         self.buildVideoPlayerWidgets()
@@ -158,11 +160,11 @@ class VideoPlayerWidget(QWidget):
 
     def reset_widgets(self):
         self.blockSignals(True)
+        self.videoPlayerWidget.stop_timer()
+        self.videoControlWidget.playIcon.setToolTip("Play")
         self.videoControlWidget.videoSeekSlider.setValue(0)
         self.videoControlWidget.frameSpinBox.setValue(1)
         self.videoControlWidget.playIcon.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "play.png")))
-        self.videoControlWidget.playIcon.setToolTip("Play")
-        self.videoPlayerWidget.stop_timer()
         self.videoControlWidget.fpsTextBox.setText(str(self.videoPlayerWidget.get_fps()))
         self.blockSignals(False)
 
@@ -190,6 +192,8 @@ class VideoPlayerWidget(QWidget):
         self.videoDepthControlWidget.maxSpinBox.setValue(max_frame_limit)
         self.videoDepthControlWidget.minSpinBox.blockSignals(False)
         self.videoDepthControlWidget.maxSpinBox.blockSignals(False)
+
+        self.update_external_widgets.emit(frame_no)
 
     def playPauseVideo(self):
         if self.videoPlayerWidget.timer_is_running():
