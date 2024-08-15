@@ -139,14 +139,19 @@ class FileDetailingSystemWidget(QWidget):
     ###     DATA TABLE RELATED FUNCTIONS    ###
     def load_table_data(self):
         self.fileDetailsWidget.setItem(0, 1, QTableWidgetItem(str(self.media_data_manager.get_frames_amount())))
-        self.fileDetailsWidget.setItem(1, 1, QTableWidgetItem(str(round(self.media_data_manager.get_initial_x_range(), 3))))
-        self.fileDetailsWidget.setItem(2, 1, QTableWidgetItem(str(round(self.media_data_manager.get_fps_speed(), 3))))
-        self.fileDetailsWidget.setItem(3, 1, QTableWidgetItem(str(round(self.media_data_manager.get_line_frequency(), 3))))
+        self.fileDetailsWidget.setItem(1, 1, QTableWidgetItem(str(round(self.media_data_manager.get_initial_x_range(), 4))))
+        self.fileDetailsWidget.setItem(2, 1, QTableWidgetItem(str(round(self.media_data_manager.get_fps_speed(), 4))))
+        self.fileDetailsWidget.setItem(3, 1, QTableWidgetItem(str(round(self.media_data_manager.get_line_frequency(), 4))))
         self.fileDetailsWidget.setItem(4, 1, QTableWidgetItem(str(self.media_data_manager.get_y_dims())))
         self.fileDetailsWidget.setItem(5, 1, QTableWidgetItem(str(self.media_data_manager.get_x_dims())))
-        self.fileDetailsWidget.setItem(6, 1, QTableWidgetItem(str(round(self.media_data_manager.get_initial_pix_nm_scaling(), 3))))
+        self.fileDetailsWidget.setItem(6, 1, QTableWidgetItem(str(round(self.media_data_manager.get_initial_pix_nm_scaling(), 4))))
         self.fileDetailsWidget.setItem(7, 1, QTableWidgetItem(str(self.media_data_manager.get_cw_channel())))
         self.adjustTableSize()
+
+    def update_table_data(self, frame_no):
+        frame_metadata = self.media_data_manager.get_frames_metadata_per_frame(frame_no=frame_no)
+        self.fileDetailsWidget.setItem(1, 1, QTableWidgetItem(str(round(frame_metadata["X Range (nm)"], 4))))
+        self.fileDetailsWidget.setItem(6, 1, QTableWidgetItem(str(round(frame_metadata["Pixel/nm Scaling Factor"], 4))))
 
     def adjustTableSize(self):
         # Resize columns to content

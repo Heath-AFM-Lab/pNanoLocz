@@ -24,7 +24,6 @@ class MediaDataManager(QObject):
         self.file_metadata = None
         self.image_data = None
         self.image_metadata = None
-        self.channels = None
         self.contained_in_folder = None
         self._initialized = True
 
@@ -36,7 +35,7 @@ class MediaDataManager(QObject):
                            file_metadata: list, channels: list):
         """Load new file data into the manager, resetting previous data."""
         # Reset all variables
-        self.reset()
+        # self.reset()
 
         # Convert frames to np.array if not already
         if isinstance(frames, (list, tuple)):
@@ -101,7 +100,7 @@ class MediaDataManager(QObject):
                              folder_metadata: list, channels: list):
         """Load new folder data into the manager, resetting previous data."""
         # Reset all variables
-        self.reset()
+        # self.reset()
 
         # Convert frames to np.array if not already
         if isinstance(frames, (list, tuple)):
@@ -166,7 +165,6 @@ class MediaDataManager(QObject):
                 if response == QMessageBox.StandardButton.Ok:
                     break
                 else:
-                    self.reset()
                     return
                 
         frame_metadata_dictionary = {}
