@@ -32,19 +32,19 @@ class FileSystemWidget(QWidget):
         self.openFolderButton.setFixedSize(self.openFolderButton.sizeHint())
         fileManagementLayout.addWidget(self.openFolderButton)
 
-        self.navigateOutOfDirectoryButton = QPushButton()
-        self.navigateOutOfDirectoryButton.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "up.png")))
-        self.navigateOutOfDirectoryButton.setIconSize(self.navigateOutOfDirectoryButton.sizeHint())
-        self.navigateOutOfDirectoryButton.setToolTip("Navigate out of Directory")
-        self.navigateOutOfDirectoryButton.setFixedSize(self.navigateOutOfDirectoryButton.sizeHint())
-        fileManagementLayout.addWidget(self.navigateOutOfDirectoryButton)
+        # self.navigateOutOfDirectoryButton = QPushButton()
+        # self.navigateOutOfDirectoryButton.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "up.png")))
+        # self.navigateOutOfDirectoryButton.setIconSize(self.navigateOutOfDirectoryButton.sizeHint())
+        # self.navigateOutOfDirectoryButton.setToolTip("Navigate out of Directory")
+        # self.navigateOutOfDirectoryButton.setFixedSize(self.navigateOutOfDirectoryButton.sizeHint())
+        # fileManagementLayout.addWidget(self.navigateOutOfDirectoryButton)
 
-        self.navigateIntoDirectoryButton = QPushButton()
-        self.navigateIntoDirectoryButton.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "down.png")))
-        self.navigateIntoDirectoryButton.setIconSize(self.navigateIntoDirectoryButton.sizeHint())
-        self.navigateIntoDirectoryButton.setToolTip("Navigate into Directory")
-        self.navigateIntoDirectoryButton.setFixedSize(self.navigateIntoDirectoryButton.sizeHint())
-        fileManagementLayout.addWidget(self.navigateIntoDirectoryButton)
+        # self.navigateIntoDirectoryButton = QPushButton()
+        # self.navigateIntoDirectoryButton.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "down.png")))
+        # self.navigateIntoDirectoryButton.setIconSize(self.navigateIntoDirectoryButton.sizeHint())
+        # self.navigateIntoDirectoryButton.setToolTip("Navigate into Directory")
+        # self.navigateIntoDirectoryButton.setFixedSize(self.navigateIntoDirectoryButton.sizeHint())
+        # fileManagementLayout.addWidget(self.navigateIntoDirectoryButton)
 
         fileManagementLayout.addStretch(1)
 
@@ -56,8 +56,8 @@ class FileSystemWidget(QWidget):
         self.autosaveCheckbox.clicked.connect(self.onAutosaveClicked)
         self.saveButton.clicked.connect(self.onSaveButtonClicked)
         self.openFolderButton.clicked.connect(self.onOpenFolderButtonClicked)
-        self.navigateOutOfDirectoryButton.clicked.connect(self.onNavigateOutButtonClicked)
-        self.navigateIntoDirectoryButton.clicked.connect(self.onNavigateInButtonClicked)
+        # self.navigateOutOfDirectoryButton.clicked.connect(self.onNavigateOutButtonClicked)
+        # self.navigateIntoDirectoryButton.clicked.connect(self.onNavigateInButtonClicked)
 
     def onAutosaveClicked(self):
         pass

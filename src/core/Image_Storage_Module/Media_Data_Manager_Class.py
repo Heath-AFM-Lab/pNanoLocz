@@ -1,8 +1,5 @@
 import numpy as np
-import math
-from PyQt6.QtWidgets import QMessageBox
 from PyQt6.QtCore import QObject, pyqtSignal
-from collections import Counter
 from utils.constants import FILE_METADATA_DICT_KEYS, IMAGE_METADATA_DICT_KEYS, STANDARDISED_METADATA_DICT_KEYS
 from .Media_Storage_Class import MediaStorage
 
@@ -10,6 +7,7 @@ class MediaDataManager(QObject):
     _instance = None
     
     new_file_loaded = pyqtSignal()
+    current_mode_changed = pyqtSignal(str)
     
     def __new__(cls):
         if cls._instance is None:
@@ -20,11 +18,11 @@ class MediaDataManager(QObject):
 
     def _initialize(self):
         self.storage = {
-            'target': MediaStorage(),
-            'preview': MediaStorage(),
-            'default': MediaStorage()
+            'Target': MediaStorage(),
+            'Preview': MediaStorage(),
+            'Original': MediaStorage()
         }
-        self.current_mode = 'target'
+        self.current_mode = 'Target'
         self._initialized = True
 
     def __init__(self):
@@ -34,14 +32,22 @@ class MediaDataManager(QObject):
         if mode not in self.storage:
             raise ValueError(f"Invalid mode. Must be one of: {', '.join(self.storage.keys())}")
         self.current_mode = mode
+        self.current_mode_changed.emit(mode)
+
+    def get_mode(self) -> str:
+        return self.current_mode
+    
+    def get_mode_list(self) -> list:
+        return self.storage.keys()
 
     def load_new_file_data(self, file_path: str, file_ext: str, frames: np.ndarray | list | tuple, 
                            file_metadata: list, channels: list):
         self.storage[self.current_mode].load_new_file_data(file_path, file_ext, frames, file_metadata, channels)
 
         # Propagate a copy of the storage across the entire dict
-        self.copy_storage_across_dict(from_type="target")
+        self.copy_storage_across_dict(from_type=self.current_mode)
 
+        self.set_mode("Original")
         self.new_file_loaded.emit()
 
     def load_new_folder_data(self, folder_path: str, dominant_file_ext: str, frames: np.ndarray | list | tuple, 
@@ -49,13 +55,12 @@ class MediaDataManager(QObject):
         self.storage[self.current_mode].load_new_folder_data(folder_path, dominant_file_ext, frames, folder_metadata, channels)
 
         # Propagate a copy of the storage across the entire dict
-        self.copy_storage_across_dict(from_type="target")
+        self.copy_storage_across_dict(from_type=self.current_mode)
 
+        self.set_mode("Original")
         self.new_file_loaded.emit()
 
     
-
-
     def compare_storages(self, storage_type1: str, storage_type2: str) -> bool:
         """
         Compare two storage instances.
@@ -151,7 +156,7 @@ class MediaDataManager(QObject):
 
     # New method to remove a storage type
     def remove_storage_type(self, storage_type: str):
-        if storage_type in self.storage and storage_type not in ['target', 'preview']:
+        if storage_type in self.storage and storage_type not in ['Target', 'Preview']:
             del self.storage[storage_type]
         else:
             print(f"Cannot remove storage type '{storage_type}'.")

@@ -2,7 +2,7 @@ import sys
 import os
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSizePolicy, QApplication
 from PyQt6.QtGui import QIcon
-from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtCore import pyqtSignal, QSize
 from UI_components.RHS_Components.Video_Player_Components import VideoControlWidget, VideoDepthControlWidget, VisualRepresentationWidget, ExportAndVideoScaleWidget, MatplotlibVideoPlayerWidget, MatplotlibColourBarWidget
 from utils.constants import PATH_TO_ICON_DIRECTORY
 from core.Image_Storage_Module.Media_Data_Manager_Class import MediaDataManager
@@ -38,6 +38,14 @@ class VideoPlayerWidget(QWidget):
         # Set and add a layout to store video player and colour bar
         self.videoPlayerLayout = QHBoxLayout()
         self.mediaLayout.addLayout(self.videoPlayerLayout)
+
+        self.accept_changes_button = QPushButton()
+        self.accept_changes_button.setIcon(QIcon(os.path.join(PATH_TO_ICON_DIRECTORY, "accept.png")))
+        self.accept_changes_button.setStyleSheet("border: none; background: transparent; padding: 0; margin: 0;")
+        self.accept_changes_button.setIconSize(QSize(30, 330))
+        self.accept_changes_button.setFixedSize(self.accept_changes_button.sizeHint())
+        self.accept_changes_button.hide()
+        self.videoPlayerLayout.addWidget(self.accept_changes_button)
         
         self.videoPlayerWidget = MatplotlibVideoPlayerWidget(self.depth_control_manager)
         self.videoPlayerWidget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
@@ -79,8 +87,11 @@ class VideoPlayerWidget(QWidget):
         self.depth_control_manager.request_current_min_max_values.connect(self.videoDepthControlWidget.get_min_max_values)
 
 
-        # Media manager class to load data
+        # Media manager class
         self.media_data_manager.new_file_loaded.connect(self.load_frames_data)
+        self.media_data_manager.current_mode_changed.connect(self.on_view_mode_changed)
+        self.accept_changes_button.clicked.connect(self.on_accept_changes_button_clicked)
+
 
         # Depth control widget to update widgets if changes are detected
         self.depth_control_manager.update_widgets.connect(self.update_widgets)
@@ -248,6 +259,17 @@ class VideoPlayerWidget(QWidget):
     def change_colour_bar(self, cmap_name):
         self.videoPlayerWidget.set_cmap(cmap_name)
         self.colorbarWidget.set_cmap(cmap_name)
+
+    ### VIEW MODE FUNCTIONALITY ###
+    def on_accept_changes_button_clicked(self):
+        self.media_data_manager.copy_storage(from_type="Preview", to_type="Target")
+        self.media_data_manager.set_mode("Target")
+
+    def on_view_mode_changed(self, mode):
+        if mode == "Preview":
+            self.accept_changes_button.show()
+        else:
+            self.accept_changes_button.hide()
             
 
 # TODO: remove later

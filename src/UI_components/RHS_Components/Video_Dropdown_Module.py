@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QComboBox
 from core.Colormaps_Module.Colormaps import CMAPS
+from core.Image_Storage_Module.Media_Data_Manager_Class import MediaDataManager
 
 class VideoDropdownWidget(QWidget):
     def __init__(self):
@@ -9,13 +10,14 @@ class VideoDropdownWidget(QWidget):
 
     def buildVideoDropdownWidgets(self):
         # Create a QHBoxLayout to contain the dropdowns
+        self.media_data_manager = MediaDataManager()
         dropdownLayout = QHBoxLayout()
 
         # Change preview dropdown
-        self.previewDropdown = QComboBox()
-        self.previewDropdown.addItems(["Target", "Preview"])
-        self.previewDropdown.setFixedSize(self.previewDropdown.sizeHint())
-        dropdownLayout.addWidget(self.previewDropdown)
+        self.view_mode_dropdown = QComboBox()
+        self.view_mode_dropdown.addItems(self.media_data_manager.get_mode_list())
+        self.view_mode_dropdown.setFixedSize(self.view_mode_dropdown.sizeHint())
+        dropdownLayout.addWidget(self.view_mode_dropdown)
 
         # Change colour scale dropdown
         self.colourScaleDropdown = QComboBox()
@@ -24,10 +26,10 @@ class VideoDropdownWidget(QWidget):
         dropdownLayout.addWidget(self.colourScaleDropdown)
 
         # Change view modes dropdown
-        self.viewModesDropdown = QComboBox()
-        self.viewModesDropdown.addItems(["2D surface", "3D surface", "Co-ordinates"])
-        self.viewModesDropdown.setFixedSize(self.viewModesDropdown.sizeHint())
-        dropdownLayout.addWidget(self.viewModesDropdown)
+        self.surfaceOptionsDropdown = QComboBox()
+        self.surfaceOptionsDropdown.addItems(["2D surface", "3D surface", "Co-ordinates"])
+        self.surfaceOptionsDropdown.setFixedSize(self.surfaceOptionsDropdown.sizeHint())
+        dropdownLayout.addWidget(self.surfaceOptionsDropdown)
 
         # Switch view dropdown
         self.switchViewDropdown = QComboBox()
@@ -59,16 +61,18 @@ class VideoDropdownWidget(QWidget):
         self.setLayout(dropdownLayout)
 
         # Set signals of all widgets
-        self.previewDropdown.currentIndexChanged.connect(self.onPreviewDropdownChanged)
+        self.view_mode_dropdown.currentTextChanged.connect(self.on_view_mode_changed)
         self.colourScaleDropdown.currentIndexChanged.connect(self.onColourScaleDropdownChanged)
-        self.viewModesDropdown.currentIndexChanged.connect(self.onViewModesDropdownChanged)
+        self.surfaceOptionsDropdown.currentIndexChanged.connect(self.onViewModesDropdownChanged)
         self.switchViewDropdown.currentIndexChanged.connect(self.onSwitchViewDropdownChanged)
         self.rawOrInterpolatedDropdown.currentIndexChanged.connect(self.onRawOrInterpolatedDropdownChanged)
         self.dropdown6.currentIndexChanged.connect(self.onDropdown6Changed)
 
-    def onPreviewDropdownChanged(self, index):
-        # TODO: Handle preview dropdown change
-        pass
+        # Signals coming from the media data manager
+        self.media_data_manager.current_mode_changed.connect(self.set_current_mode)
+
+    def on_view_mode_changed(self, mode):
+        self.media_data_manager.set_mode(mode=mode)
 
     def onColourScaleDropdownChanged(self, index):
         # TODO: Handle colour scale dropdown change
@@ -89,7 +93,9 @@ class VideoDropdownWidget(QWidget):
     def onDropdown6Changed(self, index):
         # TODO: Handle dropdown6 change
         pass
-
+    
+    def set_current_mode(self, mode):
+        self.view_mode_dropdown.setCurrentText(mode)
 
 # TODO: remove once finished
 from PyQt6.QtWidgets import QApplication

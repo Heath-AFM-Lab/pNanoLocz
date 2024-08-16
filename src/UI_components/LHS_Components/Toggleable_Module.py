@@ -1,7 +1,7 @@
 import os
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QCheckBox, QComboBox, 
-    QSpinBox
+    QWidget, QVBoxLayout, QHBoxLayout, QCheckBox, QComboBox, 
+    QSpinBox, QLabel
 )
 from core.Image_Storage_Module.Media_Data_Manager_Class import MediaDataManager
 
@@ -11,7 +11,7 @@ class ToggleableWidget(QWidget):
         self.buildToggleableWidgets()
 
     def buildToggleableWidgets(self):
-        media_data_manager = MediaDataManager()
+        self.media_data_manager = MediaDataManager()
         
         # Building 2 QHBoxLayouts to construct 1 QVBoxLayout, and saving that as a widget
         topHorizontalLayout = QHBoxLayout()
@@ -33,8 +33,11 @@ class ToggleableWidget(QWidget):
         topHorizontalLayout.addStretch(1)
 
         # Add button to toggle preview
-        self.togglePreviewButton = QPushButton("Preview On/Off")
-        topHorizontalLayout.addWidget(self.togglePreviewButton)
+        self.view_mode_text = QLabel("View mode selection:")
+        topHorizontalLayout.addWidget(self.view_mode_text)
+        self.view_mode_dropdown = QComboBox()
+        self.view_mode_dropdown.addItems(self.media_data_manager.get_mode_list())
+        topHorizontalLayout.addWidget(self.view_mode_dropdown)
 
 
         # Fill bottom row with toggleable switch and frames
@@ -75,10 +78,13 @@ class ToggleableWidget(QWidget):
         # Set names and signals of all widgets
         self.autoplayCheckbox.stateChanged.connect(self.onAutoplayStateChanged)
         self.biDirectionalDataCheckbox.clicked.connect(self.onBiDirectionalDataClicked)
-        self.togglePreviewButton.clicked.connect(self.onTogglePreviewButtonClicked)
+        self.view_mode_dropdown.currentTextChanged.connect(self.on_view_mode_changed)
         self.loadAllFrames.clicked.connect(self.onLoadAllFramesClicked)
         self.frameSpinBox.valueChanged.connect(self.onFrameSpinBoxValueChanged)
         self.particlesOrFramesDropdown.currentIndexChanged.connect(self.onParticlesOrFramesDropdownChanged)
+
+        # Signals coming from the media data manager
+        self.media_data_manager.current_mode_changed.connect(self.set_current_mode)
 
 
     def onAutoplayStateChanged(self, state):
@@ -89,9 +95,8 @@ class ToggleableWidget(QWidget):
         # TODO: Handle bi-directional data checkbox click
         pass
 
-    def onTogglePreviewButtonClicked(self):
-        # TODO: Handle preview button click
-        pass
+    def on_view_mode_changed(self, mode):
+        self.media_data_manager.set_mode(mode=mode)
 
     def onLoadAllFramesClicked(self, checked):
         # Handle load all frames checkbox click
@@ -104,6 +109,9 @@ class ToggleableWidget(QWidget):
     def onParticlesOrFramesDropdownChanged(self, index):
         # TODO: Handle particles or frames dropdown index change
         pass
+
+    def set_current_mode(self, mode):
+        self.view_mode_dropdown.setCurrentText(mode)
 
 
 
