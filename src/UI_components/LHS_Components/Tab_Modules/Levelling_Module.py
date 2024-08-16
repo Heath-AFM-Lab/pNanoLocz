@@ -311,31 +311,53 @@ def apply_levelling(img, polyx, polyy, line_plane, imgt):
         imgt = img > -np.inf
 
     if line_plane == 'plane':
-        row_avg = np.mean(img, axis=1)
-        col_avg = np.mean(img, axis=0)
+        xp = np.nanmean(imgt * img, axis=1)
+        xf = xp[~np.isnan(xp)]
+        xl = np.arange(len(xp))
+        xl = xl[~np.isnan(xp)]
 
-        row_poly = np.polyfit(np.arange(len(row_avg)), row_avg, polyx)
-        col_poly = np.polyfit(np.arange(len(col_avg)), col_avg, polyy)
+        if polyx > 0:
+            p = np.polyfit(xl, xf, polyx)
+            r -= np.polyval(p, np.arange(len(xp)))
 
-        row_poly_values = np.polyval(row_poly, np.arange(len(img)))
-        col_poly_values = np.polyval(col_poly, np.arange(len(img[0])))
+        yp = np.nanmean(imgt * r, axis=0)
+        yf = yp[~np.isnan(yp)]
+        yl = np.arange(len(yp))
+        yl = yl[~np.isnan(yp)]
 
-        row_poly_mesh, col_poly_mesh = np.meshgrid(row_poly_values, col_poly_values)
-
-        r = img - row_poly_mesh.T - col_poly_mesh.T
+        if polyy > 0:
+            p = np.polyfit(yl, yf, polyy)
+            r -= np.polyval(p, np.arange(len(yp)))
 
     elif line_plane == 'line':
         if polyx > 0:
             xl = np.arange(img.shape[1])
+            y2 = np.zeros_like(r)
+            mask_line = []
+
             for i in range(img.shape[0]):
                 pos = imgt[i, :] > 0
-                if np.sum(pos) > polyx + 5:
+                if np.sum(pos) > polyx + 8:
                     y1 = img[i, pos]
                     x1 = xl[pos]
-                    p = Polynomial.fit(x1, y1, polyx)
-                    r[i, :] -= p(np.arange(img.shape[1]))
+                    p = np.polyfit(x1, y1, polyx)
+                    y2[i, :] = np.polyval(p, np.arange(img.shape[1]))
+                    r[i, :] -= y2[i, :]
                 else:
-                    r[i, pos] = img[i, pos]
+                    mask_line.append(i)
+
+            for i in mask_line:
+                r[i, :] = img[i, :] - np.nanmedian(y2)
+
+        if polyy > 0:
+            for i in range(img.shape[1]):
+                yp = imgt[:, i] * r[:, i]
+                yf = yp[~np.isnan(yp)]
+                yl = np.arange(img.shape[0])
+                yl = yl[~np.isnan(yp)]
+                if len(yl) >= polyy:
+                    p = np.polyfit(yl, yf, polyy)
+                    r[:, i] -= np.polyval(p, np.arange(img.shape[0]))
 
     return r
 
