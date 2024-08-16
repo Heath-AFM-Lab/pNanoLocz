@@ -172,6 +172,15 @@ class MediaStorage():
         
         self.output_file_data()
 
+    def set_image_data(self, image_data: np.ndarray):
+        self.image_data = image_data
+        self._calculate_new_image_metadata(self, image_data)
+
+    def _calculate_new_image_metadata(self, frames: np.ndarray):
+        for frame_no in range(len(frames)):
+            self.image_metadata[frame_no]["Max pixel value"] = np.max(frames[frame_no])
+            self.image_metadata[frame_no]["Min pixel value"] = np.min(frames[frame_no])
+
     @staticmethod
     def _filter_arrays_by_common_shape(arrays, metadata):
         """

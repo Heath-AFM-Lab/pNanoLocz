@@ -1,7 +1,8 @@
 import numpy as np
 from PyQt6.QtCore import QObject, pyqtSignal
-from utils.constants import FILE_METADATA_DICT_KEYS, IMAGE_METADATA_DICT_KEYS, STANDARDISED_METADATA_DICT_KEYS
 from .Media_Storage_Class import MediaStorage
+
+DEFAULT_VIEW_MODES = ['Target', 'Preview']
 
 class MediaDataManager(QObject):
     _instance = None
@@ -17,12 +18,8 @@ class MediaDataManager(QObject):
         return cls._instance
 
     def _initialize(self):
-        self.storage = {
-            'Target': MediaStorage(),
-            'Preview': MediaStorage(),
-            'Original': MediaStorage()
-        }
-        self.current_mode = 'Target'
+        self.storage = {mode: MediaStorage() for mode in DEFAULT_VIEW_MODES}
+        self.current_mode = DEFAULT_VIEW_MODES[0]
         self._initialized = True
 
     def __init__(self):
@@ -47,7 +44,7 @@ class MediaDataManager(QObject):
         # Propagate a copy of the storage across the entire dict
         self.copy_storage_across_dict(from_type=self.current_mode)
 
-        self.set_mode("Original")
+        self.set_mode("Target")
         self.new_file_loaded.emit()
 
     def load_new_folder_data(self, folder_path: str, dominant_file_ext: str, frames: np.ndarray | list | tuple, 
@@ -57,7 +54,7 @@ class MediaDataManager(QObject):
         # Propagate a copy of the storage across the entire dict
         self.copy_storage_across_dict(from_type=self.current_mode)
 
-        self.set_mode("Original")
+        self.set_mode("Target")
         self.new_file_loaded.emit()
 
     
@@ -84,6 +81,25 @@ class MediaDataManager(QObject):
         for name in self.storage.keys():
             if name != from_type:
                 self.copy_storage(from_type=from_type, to_type=name)
+
+    def switch_to_preview(self):
+        if self.current_mode != "Preview":
+            self.storage["Preview"] = self.copy_storage(from_type=self.current_mode, to_type="Preview")
+            self.set_mode("Preview")
+
+    def accept_changes(self):
+        self.copy_storage(from_type="Preview", to_type="Target")
+        self.set_mode("Target")
+
+
+    
+    # Setter functions. Each will change the view mode to "Preview" and set the respective item accordingly
+    def set_media_data(self, media: np.ndarray):
+        if media.ndim != 3:
+            raise ValueError(f"Media Data Manager received an np.array that does not match required dims. Got {media.ndim}, Required 3")
+
+        self.switch_to_preview()
+        self.storage[self.current_mode].set_image_data(media)
 
     
     # Getter functions, direct from dict depending on view mode
@@ -156,7 +172,7 @@ class MediaDataManager(QObject):
 
     # New method to remove a storage type
     def remove_storage_type(self, storage_type: str):
-        if storage_type in self.storage and storage_type not in ['Target', 'Preview']:
+        if storage_type in self.storage and storage_type not in DEFAULT_VIEW_MODES:
             del self.storage[storage_type]
         else:
             print(f"Cannot remove storage type '{storage_type}'.")

@@ -262,8 +262,7 @@ class VideoPlayerWidget(QWidget):
 
     ### VIEW MODE FUNCTIONALITY ###
     def on_accept_changes_button_clicked(self):
-        self.media_data_manager.copy_storage(from_type="Preview", to_type="Target")
-        self.media_data_manager.set_mode("Target")
+        self.media_data_manager.accept_changes()
 
     def on_view_mode_changed(self, mode):
         if mode == "Preview":
