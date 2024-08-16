@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QColor
 from UI_components.LHS_Components.Tab_Modules import LevelingWidget
-from core.Image_Storage_Module.Image_Storage_Class import MediaDataManager
+from core.Image_Storage_Module.Media_Data_Manager_Class import MediaDataManager
 
 
 class TabWidget(QWidget):

@@ -7,7 +7,7 @@ from utils.Folder_Opener_Module.Folder_Opener import FolderOpener
 from utils.file_reader.File_Reader import loadFileData
 import os
 from utils.constants import FILE_EXTS
-from core.Image_Storage_Module.Image_Storage_Class import MediaDataManager
+from core.Image_Storage_Module.Media_Data_Manager_Class import MediaDataManager
 
 class CustomFileFilterProxyModel(QSortFilterProxyModel):
     def __init__(self, extensions, parent=None):
