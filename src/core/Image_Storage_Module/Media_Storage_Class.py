@@ -1,41 +1,23 @@
 import numpy as np
 import math
+import copy
 from PyQt6.QtWidgets import QMessageBox
-from PyQt6.QtCore import QObject, pyqtSignal
 from collections import Counter
 from utils.constants import FILE_METADATA_DICT_KEYS, IMAGE_METADATA_DICT_KEYS, STANDARDISED_METADATA_DICT_KEYS
 
-class MediaDataManager(QObject):
-    _instance = None
-    
-    new_file_loaded = pyqtSignal()
-    
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(MediaDataManager, cls).__new__(cls)
-            # Initialize QObject here
-            QObject.__init__(cls._instance)
-            cls._instance._initialize()
-        return cls._instance
 
-    def _initialize(self):
+class MediaStorage():
+    def __init__(self):
         self.file_path = None
         self.file_ext = None
         self.file_metadata = None
         self.image_data = None
         self.image_metadata = None
-        self.contained_in_folder = None
-        self._initialized = True
-
-    def __init__(self):
-        # This method is now empty to avoid re-initialization
-        pass
+        self.contained_in_folder = False
 
     def load_new_file_data(self, file_path: str, file_ext: str, frames: np.ndarray | list | tuple, 
                            file_metadata: list, channels: list):
         """Load new file data into the manager, resetting previous data."""
-        # Reset all variables
-        # self.reset()
 
         # Convert frames to np.array if not already
         if isinstance(frames, (list, tuple)):
@@ -93,14 +75,11 @@ class MediaDataManager(QObject):
         self.image_metadata = frame_metadata_dictionary
         self.contained_in_folder = False
 
-        self.new_file_loaded.emit()
         self.output_file_data()
 
     def load_new_folder_data(self, folder_path: str, dominant_file_ext: str, frames: np.ndarray | list | tuple, 
                              folder_metadata: list, channels: list):
         """Load new folder data into the manager, resetting previous data."""
-        # Reset all variables
-        # self.reset()
 
         # Convert frames to np.array if not already
         if isinstance(frames, (list, tuple)):
@@ -190,9 +169,17 @@ class MediaDataManager(QObject):
         self.image_data = frames
         self.image_metadata = frame_metadata_dictionary
         self.contained_in_folder = True
-
-        self.new_file_loaded.emit()
+        
         self.output_file_data()
+
+    def set_image_data(self, image_data: np.ndarray):
+        self.image_data = image_data
+        self._calculate_new_image_metadata(self, image_data)
+
+    def _calculate_new_image_metadata(self, frames: np.ndarray):
+        for frame_no in range(len(frames)):
+            self.image_metadata[frame_no]["Max pixel value"] = np.max(frames[frame_no])
+            self.image_metadata[frame_no]["Min pixel value"] = np.min(frames[frame_no])
 
     @staticmethod
     def _filter_arrays_by_common_shape(arrays, metadata):
@@ -307,6 +294,56 @@ class MediaDataManager(QObject):
         if show_image_data:
             print(f"File image data: {self.image_data}") 
         print(f"Is in folder?: {self.contained_in_folder}")
+
+    def __eq__(self, other):
+        """
+        Compare this MediaStorage instance to another for equality.
+        
+        Two MediaStorage instances are considered equal if all their attributes are equal.
+        """
+        if not isinstance(other, MediaStorage):
+            return False
+        
+        # Compare simple attributes
+        if (self.file_path != other.file_path or
+            self.file_ext != other.file_ext or
+            self.contained_in_folder != other.contained_in_folder):
+            return False
+        
+        # Compare file_metadata
+        if self.file_metadata != other.file_metadata:
+            return False
+        
+        # Compare image_metadata
+        if self.image_metadata != other.image_metadata:
+            return False
+        
+        # Compare image_data
+        if not np.array_equal(self.image_data, other.image_data):
+            return False
+        
+        return True
+
+    def copy(self):
+        """
+        Create a deep copy of this MediaStorage instance.
+        """
+        new_instance = MediaStorage()
+        new_instance.file_path = self.file_path
+        new_instance.file_ext = self.file_ext
+        new_instance.file_metadata = copy.deepcopy(self.file_metadata)
+        new_instance.image_data = np.copy(self.image_data)
+        new_instance.image_metadata = copy.deepcopy(self.image_metadata)
+        new_instance.contained_in_folder = self.contained_in_folder
+        return new_instance
+
+    def __repr__(self):
+        """
+        Return a string representation of the MediaStorage instance.
+        """
+        return (f"MediaStorage(file_path={self.file_path}, file_ext={self.file_ext}, "
+                f"frames={self.file_metadata['Frames'] if self.file_metadata else None}, "
+                f"contained_in_folder={self.contained_in_folder})")
 
     def reset(self):
         """Reset all stored data to None."""
