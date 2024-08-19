@@ -8,6 +8,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.polynomial import Polynomial
+from core.Image_Storage_Module.Image_Storage_Class import MediaDataManager
 
 AUTO_LIST = ["Off", "Iterative 1nm High", "Iterative -1nm Low", "Iterative High Low", "High-Low x2 (Fit)", "Iterative Fit Holes", "Iterative Fit Peaks"]
 FILTER_LIST = ["Off", "Gaussian", "Median", "Mean", "Non-local mean", "High-pass", "Top Hat", "Sliding Mean Frames", "Sphere Deconvolution", "Mean All", "Median all", "Fill Mask", "Scar Fill"]
@@ -21,7 +22,7 @@ class LevelingWidget(QWidget):
     def __init__(self):
         super().__init__()
         self.build_leveling_module()
-        self.current_image = np.random.rand(100, 100)  # Placeholder image with random data
+        self.current_image = self.media_data_manager.get_frames()
         self.imgt = None
 
     class CustomSpinBox(QSpinBox):
@@ -30,6 +31,7 @@ class LevelingWidget(QWidget):
             event.ignore()
 
     def build_leveling_module(self):
+        self.media_data_manager = MediaDataManager()
         self.leveling_layout = self.build_leveling_layout()
         self.filtering_layout = self.build_filtering_layout()
         self.graph_widget = self.build_graph_widget()
