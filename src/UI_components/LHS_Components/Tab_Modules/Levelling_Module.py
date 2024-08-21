@@ -8,7 +8,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.polynomial import Polynomial
-from core.Image_Storage_Module.Image_Storage_Class import MediaDataManager
+from core.Image_Storage_Module.Media_Data_Manager_Class import MediaDataManager
 
 AUTO_LIST = ["Off", "Iterative 1nm High", "Iterative -1nm Low", "Iterative High Low", "High-Low x2 (Fit)", "Iterative Fit Holes", "Iterative Fit Peaks"]
 FILTER_LIST = ["Off", "Gaussian", "Median", "Mean", "Non-local mean", "High-pass", "Top Hat", "Sliding Mean Frames", "Sphere Deconvolution", "Mean All", "Median all", "Fill Mask", "Scar Fill"]
@@ -21,8 +21,9 @@ class LevelingWidget(QWidget):
 
     def __init__(self):
         super().__init__()
+        self.media_data_manager = MediaDataManager()  # Initialize the MediaDataManager
         self.build_leveling_module()
-        self.current_image = self.media_data_manager.get_frames()
+        self.current_image = None  # Initialize with None
         self.imgt = None
 
     class CustomSpinBox(QSpinBox):
@@ -31,7 +32,7 @@ class LevelingWidget(QWidget):
             event.ignore()
 
     def build_leveling_module(self):
-        self.media_data_manager = MediaDataManager()
+        # Do not reinitialize media_data_manager here
         self.leveling_layout = self.build_leveling_layout()
         self.filtering_layout = self.build_filtering_layout()
         self.graph_widget = self.build_graph_widget()
@@ -166,8 +167,16 @@ class LevelingWidget(QWidget):
         polyy = self.y_plane_spinbox.value()
         line_plane = "plane" if self.plane_label.text() == "Plane" else "line"  # Change as per your requirement
 
-        # Apply leveling to the image
-        leveled_image = apply_levelling(self.current_image, polyx, polyy, line_plane, self.imgt)
+        # Retrieve the frames
+        frames = self.media_data_manager.get_frames()
+
+        # Check if frames are loaded correctly
+        if frames is None:
+            print("Error: No frames loaded in MediaDataManager.")
+            return
+
+        # Apply leveling to the image using the actual frames
+        leveled_image = apply_levelling(frames, polyx, polyy, line_plane, self.imgt)
 
         # Display the updated image in a new Matplotlib window
         plt.close('all')  # Close any existing windows
@@ -175,9 +184,9 @@ class LevelingWidget(QWidget):
         plt.title(f"Updated Image: {line_plane.capitalize()} X: {polyx}, Y: {polyy}")
         plt.show()
 
+
     def build_filtering_layout(self):
         filtering_layout = QVBoxLayout()
-        # filtering_layout.setSpacing(5)  # Compact spacing
 
         # Add title in bold
         self.filtering_title = QLabel("Filtering")
@@ -307,29 +316,52 @@ class LevelingWidget(QWidget):
     
 
 def apply_levelling(img, polyx, polyy, line_plane, imgt):
-    r = img.copy()
+    # Convert the image to float64 to ensure the operations are compatible
+    r = img.astype(np.float64).copy()
 
     if imgt is None:
         imgt = img > -np.inf
 
     if line_plane == 'plane':
         xp = np.nanmean(imgt * img, axis=1)
-        xf = xp[~np.isnan(xp)]
-        xl = np.arange(len(xp))
-        xl = xl[~np.isnan(xp)]
+        print(f"[DEBUG] Shape of xp after np.nanmean: {xp.shape}")
 
-        if polyx > 0:
+        # Ensure xp is 1D by squeezing the array
+        xp = np.squeeze(xp)
+        print(f"[DEBUG] Shape of xp after squeezing: {xp.shape}")
+
+        # Ensure xp is 1D
+        if xp.ndim != 1:
+            raise ValueError(f"Unexpected array shape for xp, expected 1D array but got {xp.shape}.")
+
+        valid_xp = ~np.isnan(xp)
+        xf = xp[valid_xp]
+        xl = np.arange(len(xp))[valid_xp]
+
+        if polyx > 0 and len(xl) > 0:
             p = np.polyfit(xl, xf, polyx)
-            r -= np.polyval(p, np.arange(len(xp)))
+            r -= np.polyval(p, np.arange(r.shape[0]))[:, None]  # Correct broadcasting without changing dimensions
+            print(f"[DEBUG] Shape of r after polyx subtraction: {r.shape}")
 
-        yp = np.nanmean(imgt * r, axis=0)
-        yf = yp[~np.isnan(yp)]
-        yl = np.arange(len(yp))
-        yl = yl[~np.isnan(yp)]
+        yp = np.nanmean(r, axis=0)  # Calculate mean across the rows (axis=0) to get a 1D array
+        print(f"[DEBUG] Shape of yp after np.nanmean: {yp.shape}")
 
-        if polyy > 0:
+        # Ensure yp is 1D by squeezing the array
+        yp = np.squeeze(yp)
+        print(f"[DEBUG] Shape of yp after squeezing: {yp.shape}")
+
+        # Ensure yp is 1D
+        if yp.ndim != 1:
+            raise ValueError(f"Unexpected array shape for yp, expected 1D array but got {yp.shape}.")
+
+        valid_yp = ~np.isnan(yp)
+        yf = yp[valid_yp]
+        yl = np.arange(len(yp))[valid_yp]
+
+        if polyy > 0 and len(yl) > 0:
             p = np.polyfit(yl, yf, polyy)
-            r -= np.polyval(p, np.arange(len(yp)))
+            r -= np.polyval(p, np.arange(r.shape[1]))  # Subtract the polynomial fit from the result
+            print(f"[DEBUG] Shape of r after polyy subtraction: {r.shape}")
 
     elif line_plane == 'line':
         if polyx > 0:
@@ -353,15 +385,31 @@ def apply_levelling(img, polyx, polyy, line_plane, imgt):
 
         if polyy > 0:
             for i in range(img.shape[1]):
-                yp = imgt[:, i] * r[:, i]
-                yf = yp[~np.isnan(yp)]
-                yl = np.arange(img.shape[0])
-                yl = yl[~np.isnan(yp)]
+                yp = np.nanmean(r[:, i])  # Calculate mean across the columns (axis=1) to get a 1D array
+                print(f"[DEBUG] Shape of yp before squeezing in line: {yp.shape}")
+
+                # Ensure yp is 1D by squeezing the array
+                yp = np.squeeze(yp)
+                print(f"[DEBUG] Shape of yp after squeezing in line: {yp.shape}")
+
+                # Ensure yp is 1D
+                if yp.ndim != 1:
+                    print(f"yp in line is not 1D, shape is: {yp.shape}")
+                    raise ValueError("Unexpected array shape for yp in line, expected 1D array.")
+
+                valid_yp = ~np.isnan(yp)
+                yf = yp[valid_yp]
+                yl = np.arange(img.shape[0])[valid_yp]
+
                 if len(yl) >= polyy:
                     p = np.polyfit(yl, yf, polyy)
                     r[:, i] -= np.polyval(p, np.arange(img.shape[0]))
 
     return r
+
+
+
+
 
 from PyQt6.QtWidgets import QApplication
 import sys
