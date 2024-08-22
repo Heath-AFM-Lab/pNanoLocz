@@ -180,7 +180,7 @@ class LevelingWidget(QWidget):
 
         # Display the updated image in a new Matplotlib window
         plt.close('all')  # Close any existing windows
-        plt.imshow(leveled_image, cmap='gray')
+        plt.imshow(leveled_image, cmap='rainbow')
         plt.title(f"Updated Image: {line_plane.capitalize()} X: {polyx}, Y: {polyy}")
         plt.show()
 
@@ -343,7 +343,7 @@ def apply_levelling(img, polyx, polyy, line_plane, imgt):
             r -= np.polyval(p, np.arange(r.shape[0]))[:, None]  # Correct broadcasting without changing dimensions
             print(f"[DEBUG] Shape of r after polyx subtraction: {r.shape}")
 
-        yp = np.nanmean(r, axis=0)  # Calculate mean across the rows (axis=0) to get a 1D array
+        yp = np.nanmean(r, axis=2)  # Calculate mean across the rows (axis=2) to get a 1D array
         print(f"[DEBUG] Shape of yp after np.nanmean: {yp.shape}")
 
         # Ensure yp is 1D by squeezing the array
@@ -405,10 +405,7 @@ def apply_levelling(img, polyx, polyy, line_plane, imgt):
                     p = np.polyfit(yl, yf, polyy)
                     r[:, i] -= np.polyval(p, np.arange(img.shape[0]))
 
-    return r
-
-
-
+    return np.squeeze(r)  # Squeeze the result to remove any singleton dimensions
 
 
 from PyQt6.QtWidgets import QApplication
