@@ -165,24 +165,27 @@ class LevelingWidget(QWidget):
     def update_image(self):
         polyx = self.x_plane_spinbox.value()
         polyy = self.y_plane_spinbox.value()
-        line_plane = "plane" if self.plane_label.text() == "Plane" else "line"  # Change as per your requirement
+        line_plane = "plane" if self.plane_label.text() == "Plane" else "line"
 
-        # Retrieve the frames
         frames = self.media_data_manager.get_frames()
 
-        # Check if frames are loaded correctly
         if frames is None:
             print("Error: No frames loaded in MediaDataManager.")
             return
 
-        # Apply leveling to the image using the actual frames
         leveled_image = apply_levelling(frames, polyx, polyy, line_plane, self.imgt)
 
-        # Display the updated image in a new Matplotlib window
-        plt.close('all')  # Close any existing windows
-        plt.imshow(leveled_image, cmap='rainbow')
-        plt.title(f"Updated Image: {line_plane.capitalize()} X: {polyx}, Y: {polyy}")
-        plt.show()
+        # If there are multiple frames, display them as an animation or loop
+        if leveled_image.ndim == 3:
+            for i in range(leveled_image.shape[0]):
+                plt.imshow(leveled_image[i], cmap='rainbow')
+                plt.title(f"Updated Image {i+1}/{leveled_image.shape[0]}: {line_plane.capitalize()} X: {polyx}, Y: {polyy}")
+                plt.show()
+        else:
+            plt.imshow(leveled_image, cmap='rainbow')
+            plt.title(f"Updated Image: {line_plane.capitalize()} X: {polyx}, Y: {polyy}")
+            plt.show()
+
 
 
     def build_filtering_layout(self):
@@ -319,93 +322,108 @@ def apply_levelling(img, polyx, polyy, line_plane, imgt):
     # Convert the image to float64 to ensure the operations are compatible
     r = img.astype(np.float64).copy()
 
-    if imgt is None:
-        imgt = img > -np.inf
+    # Initialize an empty list to hold the processed frames
+    processed_frames = []
 
-    if line_plane == 'plane':
-        xp = np.nanmean(imgt * img, axis=1)
-        print(f"[DEBUG] Shape of xp after np.nanmean: {xp.shape}")
+    # Iterate over each frame if there are multiple frames
+    for frame in range(r.shape[0]):
+        img_frame = r[frame, :, :]  # Extract the current frame
 
-        # Ensure xp is 1D by squeezing the array
-        xp = np.squeeze(xp)
-        print(f"[DEBUG] Shape of xp after squeezing: {xp.shape}")
+        if imgt is None:
+            imgt_frame = img_frame > -np.inf
+        else:
+            imgt_frame = imgt[frame, :, :] if imgt.ndim == 3 else imgt  # Adjust imgt for the current frame
 
-        # Ensure xp is 1D
-        if xp.ndim != 1:
-            raise ValueError(f"Unexpected array shape for xp, expected 1D array but got {xp.shape}.")
+        if line_plane == 'plane':
+            xp = np.nanmean(imgt_frame * img_frame, axis=1)
+            print(f"[DEBUG] Shape of xp after np.nanmean: {xp.shape}")
 
-        valid_xp = ~np.isnan(xp)
-        xf = xp[valid_xp]
-        xl = np.arange(len(xp))[valid_xp]
+            # Ensure xp is 1D by squeezing the array
+            xp = np.squeeze(xp)
+            print(f"[DEBUG] Shape of xp after squeezing: {xp.shape}")
 
-        if polyx > 0 and len(xl) > 0:
-            p = np.polyfit(xl, xf, polyx)
-            r -= np.polyval(p, np.arange(r.shape[0]))[:, None]  # Correct broadcasting without changing dimensions
-            print(f"[DEBUG] Shape of r after polyx subtraction: {r.shape}")
+            # Ensure xp is 1D
+            if xp.ndim != 1:
+                raise ValueError(f"Unexpected array shape for xp, expected 1D array but got {xp.shape}.")
 
-        yp = np.nanmean(r, axis=2)  # Calculate mean across the rows (axis=2) to get a 1D array
-        print(f"[DEBUG] Shape of yp after np.nanmean: {yp.shape}")
+            valid_xp = ~np.isnan(xp)
+            xf = xp[valid_xp]
+            xl = np.arange(len(xp))[valid_xp]
 
-        # Ensure yp is 1D by squeezing the array
-        yp = np.squeeze(yp)
-        print(f"[DEBUG] Shape of yp after squeezing: {yp.shape}")
+            if polyx > 0 and len(xl) > 0:
+                p = np.polyfit(xl, xf, polyx)
+                img_frame -= np.polyval(p, np.arange(img_frame.shape[0]))[:, None]  # Correct broadcasting
+                print(f"[DEBUG] Shape of img_frame after polyx subtraction: {img_frame.shape}")
 
-        # Ensure yp is 1D
-        if yp.ndim != 1:
-            raise ValueError(f"Unexpected array shape for yp, expected 1D array but got {yp.shape}.")
+            yp = np.nanmean(img_frame, axis=1)
+            print(f"[DEBUG] Shape of yp after np.nanmean: {yp.shape}")
 
-        valid_yp = ~np.isnan(yp)
-        yf = yp[valid_yp]
-        yl = np.arange(len(yp))[valid_yp]
+            # Ensure yp is 1D by squeezing the array
+            yp = np.squeeze(yp)
+            print(f"[DEBUG] Shape of yp after squeezing: {yp.shape}")
 
-        if polyy > 0 and len(yl) > 0:
-            p = np.polyfit(yl, yf, polyy)
-            r -= np.polyval(p, np.arange(r.shape[1]))  # Subtract the polynomial fit from the result
-            print(f"[DEBUG] Shape of r after polyy subtraction: {r.shape}")
+            # Ensure yp is 1D
+            if yp.ndim != 1:
+                raise ValueError(f"Unexpected array shape for yp, expected 1D array but got {yp.shape}.")
 
-    elif line_plane == 'line':
-        if polyx > 0:
-            xl = np.arange(img.shape[1])
-            y2 = np.zeros_like(r)
-            mask_line = []
+            valid_yp = ~np.isnan(yp)
+            yf = yp[valid_yp]
+            yl = np.arange(len(yp))[valid_yp]
 
-            for i in range(img.shape[0]):
-                pos = imgt[i, :] > 0
-                if np.sum(pos) > polyx + 8:
-                    y1 = img[i, pos]
-                    x1 = xl[pos]
-                    p = np.polyfit(x1, y1, polyx)
-                    y2[i, :] = np.polyval(p, np.arange(img.shape[1]))
-                    r[i, :] -= y2[i, :]
-                else:
-                    mask_line.append(i)
+            if polyy > 0 and len(yl) > 0:
+                p = np.polyfit(yl, yf, polyy)
+                img_frame -= np.polyval(p, np.arange(img_frame.shape[1]))
+                print(f"[DEBUG] Shape of img_frame after polyy subtraction: {img_frame.shape}")
 
-            for i in mask_line:
-                r[i, :] = img[i, :] - np.nanmedian(y2)
+        elif line_plane == 'line':
+            if polyx > 0:
+                xl = np.arange(img_frame.shape[1])
+                y2 = np.zeros_like(img_frame)
+                mask_line = []
 
-        if polyy > 0:
-            for i in range(img.shape[1]):
-                yp = np.nanmean(r[:, i])  # Calculate mean across the columns (axis=1) to get a 1D array
-                print(f"[DEBUG] Shape of yp before squeezing in line: {yp.shape}")
+                for i in range(img_frame.shape[0]):
+                    pos = imgt_frame[i, :] > 0
+                    if np.sum(pos) > polyx + 8:
+                        y1 = img_frame[i, pos]
+                        x1 = xl[pos]
+                        p = np.polyfit(x1, y1, polyx)
+                        y2[i, :] = np.polyval(p, np.arange(img_frame.shape[1]))
+                        img_frame[i, :] -= y2[i, :]
+                    else:
+                        mask_line.append(i)
 
-                # Ensure yp is 1D by squeezing the array
-                yp = np.squeeze(yp)
-                print(f"[DEBUG] Shape of yp after squeezing in line: {yp.shape}")
+                for i in mask_line:
+                    img_frame[i, :] = img_frame[i, :] - np.nanmedian(y2)
 
-                # Ensure yp is 1D
-                if yp.ndim != 1:
-                    print(f"yp in line is not 1D, shape is: {yp.shape}")
-                    raise ValueError("Unexpected array shape for yp in line, expected 1D array.")
+            if polyy > 0:
+                for i in range(img_frame.shape[1]):
+                    yp = np.nanmean(img_frame[:, i])
+                    print(f"[DEBUG] Shape of yp before squeezing in line: {yp.shape}")
 
-                valid_yp = ~np.isnan(yp)
-                yf = yp[valid_yp]
-                yl = np.arange(img.shape[0])[valid_yp]
+                    # Ensure yp is 1D by squeezing the array
+                    yp = np.squeeze(yp)
+                    print(f"[DEBUG] Shape of yp after squeezing in line: {yp.shape}")
 
-                if len(yl) >= polyy:
-                    p = np.polyfit(yl, yf, polyy)
-                    r[:, i] -= np.polyval(p, np.arange(img.shape[0]))
+                    # Ensure yp is 1D
+                    if yp.ndim != 1:
+                        print(f"yp in line is not 1D, shape is: {yp.shape}")
+                        raise ValueError("Unexpected array shape for yp in line, expected 1D array.")
 
-    return np.squeeze(r)  # Squeeze the result to remove any singleton dimensions
+                    valid_yp = ~np.isnan(yp)
+                    yf = yp[valid_yp]
+                    yl = np.arange(img_frame.shape[0])[valid_yp]
+
+                    if len(yl) >= polyy:
+                        p = np.polyfit(yl, yf, polyy)
+                        img_frame[:, i] -= np.polyval(p, np.arange(img_frame.shape[0]))
+
+        # Append the processed frame to the list
+        processed_frames.append(np.squeeze(img_frame))  # Ensure the frame is squeezed to remove any singleton dimensions
+
+    # Stack all processed frames back into a 3D array if there are multiple frames
+    return np.stack(processed_frames, axis=0) if len(processed_frames) > 1 else np.squeeze(processed_frames[0])
+
+
 
 
 from PyQt6.QtWidgets import QApplication
