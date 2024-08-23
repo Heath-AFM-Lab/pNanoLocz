@@ -1,7 +1,7 @@
 import os
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QCheckBox, QComboBox, 
-    QSpinBox, QLabel
+    QWidget, QVBoxLayout, QHBoxLayout, QCheckBox, QPushButton, 
+    QSpinBox, QLabel, QComboBox
 )
 from core.Image_Storage_Module.Media_Data_Manager_Class import MediaDataManager
 
@@ -33,12 +33,10 @@ class ToggleableWidget(QWidget):
         topHorizontalLayout.addStretch(1)
 
         # Add button to toggle preview
-        self.view_mode_text = QLabel("View mode selection:")
-        topHorizontalLayout.addWidget(self.view_mode_text)
-        self.view_mode_dropdown = QComboBox()
-        self.view_mode_dropdown.addItems(self.media_data_manager.get_mode_list())
-        topHorizontalLayout.addWidget(self.view_mode_dropdown)
-
+        self.view_mode_button = QPushButton("Preview on")
+        self.view_mode_button.clicked.connect(self.toggle_view_mode)
+        topHorizontalLayout.addWidget(QLabel("View mode selection:"))
+        topHorizontalLayout.addWidget(self.view_mode_button)
 
         # Fill bottom row with toggleable switch and frames
         # Add Load all frames Checkbox
@@ -49,8 +47,6 @@ class ToggleableWidget(QWidget):
         bottomHorizontalLayout.addWidget(self.loadAllFrames)
 
         # Add spin box for quantity of frames 
-        # NEEDS TO BE CHANGED TO FIT THE ACTUAL NUMBER OF FRAMES BY SLOT
-        # TODO: Add a label next to the frameSpinBox to indicate what the spinbox does
         self.frameSpinBox = QSpinBox()
         self.frameSpinBox.setMinimum(0)
         self.frameSpinBox.setMaximum(100000)
@@ -63,7 +59,6 @@ class ToggleableWidget(QWidget):
         bottomHorizontalLayout.addStretch(1)
 
         # Add dropdown for either frames or particles
-        # We can implement the toggle switch but for the concept we will keep it simple
         self.particlesOrFramesDropdown = QComboBox()
         self.particlesOrFramesDropdown.addItems(["Frames", "Particles"])
         bottomHorizontalLayout.addWidget(self.particlesOrFramesDropdown)
@@ -78,7 +73,6 @@ class ToggleableWidget(QWidget):
         # Set names and signals of all widgets
         self.autoplayCheckbox.stateChanged.connect(self.onAutoplayStateChanged)
         self.biDirectionalDataCheckbox.clicked.connect(self.onBiDirectionalDataClicked)
-        self.view_mode_dropdown.currentTextChanged.connect(self.on_view_mode_changed)
         self.loadAllFrames.clicked.connect(self.onLoadAllFramesClicked)
         self.frameSpinBox.valueChanged.connect(self.onFrameSpinBoxValueChanged)
         self.particlesOrFramesDropdown.currentIndexChanged.connect(self.onParticlesOrFramesDropdownChanged)
@@ -86,6 +80,19 @@ class ToggleableWidget(QWidget):
         # Signals coming from the media data manager
         self.media_data_manager.current_mode_changed.connect(self.set_current_mode)
 
+    def toggle_view_mode(self):
+        # Toggle between 'Target' and 'Preview'
+        current_mode = self.media_data_manager.get_mode()
+        new_mode = "Preview" if current_mode == "Target" else "Target"
+        self.media_data_manager.set_mode(new_mode)
+        self.update_view_mode_button_text(new_mode)
+
+    def update_view_mode_button_text(self, mode):
+        # Update button text based on the current mode
+        if mode == "Target":
+            self.view_mode_button.setText("Preview on")
+        else:
+            self.view_mode_button.setText("Preview off")
 
     def onAutoplayStateChanged(self, state):
         # TODO: Handle autoplay checkbox state change
@@ -94,9 +101,6 @@ class ToggleableWidget(QWidget):
     def onBiDirectionalDataClicked(self, checked):
         # TODO: Handle bi-directional data checkbox click
         pass
-
-    def on_view_mode_changed(self, mode):
-        self.media_data_manager.set_mode(mode=mode)
 
     def onLoadAllFramesClicked(self, checked):
         # Handle load all frames checkbox click
@@ -111,20 +115,4 @@ class ToggleableWidget(QWidget):
         pass
 
     def set_current_mode(self, mode):
-        self.view_mode_dropdown.setCurrentText(mode)
-
-
-
-
-# TODO: remove once finished
-from PyQt6.QtWidgets import QApplication
-import sys
-
-# TODO: remove once finished
-if __name__ == '__main__':
-    ICON_DIRECTORY = "../../../assets/icons"
-    PATH_TO_ICON_DIRECTORY = os.path.abspath(os.path.join(os.getcwd(), ICON_DIRECTORY))
-    app = QApplication(sys.argv)
-    toggleable_widget = ToggleableWidget()
-    toggleable_widget.show()
-    sys.exit(app.exec())
+        self.update_view_mode_button_text(mode)
