@@ -97,7 +97,12 @@ class FileDetailingSystemWidget(QWidget):
         self.fileTreeView.setModel(self.fileFilterProxyModel)
         self.fileTreeView.setColumnWidth(0, 250)
         self.fileTreeView.setSortingEnabled(True)
-        self.fileTreeView.doubleClicked.connect(self.onFileDoubleClicked)  # Connect double click event
+
+        # Connect the single click event
+        self.fileTreeView.clicked.connect(self.onFileClicked)
+
+        # Connect selection change for arrow key navigation
+        self.fileTreeView.selectionModel().selectionChanged.connect(self.onSelectionChanged)
 
         self.fileTreeView.header().sortIndicatorChanged.connect(self.onSortIndicatorChanged)
         fileDetailingLayout.addWidget(self.fileTreeView)
@@ -133,7 +138,6 @@ class FileDetailingSystemWidget(QWidget):
         self.setLayout(fileDetailingLayout)
         self.folderOpener.folderReceived.connect(self.populateFileTree)
         self.media_data_manager.new_file_loaded.connect(self.load_table_data)
-
 
 
     ###     DATA TABLE RELATED FUNCTIONS    ###
@@ -182,13 +186,15 @@ class FileDetailingSystemWidget(QWidget):
         self.fileSystemModel.setRootPath(folder_path)
         self.fileTreeView.setRootIndex(self.fileFilterProxyModel.mapFromSource(self.fileSystemModel.index(folder_path)))
 
-    def onFileDoubleClicked(self, index):
+    def onFileClicked(self, index):
         file_path = self.fileSystemModel.filePath(self.fileFilterProxyModel.mapToSource(index))
-        # This will automatically establish a new class to store the file data and metadata to
-        # Call upon the class name MediaDataManager to access the values anywhere in the code
-        # Repeated calls of this function will wipe any currently saved data
+        # Open the file when it is single-clicked
         loadFileData(file_path)
 
+    def onSelectionChanged(self, selected, deselected):
+        indexes = selected.indexes()
+        if indexes:
+            self.onFileClicked(indexes[0])  # Open the file when it is highlighted with arrow keys
 
 
 if __name__ == '__main__':

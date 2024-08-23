@@ -484,6 +484,10 @@ def read_channel_data(
         frame_data = open_file.read(frame_header_dict["total_size"] * 2)
         frame_data = np.frombuffer(frame_data, dtype=np.int16)
         frame_data = frame_data.reshape((y_pixels, x_pixels))
+
+        # Multiply the frame data by -1 to adjust the display
+        frame_data = frame_data * -1
+
         frames.append(frame_data)
 
         # Add the frame-specific metadata to the list
@@ -500,7 +504,6 @@ def read_channel_data(
         })
 
     return frames, frame_metadata_list
-
 
 def create_animation(frames: npt.NDArray) -> None:
     """
